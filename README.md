@@ -11,30 +11,32 @@ so [Docker] is required. Also [kubectl] is required for cluster operations.
 
 See also:
 
-- TODO: [Kubespray in Docker →]
+* [Kubespray in Docker →] **WiP**
 
-### Prerequisites
+### Infrastructure
 
-The current approach assumes that every host purposed for the cluster satisfies
-the following conditioins:
+The current approach assumes that every host purposed for the cluster should
+satisfy the following conditioins:
 
-- [Ubuntu 16.04 LTS] upgraded after the OS setup
-- swap is turned off
-- hostname is set to the corresponding node name
-- SSH access
+* [Ubuntu 16.04 LTS] OS upgraded after setup
+* swap is turned off
+* hostname is set to the corresponding node name
+* SSH access
 
 Optinally, sudo password could be disabled and needed SSH keys provisioned.
 
 See also:
 
-- TODO: [vSphere infrastructure provisioning →]
-- TODO: [IBM infrastructure provisioning →]
-- TODO: [AWS infrastructure provisioning →]
+* [Setup Infrastructure on vSphere →] **WiP**
+* [Setup Infrastructure on IBM →] **WiP**
+* [Setup Infrastructure on AWS →] **WiP**
+* [Setup Infrastructure on GCE →] **WiP**
+* [Provision SSH Keys →] **WiP**
 
 ### Configuration
 
-Name our cluster "nfv-k8s.example.net" (any other name can be used) and make its
-initial configuration:
+Let's name our cluster "nfv-k8s.example.net" (any other name can be used)
+and get its initial configuration:
 
 ```
 $ CLUSTER=nfv-k8s.example.net
@@ -47,34 +49,38 @@ $ docker run \
 that should end up with the following structure:
 
 ```
-$ tree $CLUSTER
-nfv-k8s.example.net
-└── cluster
-    └── config
-        ├── group_vars
-        │   ├── all.yml
-        │   └── k8s-cluster.yml
-        └── hosts.ini
+$ tree $CLUSTER/cluster
+nfv-k8s.example.net/cluster
+└── config
+    ├── group_vars
+    │   ├── all.yml
+    │   └── k8s-cluster.yml
+    └── hosts.ini
 
 3 directories, 3 files
 ```
 
-The cluster topology is defined in the "hosts.ini" file and should be modified
-as needed. Also pay attention to the SSH settings.
+Let's have a look into the files:
 
-The "k8s-cluster.yml" defines Kubernetes settings, especially important might
-be the following:
+ * hosts.ini — defines cluster topology and SSH access details. Modify according
+   to your desired topology and SSH setting. Make sure your nodes hostnames are
+   set according to the hostnames in this file
 
-- kube_version — Kubernetes version
-- cluster_name — "nfv-k8s.example.net" should be changed to the selected name
-- supplementary_addresses\_in\_ssl\_keys — if the "ip" variable in the
-"hosts.ini" file was set to the IP addresses non-reachable from the outside,
-this options should have a list of the master nodes IP addresses reachable
-from the outside.
+ * k8s-cluster.yml — defines Kubernetes settings, especially important might be
+   the following:
 
-The "all.yml" file should not be changed in most of the cases, but if the nodes
-access the Internet via proxy only, it should be specified by defining
-"http_proxy" and "https_proxy" options.
+   - kube_version — Kubernetes version
+
+   - cluster_name — use your name if differs from "nfv-k8s.example.net"
+
+   - supplementary_addresses\_in\_ssl\_keys — if the "ip" variables in the
+     "hosts.ini" file are set to IP addresses non-reachable from the outside,
+     this option should be set to a list of the master nodes IP addresses
+     reachable from the outside
+
+ * all.yml — should not be changed in most of the cases, but if the nodes access
+   the Internet via proxy only, it should be specified by defining "http_proxy"
+   and "https_proxy" options.
 
 ### Deploy
 
@@ -109,21 +115,21 @@ $ kubectl get pods --all-namespaces
 
 See also:
 
-- TODO: [Cluster scaling →]
-- TODO: [Cluster upgrade →]
-- TODO: [OS Kernel and security updates →]
+* [Scaling a Cluster →] **WiP**
+* [Upgrading a Cluster →] **WiP**
+* [OS Kernel and Security Updates →] **WiP**
 
 ### Components
 
 After the plain Kubernetes cluster is set up, additional components could be
 installed to fulfill application and operational needs.
 
-- TODO: [Storage →](docs/storage.md)
-- TODO: [Network →](docs/network.md)
-- TODO: [Load Balancer →](docs/loadbalancer.md)
-- TODO: [Dashboard →](docs/dashboard.md)
-- TODO: [Helm →](docs/helm.md)
-- TODO: [Monitoring →](docs/monitoring.md)
+* [Storage →] **WiP**
+* [Network →] **WiP**
+* [Load Balancer →] **WiP**
+* [Dashboard →] **WiP**
+* [Helm →] **WiP**
+* [Monitoring →] **WiP**
 
 <!-- Links -->
 
@@ -136,9 +142,20 @@ installed to fulfill application and operational needs.
 [Ubuntu 16.04 LTS]: http://releases.ubuntu.com/16.04
 
 [Kubespray in Docker →]: docs/kubespray_in_docker.md
-[vSphere infrastructure provisioning →]: docs/vSphere.md
-[IBM infrastructure provisioning →]: docs/IBM.md
-[AWS infrastructure provisioning →]: docs/AWS.md
-[Cluster scaling →]: docs/scaling.md
-[Cluster upgrade →]: docs/upgrade.md
-[OS Kernel and security updates →]: docs/OS_update.md
+
+[Setup Infrastructure on vSphere →]: docs/vSphere.md
+[Setup Infrastructure on IBM →]: docs/IBM.md
+[Setup Infrastructure on AWS →]: docs/AWS.md
+[Setup Infrastructure on GCE →]: docs/GCE.md
+[Provision SSH Keys →]: docs/SSH_keys.md
+
+[Scaling a Cluster →]: docs/scaling.md
+[Upgrading a Cluster →]: docs/upgrade.md
+[OS Kernel and Security Updates →]: docs/OS_update.md
+
+[Storage →]: docs/storage.md
+[Network →]: docs/network.md
+[Load Balancer →]: docs/loadbalancer.md
+[Dashboard →]: docs/dashboard.md
+[Helm →]: docs/helm.md
+[Monitoring →]: docs/monitoring.md
