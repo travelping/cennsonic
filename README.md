@@ -161,6 +161,12 @@ installed to fulfill application and operational needs.
 * [Helm →] **WiP**
 * [Monitoring →] **WiP**
 
+## Troubleshooting and FAQ
+
+We will try to keep here known issues and the ways of it resolving.
+
+* [Exec Format Error →]
+
 <!-- Links -->
 
 [NFV]: https://en.wikipedia.org/wiki/Network_function_virtualization
@@ -194,3 +200,5 @@ installed to fulfill application and operational needs.
 [Dashboard →]: docs/dashboard.md
 [Helm →]: docs/helm.md
 [Monitoring →]: docs/monitoring.md
+
+[Exec Format Error →]: docs/troubleshooting/exec_format_error.md
