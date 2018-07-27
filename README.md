@@ -21,7 +21,7 @@ satisfy the following conditioins:
 * [Ubuntu 16.04 LTS] OS upgraded after setup
 * swap is turned off
 * SSH access (either by password or by key)
-* the hostname is set according to the node name (see recommendation below)
+* the hostname is set according to the node name (see recommendation below).
 
 Optionally, sudo password could be disabled and needed SSH keys provisioned.
 
@@ -154,12 +154,12 @@ See also:
 After the plain Kubernetes cluster is set up, additional components could be
 installed to fulfill application and operational needs.
 
-* [Storage →] **WiP**
-* [Network →] **WiP**
-* [Load Balancer →] **WiP**
-* [Dashboard →] **WiP**
 * [Helm →] **WiP**
+* [Network →] **WiP**
+* [Storage →] **WiP**
+* [Dashboard →] **WiP**
 * [Monitoring →] **WiP**
+* [Load Balancer →] **WiP**
 
 ## Troubleshooting and FAQ
 
@@ -194,11 +194,11 @@ We will try to keep here known issues and the ways of it resolving.
 [OS Kernel and Security Updates →]: docs/OS_update.md
 [Modifying Kubelet Start Arguments →]: doc/kubelet.md
 
-[Storage →]: docs/storage.md
-[Network →]: docs/network.md
-[Load Balancer →]: docs/loadbalancer.md
-[Dashboard →]: docs/dashboard.md
 [Helm →]: docs/helm.md
+[Network →]: docs/network.md
+[Storage →]: docs/storage.md
+[Dashboard →]: docs/dashboard.md
 [Monitoring →]: docs/monitoring.md
+[Load Balancer →]: docs/loadbalancer.md
 
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md
