@@ -23,6 +23,6 @@ RUN apk upgrade --update --no-cache && \
     pip install -r $PROJECT/requirements.txt && \
     apk del .build-deps
 
-ADD /cluster /cluster
+ADD /cluster/config /cluster/config
 
 WORKDIR /$PROJECT
