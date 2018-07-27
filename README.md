@@ -102,6 +102,9 @@ Let's have a look into the files:
    the Internet via proxy only, it should be specified by defining "http_proxy"
    and "https_proxy" options.
 
+Makes sense to keep this configuration under version control if you plan to
+evolve this cluster.
+
 ### Deploy
 
 Once configuration is ready, plain Kubernetes cluster can be deployed:
@@ -122,8 +125,13 @@ be merged into the main kubeconfig file:
 ```
 $ KUBECONFIG=$CLUSTER/cluster/config/artifacts/admin.conf:~/.kube/config \
   kubectl config view --flatten > config
+$ cp ~/.kube/config ~/.kube/config.bkp # backup config if feel unsafe
 $ mv config ~/.kube/config
 ```
+
+It is not recommended to put this file under version control, therefore it
+should be removed from the cluster file tree after merging into the main
+kubeconfig file.
 
 Check the nodes and pods list to make sure API is accessible and the cluster is
 functional:
@@ -135,9 +143,11 @@ $ kubectl get pods --all-namespaces
 
 See also:
 
+* [Users and Roles →] **WiP**
 * [Scaling a Cluster →] **WiP**
 * [Upgrading a Cluster →] **WiP**
 * [OS Kernel and Security Updates →] **WiP**
+* [Modifying Kubelet Start Arguments →] **WiP**
 
 ### Components
 
@@ -172,9 +182,11 @@ installed to fulfill application and operational needs.
 [Turn Swap Off →]: docs/turn_swap_off.md
 [Disable Sudo Password →]: docs/disable_sudo_password.md
 
+[Users and Roles →]: docs/users_and_roles.md
 [Scaling a Cluster →]: docs/scaling.md
 [Upgrading a Cluster →]: docs/upgrade.md
 [OS Kernel and Security Updates →]: docs/OS_update.md
+[Modifying Kubelet Start Arguments →]: doc/kubelet.md
 
 [Storage →]: docs/storage.md
 [Network →]: docs/network.md
