@@ -20,18 +20,38 @@ satisfy the following conditioins:
 
 * [Ubuntu 16.04 LTS] OS upgraded after setup
 * swap is turned off
-* hostname is set to the corresponding node name
-* SSH access
+* SSH access (either by password or by key)
+* the hostname is set according to the node name (see recommendation below)
 
-Optinally, sudo password could be disabled and needed SSH keys provisioned.
+Optionally, sudo password could be disabled and needed SSH keys provisioned.
+
+The recommended way of naming nodes is the following. Assuming your cluster
+is named "nfv-k8s.example.net" then for a single host setup use:
+
+```
+single.nfv-k8s.example.net
+```
+
+for a multi-host setup use:
+
+```
+master-01.nfv-k8s.example.net
+...
+master-XX.nfv-k8s.example.net
+worker-01.nfv-k8s.example.net
+...
+worker-XX.nfv-k8s.example.net
+```
 
 See also:
 
 * [Setup Infrastructure on vSphere →] **WiP**
-* [Setup Infrastructure on IBM →] **WiP**
 * [Setup Infrastructure on AWS →] **WiP**
 * [Setup Infrastructure on GCE →] **WiP**
+* [Setup Infrastructure on IBM →] **WiP**
+* [Turn Swap Off →] **WiP**
 * [Provision SSH Keys →] **WiP**
+* [Disable Sudo Password →] **WiP**
 
 ### Configuration
 
@@ -147,7 +167,10 @@ installed to fulfill application and operational needs.
 [Setup Infrastructure on IBM →]: docs/IBM.md
 [Setup Infrastructure on AWS →]: docs/AWS.md
 [Setup Infrastructure on GCE →]: docs/GCE.md
+
 [Provision SSH Keys →]: docs/SSH_keys.md
+[Turn Swap Off →]: docs/turn_swap_off.md
+[Disable Sudo Password →]: docs/disable_sudo_password.md
 
 [Scaling a Cluster →]: docs/scaling.md
 [Upgrading a Cluster →]: docs/upgrade.md
