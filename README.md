@@ -103,7 +103,7 @@ Let's have a look into the files:
    and "https_proxy" options.
 
 Makes sense to keep this configuration under version control if you plan to
-evolve this cluster.
+evolve this cluster. Well, also makes sense if you do not plan that.
 
 ### Deploy
 
@@ -148,6 +148,7 @@ See also:
 * [Upgrading a Cluster →] **WiP**
 * [OS Kernel and Security Updates →] **WiP**
 * [Modifying Kubelet Start Arguments →] **WiP**
+* [CIS Kubernetes Benchmark Compliance →] **WiP**
 
 ### Components
 
@@ -193,6 +194,7 @@ We will try to keep here known issues and the ways of it resolving.
 [Upgrading a Cluster →]: docs/upgrade.md
 [OS Kernel and Security Updates →]: docs/OS_update.md
 [Modifying Kubelet Start Arguments →]: doc/kubelet.md
+[CIS Kubernetes Benchmark Compliance →]: doc/cis_benchmark.md
 
 [Helm →]: docs/helm.md
 [Network →]: docs/network.md
