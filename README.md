@@ -166,7 +166,7 @@ and make sure you have selected the "API" scope during a token creation.
 * [Helm →]
 * [Network →] **WiP**
 * [Storage →] **WiP**
-* [Dashboard →] **WiP**
+* [Dashboard →]
 * [Monitoring →] **WiP**
 * [Load Balancer →] **WiP**
 
