@@ -5,7 +5,7 @@ operations.
 
 ## Setup
 
-The NFV cluster is based on a regular Kubernetes cluster so we start from
+The NFV cluster is based on a regular Kubernetes cluster, so we start from
 setting it up. For the setup we use [Kubespray] packed into a [Docker image],
 so [Docker] is required. Also [kubectl] is required for cluster operations.
 
@@ -155,7 +155,15 @@ See also:
 After the plain Kubernetes cluster is set up, additional components could be
 installed to fulfill application and operational needs.
 
-* [Helm →] **WiP**
+Some of the components are defined in the manifests located in this repository.
+As this repository is not publicly available you would need a private token,
+because these guides assume access to the manifests without cloning this
+repository or copying anything from the web pages being logged in.
+
+Please follow the [Personal Access Tokens] guide to get yourself one,
+and make sure you have selected the "API" scope during a token creation.
+
+* [Helm →]
 * [Network →] **WiP**
 * [Storage →] **WiP**
 * [Dashboard →] **WiP**
@@ -193,14 +201,16 @@ We will try to keep here known issues and the ways of it resolving.
 [Scaling a Cluster →]: docs/scaling.md
 [Upgrading a Cluster →]: docs/upgrade.md
 [OS Kernel and Security Updates →]: docs/OS_update.md
-[Modifying Kubelet Start Arguments →]: doc/kubelet.md
-[CIS Kubernetes Benchmark Compliance →]: doc/cis_benchmark.md
+[Modifying Kubelet Start Arguments →]: docs/kubelet.md
+[CIS Kubernetes Benchmark Compliance →]: docs/cis_benchmark.md
 
-[Helm →]: docs/helm.md
-[Network →]: docs/network.md
-[Storage →]: docs/storage.md
-[Dashboard →]: docs/dashboard.md
-[Monitoring →]: docs/monitoring.md
-[Load Balancer →]: docs/loadbalancer.md
+[Personal Access Tokens]: https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html
+
+[Helm →]: docs/components/helm.md
+[Network →]: docs/components/network.md
+[Storage →]: docs/components/storage.md
+[Dashboard →]: docs/components/dashboard.md
+[Monitoring →]: docs/components/monitoring.md
+[Load Balancer →]: docs/components/loadbalancer.md
 
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md
