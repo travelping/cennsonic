@@ -20,7 +20,7 @@ $ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/
 After that we can install Helm in a way to use that service account:
 
 ```
-helm init --service-account tiller
+$ helm init --service-account tiller
 ```
 
 <!-- Links -->

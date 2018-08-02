@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: iperf3-server-tcp
+  annotations:
+    metallb.universe.tf/allow-shared-ip: iperf3-server-key
+  name: iperf3-server-tcp
+spec:
+  ports:
+  - port: 5201
+    protocol: TCP
+    targetPort: 5201
+  selector:
+    run: iperf3-server 
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: iperf3-server-udp
+  annotations:
+    metallb.universe.tf/allow-shared-ip: iperf3-server-key
+  name: iperf3-server-udp
+spec:
+  ports:
+  - port: 5201
+    protocol: UDP
+    targetPort: 5201
+  selector:
+    run: iperf3-server 
+  type: LoadBalancer
