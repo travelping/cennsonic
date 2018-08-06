@@ -149,26 +149,20 @@ See also:
 * [OS Kernel and Security Updates →] **WiP**
 * [Modifying Kubelet Start Arguments →] **WiP**
 * [CIS Kubernetes Benchmark Compliance →] **WiP**
+* [Modifying a Cluster API access addresses →] **WiP**
 
 ### Components
 
 After the plain Kubernetes cluster is set up, additional components could be
 installed to fulfill application and operational needs.
 
-Some of the components are defined in the manifests located in this repository.
-As this repository is not publicly available you would need a private token,
-because these guides assume access to the manifests without cloning this
-repository or copying anything from the web pages being logged in.
-
-Please follow the [Personal Access Tokens] guide to get yourself one,
-and make sure you have selected the "API" scope during a token creation.
-
 * [Helm →]
 * [Network →] **WiP**
 * [Storage →] **WiP**
 * [Dashboard →]
 * [Monitoring →] **WiP**
-* [Load Balancer →] **WiP**
+* [Load Balancer →]
+* [Ingress Controller →] **WiP**
 
 ## Troubleshooting and FAQ
 
@@ -203,8 +197,7 @@ We will try to keep here known issues and the ways of it resolving.
 [OS Kernel and Security Updates →]: docs/OS_update.md
 [Modifying Kubelet Start Arguments →]: docs/kubelet.md
 [CIS Kubernetes Benchmark Compliance →]: docs/cis_benchmark.md
-
-[Personal Access Tokens]: https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html
+[Modifying a Cluster API access addresses →]: docs/access_addresses.md
 
 [Helm →]: docs/components/helm.md
 [Network →]: docs/components/network.md
@@ -212,5 +205,6 @@ We will try to keep here known issues and the ways of it resolving.
 [Dashboard →]: docs/components/dashboard.md
 [Monitoring →]: docs/components/monitoring.md
 [Load Balancer →]: docs/components/loadbalancer.md
+[Ingress Controller →]: docs/components/ingress_controller.md
 
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md

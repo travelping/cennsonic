@@ -1,30 +1,43 @@
 # Load Balancer
 
-In case of Kubernetes cluster installation where cloud provided load balancer
+In case of a Kubernetes cluster installation where cloud provided load balancer
 is not available (for example on bare metal) or cannot be used for any reason,
-there is an option to use [MetalLB]. It also enables an ability to create
-Kubernetes services of type "LoadBalancer".
+there is an option to use [MetalLB]. It enables an ability to create Kubernetes
+services of type [LoadBalancer].
 
 ## Installation
 
 The balancer could be installed this way:
 
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.6.2/manifests/metallb.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.7.1/manifests/metallb.yaml
 ```
 
 After installation it should be provided with [Layer2 configuration] describing
-range of IP addresses available for allocation. We use the [MetalLB
-configuration manifest] to create the corresponding configmap:
+range of IP addresses available for allocation. Copy the [MetalLB configuration
+manifest] to your cluster location, for example (requires [Private Token]):
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/loadbalancer/metallb-config.yaml?private_token=$PRIVATE_TOKEN
+$ CLUSTER=<Cluster Root Path>
+$ mkdir -p $CLUSTER/cluster/components/loadbalancer
+$ curl https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/loadbalancer/metallb-config.yaml?private_token=$PRIVATE_TOKEN >> $CLUSTER/cluster/components/loadbalancer/metallb-config.yaml
 ```
+
+and change the [MetalLB IP range] according to your needs. When the change
+is ready, create the configuration:
+
+```
+$ kubectl create -f $CLUSTER/cluster/components/loadbalancer/metallb-config.yaml
+```
+
+See also:
+
+* [Layer 2 Mode Tutorial →]
 
 ## Usage example
 
 As an example we deploy a service that depends on both TCP and UDP protocols.
-[Iperf3], when running as a server can serve UDP traffic, but to negotiate with
+[Iperf3] when running as a server can serve UDP traffic, but to negotiate with
 Iperf3 client they use TCP. This creates a requirement of both protocols
 availability on the same IP address.
 
@@ -34,16 +47,16 @@ First, we deploy the Iperf3 server:
 $ kubectl run iperf3-server --image=aialferov/nettools --command -- iperf3 -s
 ```
 
-In the [Example manifest] we describe two load balancers with use of the
+Using the [Example manifest] we create two load balancers with use of the
 [MetalLB IP address sharing] feature to serve both TCP and UDP traffic on the
-same IP address. To create:
+same IP address (requires [Private Token]):
 
 ```
 $ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
 ```
 
 Iperf3 client is needed to verify the server works as expected. Please refer the
-[Iperf3 download] webpage to get its binary for your OS.
+[Iperf3 download] webpage to get the executable binary for your OS.
 
 Now you can get the IP address of the service:
 
@@ -78,12 +91,26 @@ $ iperf3 -uc $IP
 iperf3: error - unable to connect to server: Network is unreachable
 ```
 
+### Example cleanup
+
+Do delete all the example related resources (requires [Private Token]):
+
+```
+$ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl delete deployment iperf3-server
+```
+
 <!-- Links -->
 
-[MetalLB]: https://metallb.universe.tf
 [Iperf3]: https://iperf.fr
+[MetalLB]: https://metallb.universe.tf
+[LoadBalancer]: https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
+[Private Token]: ../gitlab_private_token.md
 [Iperf3 download]: https://iperf.fr/iperf-download.php
 [Example manifest]: ../../cluster/components/loadbalancer/example.yaml
+[MetalLB IP range]: ../../cluster/components/loadbalancer/metallb-config.yaml#L12
 [Layer2 configuration]: https://metallb.universe.tf/configuration/#layer-2-configuration
-[MetalLB configuration manifest]: ../../cluster/components/loadbalancer/metallb-config.yaml
 [MetalLB IP address sharing]: https://metallb.universe.tf/usage/#ip-address-sharing
+[MetalLB configuration manifest]: ../../cluster/components/loadbalancer/metallb-config.yaml
+
+[Layer 2 Mode Tutorial →]: https://metallb.universe.tf/tutorial/layer2
