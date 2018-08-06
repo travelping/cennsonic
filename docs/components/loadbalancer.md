@@ -10,8 +10,10 @@ services of type [LoadBalancer].
 The balancer could be installed this way:
 
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.7.1/manifests/metallb.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.7.2/manifests/metallb.yaml
 ```
+
+## Configuration
 
 After installation it should be provided with [Layer2 configuration] describing
 range of IP addresses available for allocation. Copy the [MetalLB configuration
@@ -33,6 +35,22 @@ $ kubectl create -f $CLUSTER/cluster/components/loadbalancer/metallb-config.yaml
 See also:
 
 * [Layer 2 Mode Tutorial →]
+
+### IP Range Change
+
+To change the IP range, edit the configuration file again and apply it:
+
+```
+$ kubectl apply -f $CLUSTER/cluster/components/loadbalancer/metallb-config.yaml
+```
+
+The load balancer does not need to be restarted. See the speaker logs for the
+changes applied:
+
+```
+$ SPEAKER_POD=$(kubectl -n metallb-system get po -l app=metallb -l component=speaker -o jsonpath={.items[0].metadata.name})
+$ kubectl -n metallb-system logs $SPEAKER_POD
+```
 
 ## Usage example
 
