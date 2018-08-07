@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rook-usage-example
+  labels:
+    app: rook-usage-example
+spec:
+  clusterIP: None
+  selector:
+    app: rook-usage-example
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rook-usage-example
+spec:
+  selector:
+    matchLabels:
+      app: rook-usage-example
+  serviceName: rook-usage-example
+  template:
+    metadata:
+      labels:
+        app: rook-usage-example
+    spec:
+      containers:
+      - name: rook-usage-example
+        image: aialferov/pause
+        volumeMounts:
+        - name: rook-usage-example
+          mountPath: /data/rook-usage-example
+  volumeClaimTemplates:
+  - metadata:
+      name: rook-usage-example
+    spec:
+      storageClassName: rook-ceph-block
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
