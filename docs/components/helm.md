@@ -28,5 +28,6 @@ $ helm init --service-account tiller
 [Helm]: https://helm.sh
 [Tiller]: https://docs.helm.sh/using_helm/#installing-tiller
 [Helm Client]: https://docs.helm.sh/using_helm/#installing-the-helm-client
-[Private Token]: ../gitlab_private_token.md
 [RBAC Tiller Manifest]: ../../cluster/components/helm/rbac-tiller.yaml
+
+[Private Token]: ../gitlab_private_token.md

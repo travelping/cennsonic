@@ -123,7 +123,6 @@ $ kubectl delete deployment iperf3-server
 [Iperf3]: https://iperf.fr
 [MetalLB]: https://metallb.universe.tf
 [LoadBalancer]: https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
-[Private Token]: ../gitlab_private_token.md
 [Iperf3 download]: https://iperf.fr/iperf-download.php
 [Example manifest]: ../../cluster/components/loadbalancer/example.yaml
 [MetalLB IP range]: ../../cluster/components/loadbalancer/metallb-config.yaml#L12
@@ -132,3 +131,5 @@ $ kubectl delete deployment iperf3-server
 [MetalLB configuration manifest]: ../../cluster/components/loadbalancer/metallb-config.yaml
 
 [Layer 2 Mode Tutorial →]: https://metallb.universe.tf/tutorial/layer2
+
+[Private Token]: ../gitlab_private_token.md

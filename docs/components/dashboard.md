@@ -35,6 +35,7 @@ $ kubectl -n kube-system get secret -o jsonpath='{.items[?(@.metadata.annotation
 
 <!-- Links -->
 
-[Private Token]: ../gitlab_private_token.md
 [RBAC Dashboard]: ../../cluster/components/dashboard/rbac-dashboard.yaml
 [Kubernetes Dashboard]: https://github.com/kubernetes/dashboard
+
+[Private Token]: ../gitlab_private_token.md
