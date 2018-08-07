@@ -47,22 +47,22 @@ create it again, and see our data is still there:
 
 ```
 # Store data and display it
-$ kubectl exec rook-block-test-0 -- sh -c 'echo 1 > /data/rook-block-test/1.txt'
-$ kubectl exec rook-block-test-0 cat /data/rook-block-test/1.txt
+$ kubectl exec rook-usage-example-0 -- sh -c 'echo 1 > /data/rook-usage-example/1.txt'
+$ kubectl exec rook-usage-example-0 cat /data/rook-usage-example/1.txt
 1
 
 # Delete StatefulSet
 $ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
-service "rook-block-test" deleted
-statefulset.apps "rook-block-test" deleted
+service "rook-usage-example" deleted
+statefulset.apps "rook-usage-example" deleted
 
 # Create StatefulSet again
 $ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
-service "rook-block-test" created
-statefulset.apps "rook-block-test" created
+service "rook-usage-example" created
+statefulset.apps "rook-usage-example" created
 
 # Display the data previously stored
-$ kubectl exec rook-block-test-0 cat /data/rook-block-test/1.txt
+$ kubectl exec rook-usage-example-0 cat /data/rook-usage-example/1.txt
 1
 ```
 
@@ -72,12 +72,12 @@ also (requires [Private Token]):
 ```
 # Delete StatefulSet
 $ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
-service "rook-block-test" deleted
-statefulset.apps "rook-block-test" deleted
+service "rook-usage-example" deleted
+statefulset.apps "rook-usage-example" deleted
 
 # Delete PVC
-$ kubectl delete pvc rook-block-test-rook-block-test-0
-persistentvolumeclaim "rook-block-test-rook-block-test-0" deleted
+$ kubectl delete pvc rook-usage-example-rook-usage-example-0
+persistentvolumeclaim "rook-usage-example-rook-usage-example-0" deleted
 ```
 
 Now after creation the workload again, our data is gone (requires [Private
@@ -86,22 +86,22 @@ Token]):
 ```
 # Create StatefulSet again
 $ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
-service "rook-block-test" created
-statefulset.apps "rook-block-test" created
+service "rook-usage-example" created
+statefulset.apps "rook-usage-example" created
 
 # The file is gone
-$ kubectl exec rook-block-test-0 cat /data/rook-block-test/1.txt
-cat: can't open '/data/rook-block-test/1.txt': No such file or directory
+$ kubectl exec rook-usage-example-0 cat /data/rook-usage-example/1.txt
+cat: can't open '/data/rook-usage-example/1.txt': No such file or directory
 command terminated with exit code 1
 ```
 
-### Example cleanup
+### Example Clean Up
 
 To delete all the example related objects (requires [Private Token]):
 
 ```
 $ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
-$ kubectl delete pvc rook-block-test-rook-block-test-0
+$ kubectl delete pvc rook-usage-example-rook-usage-example-0
 ```
 
 <!-- Links -->

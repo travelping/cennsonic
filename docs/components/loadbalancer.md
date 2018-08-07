@@ -109,7 +109,7 @@ $ iperf3 -uc $IP
 iperf3: error - unable to connect to server: Network is unreachable
 ```
 
-### Example cleanup
+### Example Clean Up
 
 Do delete all the example related resources (requires [Private Token]):
 
