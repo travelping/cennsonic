@@ -158,7 +158,7 @@ installed to fulfill application and operational needs.
 
 * [Helm →]
 * [Network →] **WiP**
-* [Storage →] **WiP**
+* [Storage →]
 * [Dashboard →]
 * [Monitoring →] **WiP**
 * [Load Balancer →]
