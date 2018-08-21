@@ -35,6 +35,21 @@ For the custom network configuration it is recommended to keep the [VXLAN
 Network Configuration] manifest in your cluster repository with all the needed
 network defined.
 
+Copy the network configuration configmap sample and modify accordingly
+(requires [Private Token]):
+
+```
+$ CLUSTER=<Cluster Root Path>
+$ mkdir -p $CLUSTER/cluster/components/network
+$ curl -s https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/network/kube-vxlan-controller.yaml?private_token=$PRIVATE_TOKEN | head -n29 | tail -n10 >> $CLUSTER/cluster/components/network/kube-vxlan-controller-networks.yaml
+```
+
+After modification could be applied this way:
+
+```
+$ kubectl apply -f $CLUSTER/cluster/components/network/kube-vxlan-controller-networks.yaml
+```
+
 <!-- Links -->
 
 [Calico]: https://www.projectcalico.org
