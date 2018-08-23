@@ -1,26 +1,28 @@
+REGISTRY = docker.io
 USER = travelping
 PROJECT = nfv-k8s
-
 VERSION = 0.1.0
+
 GIT_SHA = $(shell git rev-parse HEAD | cut -c1-8)
 
-IMAGE = $(USER)/$(PROJECT):$(VERSION)
-IMAGE_LATEST = $(USER)/$(PROJECT):latest
+IMAGE = $(REGISTRY)/$(USER)/$(PROJECT):$(VERSION)
+IMAGE_LATEST = $(REGISTRY)/$(USER)/$(PROJECT):latest
 
 all:
-	@echo "Usage: make <COMMAND> [OPTIONS]"
+	@echo "Usage: make <Command> [Options]"
 	@echo
-	@echo "COMMANDS"
+	@echo "Commands"
 	@echo "    docker-build"
 	@echo "    docker-clean"
+	@echo "    docker-dist-clean"
 	@echo "    docker-push"
 	@echo "    docker-release"
-	@echo "    docker-login"
-	@echo "    docker-logout"
-	@echo ""
+	@echo "    docker-local-release"
+	@echo
 	@echo "    version"
 	@echo
-	@echo "OPTIONS"
+	@echo "Options"
+	@echo "    REGISTRY=<Docker registry> (default: $(REGISTRY))"
 	@echo "    PROJECT=<Image Name> (default: $(PROJECT))"
 	@echo "    USER=<Docker ID> (default: $(USER))"
 	@echo "    VERSION=<Version> (default: $(VERSION))"
@@ -31,18 +33,17 @@ docker-build:
 docker-clean:
 	docker rmi $(IMAGE)
 
+docker-distclean: docker-clean
+	docker rmi $(IMAGE_LATEST)
+
 docker-push:
 	docker push $(IMAGE)
 
-docker-release: docker-push
+docker-local-release:
 	docker tag $(IMAGE) $(IMAGE_LATEST)
+
+docker-release: docker-local-release docker-push
 	docker push $(IMAGE_LATEST)
-
-docker-login:
-	docker login --username $(USER)
-
-docker-logout:
-	docker logout
 
 version:
 	@echo "Version $(VERSION) (git-$(GIT_SHA))"
