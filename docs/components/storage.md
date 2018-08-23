@@ -17,13 +17,13 @@ so, we create them using the manifests (requires [Private Token]):
 
 ```
 # Rook operator
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/rook-operator.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/storage/rook-operator.yaml?private_token=$PRIVATE_TOKEN
 
 # Rook cluster
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/rook-cluster.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/storage/rook-cluster.yaml?private_token=$PRIVATE_TOKEN
 
 # Rook storage class
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/rook-storageclass.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/storage/rook-storageclass.yaml?private_token=$PRIVATE_TOKEN
 ```
 
 See also:
@@ -39,7 +39,7 @@ name for [PVC]. We create a [StatefulSet] defined in the [Usage Example] to
 demonstrate that (requires [Private Token]):
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
 ```
 
 Now we can store something in the mounted directory, remove the StatefulSet,
@@ -52,12 +52,12 @@ $ kubectl exec rook-usage-example-0 cat /data/rook-usage-example/1.txt
 1
 
 # Delete StatefulSet
-$ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
 service "rook-usage-example" deleted
 statefulset.apps "rook-usage-example" deleted
 
 # Create StatefulSet again
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
 service "rook-usage-example" created
 statefulset.apps "rook-usage-example" created
 
@@ -71,7 +71,7 @@ also (requires [Private Token]):
 
 ```
 # Delete StatefulSet
-$ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
 service "rook-usage-example" deleted
 statefulset.apps "rook-usage-example" deleted
 
@@ -85,7 +85,7 @@ Token]):
 
 ```
 # Create StatefulSet again
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
 service "rook-usage-example" created
 statefulset.apps "rook-usage-example" created
 
@@ -100,7 +100,7 @@ command terminated with exit code 1
 To delete all the example related objects (requires [Private Token]):
 
 ```
-$ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
 $ kubectl delete pvc rook-usage-example-rook-usage-example-0
 ```
 
@@ -108,13 +108,13 @@ $ kubectl delete pvc rook-usage-example-rook-usage-example-0
 
 [PVC]: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
 [StatefulSet]: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset
-[Usage Example]: ../../cluster/components/storage/example.yaml
+[Usage Example]: ../../components/storage/example.yaml
 
 [Ceph]: https://ceph.com
 [Rook]: https://rook.io/docs/rook/v0.8
-[Rook Cluster]: ../../cluster/components/storage/rook-cluster.yaml
-[Rook Operator]: ../../cluster/components/storage/rook-operator.yaml
-[Rook Storage Class]: ../../cluster/components/storage/rook-storageclass.yaml
+[Rook Cluster]: ../../components/storage/rook-cluster.yaml
+[Rook Operator]: ../../components/storage/rook-operator.yaml
+[Rook Storage Class]: ../../components/storage/rook-storageclass.yaml
 
 [Storage Resize →]: resize.md
 [Storage Backup and Restore →]: backup_and_restore.md

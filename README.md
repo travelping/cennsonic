@@ -35,12 +35,8 @@ single.nfv-k8s.example.net
 for a multi-host setup use:
 
 ```
-master-01.nfv-k8s.example.net
-...
-master-XX.nfv-k8s.example.net
-worker-01.nfv-k8s.example.net
-...
-worker-XX.nfv-k8s.example.net
+master-[01:XX].nfv-k8s.example.net
+worker-[01:XX].nfv-k8s.example.net
 ```
 
 See also:
@@ -69,8 +65,8 @@ $ docker run \
 that should end up with the following structure:
 
 ```
-$ tree $CLUSTER/cluster
-nfv-k8s.example.net/cluster
+$ tree $CLUSTER
+nfv-k8s.example.net
 └── config
     ├── group_vars
     │   ├── all.yml
@@ -111,9 +107,9 @@ Once configuration is ready, plain Kubernetes cluster can be deployed:
 
 ```
 $ docker run \
-        --rm -it -v $PWD/$CLUSTER/cluster/config:/$CLUSTER/config \
+        --rm -it -v $PWD/$CLUSTER/config:/$CLUSTER/config \
         travelping/nfv-k8s ansible-playbook cluster.yml \
-        -b -v -i /$CLUSTER/config/hosts.ini
+        -vbi /$CLUSTER/config/hosts.ini
         [-k or --ask-pass] # if SSH password should be specified
         [-K or --ask-become-pass] # if "sudo" password should be specified
         [--key-file ~/.ssh/id_rsa] # if SSH private key should be specified
@@ -123,7 +119,7 @@ If the deployment process succeeded the newly created cluster kubeconfig could
 be merged into the main kubeconfig file:
 
 ```
-$ KUBECONFIG=$CLUSTER/cluster/config/artifacts/admin.conf:~/.kube/config \
+$ KUBECONFIG=$CLUSTER/config/artifacts/admin.conf:~/.kube/config \
   kubectl config view --flatten > config
 $ cp ~/.kube/config ~/.kube/config.bkp # backup config if feel unsafe
 $ mv config ~/.kube/config

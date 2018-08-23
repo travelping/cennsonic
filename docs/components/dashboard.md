@@ -11,7 +11,7 @@ by binding it to the "cluster-admin" role. For that we use the [RBAC Dashboard]
 manifest to create the corresponding binding (requires [Private Token]):
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/dashboard/rbac-dashboard.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/dashboard/rbac-dashboard.yaml?private_token=$PRIVATE_TOKEN
 ```
 
 ## Access
@@ -35,7 +35,7 @@ $ kubectl -n kube-system get secret -o jsonpath='{.items[?(@.metadata.annotation
 
 <!-- Links -->
 
-[RBAC Dashboard]: ../../cluster/components/dashboard/rbac-dashboard.yaml
+[RBAC Dashboard]: ../../components/dashboard/rbac-dashboard.yaml
 [Kubernetes Dashboard]: https://github.com/kubernetes/dashboard
 
 [Private Token]: ../gitlab_private_token.md

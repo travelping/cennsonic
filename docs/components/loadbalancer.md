@@ -21,15 +21,15 @@ manifest] to your cluster location, for example (requires [Private Token]):
 
 ```
 $ CLUSTER=<Cluster Root Path>
-$ mkdir -p $CLUSTER/cluster/components/loadbalancer
-$ curl https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/loadbalancer/metallb-config.yaml?private_token=$PRIVATE_TOKEN >> $CLUSTER/cluster/components/loadbalancer/metallb-config.yaml
+$ mkdir -p $CLUSTER/components/loadbalancer
+$ curl https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/loadbalancer/metallb-config.yaml?private_token=$PRIVATE_TOKEN >> $CLUSTER/components/loadbalancer/metallb-config.yaml
 ```
 
 and change the [MetalLB IP range] according to your needs. When the change
 is ready, create the configuration:
 
 ```
-$ kubectl create -f $CLUSTER/cluster/components/loadbalancer/metallb-config.yaml
+$ kubectl create -f $CLUSTER/components/loadbalancer/metallb-config.yaml
 ```
 
 See also:
@@ -41,7 +41,7 @@ See also:
 To change the IP range, edit the configuration file again and apply it:
 
 ```
-$ kubectl apply -f $CLUSTER/cluster/components/loadbalancer/metallb-config.yaml
+$ kubectl apply -f $CLUSTER/components/loadbalancer/metallb-config.yaml
 ```
 
 The load balancer does not need to be restarted. See the speaker logs for the
@@ -70,7 +70,7 @@ Using the [Example manifest] we create two load balancers with use of the
 same IP address (requires [Private Token]):
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
 ```
 
 Iperf3 client is needed to verify the server works as expected. Please refer the
@@ -114,7 +114,7 @@ iperf3: error - unable to connect to server: Network is unreachable
 Do delete all the example related resources (requires [Private Token]):
 
 ```
-$ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/cluster/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
 $ kubectl delete deployment iperf3-server
 ```
 
@@ -124,11 +124,11 @@ $ kubectl delete deployment iperf3-server
 [MetalLB]: https://metallb.universe.tf
 [LoadBalancer]: https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
 [Iperf3 download]: https://iperf.fr/iperf-download.php
-[Example manifest]: ../../cluster/components/loadbalancer/example.yaml
-[MetalLB IP range]: ../../cluster/components/loadbalancer/metallb-config.yaml#L12
+[Example manifest]: ../../components/loadbalancer/example.yaml
+[MetalLB IP range]: ../../components/loadbalancer/metallb-config.yaml#L12
 [Layer2 configuration]: https://metallb.universe.tf/configuration/#layer-2-configuration
 [MetalLB IP address sharing]: https://metallb.universe.tf/usage/#ip-address-sharing
-[MetalLB configuration manifest]: ../../cluster/components/loadbalancer/metallb-config.yaml
+[MetalLB configuration manifest]: ../../components/loadbalancer/metallb-config.yaml
 
 [Layer 2 Mode Tutorial →]: https://metallb.universe.tf/tutorial/layer2
 
