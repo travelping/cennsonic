@@ -4,7 +4,7 @@ ARG PROJECT=nfv-k8s
 ARG KUBESPRAY_VERSION=2.5.0
 ARG GIT_URL=https://github.com/kubernetes-incubator/kubespray
 
-RUN apk upgrade --update --no-cache && \
+RUN apk upgrade --no-cache --update && \
     apk add --no-cache openssh sshpass python && \
     apk add --no-cache --virtual .build-deps \
         git \
@@ -23,6 +23,7 @@ RUN apk upgrade --update --no-cache && \
     pip install -r $PROJECT/requirements.txt && \
     apk del .build-deps
 
-ADD /cluster/config /cluster/config
+ADD /infra /cluster/infra
+ADD /config /cluster/config
 
 WORKDIR /$PROJECT
