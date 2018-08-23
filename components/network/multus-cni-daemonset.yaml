@@ -1,0 +1,41 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: multus-cni
+  namespace: kube-system
+  labels:
+    app: multus-cni
+spec:
+  selector:
+    matchLabels:
+      app: multus-cni
+  template:
+    metadata:
+      labels:
+        app: multus-cni
+    spec:
+      terminationGracePeriodSeconds: 0
+      containers:
+      - name: cni-installer
+        image: travelping/cni-installer
+        args: ["sleep"]
+        volumeMounts:
+        - name: bindir
+          mountPath: /opt/cni/bin
+        - name: confdir
+          mountPath: /etc/cni/net.d
+        - name: config-template
+          mountPath: /config
+        env:
+        - name: PLUGINS
+          value: "multus"
+      volumes:
+      - name: bindir
+        hostPath:
+          path: /opt/cni/bin
+      - name: confdir
+        hostPath:
+          path: /etc/cni/net.d
+      - name: config-template
+        configMap:
+          name: multus-cni-config
