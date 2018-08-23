@@ -1,0 +1,10 @@
+---
+- hosts: k8s-cluster
+  gather_facts: False
+  roles:
+    - {role: ssh-keys, tags: ssh-keys}
+
+- hosts: kube-node
+  gather_facts: False
+  roles:
+    - role: etcd-certs-symlinks
