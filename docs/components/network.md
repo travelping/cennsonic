@@ -32,8 +32,8 @@ etcd endpoints):
 $ kubectl -n kube-system get po -l k8s-app=kube-apiserver -o jsonpath='{.items[0].spec.containers[?(@.name=="kube-apiserver")].command[3]}' | cut -d= -f2
 ```
 
-Modify Macvlan interfaces according to your needs. Make sure you use master
-interface available on the nodes.
+Modify Macvlan interfaces according to your needs. Make sure you specified
+a master device name of the interface that available on the nodes.
 
 Create the configuration:
 
@@ -41,17 +41,30 @@ Create the configuration:
 $ kubectl create -f $CLUSTER/components/network/multus-cni-configmap.yaml
 ```
 
-### And Now Installation
+### Now Installation
 
-After the configuration is in place, install Multus CNI itself (requires [Private Token]):
+After the configuration is in place, install Multus CNI itself
+(requires [Private Token]):
 
 ```
 $ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/network/multus-cni-daemonset.yaml?private_token=$PRIVATE_TOKEN
 ```
 
-To validate installation create a pod and verify it contains network interface(s)
-named the way you specified in the Multus configuration and is assigned an IP
-address from the specified subnet and range (if specified). For example:
+To validate installation create a pod and verify it contains network
+interface(s) named "net[0-N]" and is/are assigned IP address(es) from the
+specified subnet(s) and range(s).
+
+To make any changes, apply the changed configuration file:
+
+```
+$ kubectl apply -f $CLUSTER/components/network/multus-cni-configmap.yaml
+```
+
+and restart the pods, for example this way:
+
+```
+$ kubectl -n kube-system delete pod -l app=multus-cni
+```
 
 ## Kube VXLAN Controller
 

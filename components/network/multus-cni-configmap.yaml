@@ -30,12 +30,13 @@ data:
            "kubeconfig": "/etc/kubernetes/node-kubeconfig.yaml"
          }
        },{
-         "name": "macvlan0",
          "type": "macvlan",
          "master": "eth0",
          "ipam": {
            "type": "host-local",
            "subnet": "172.20.11.0/24"
+           #,"rangeStart": "172.20.11.200",
+           #"rangeEnd": "172.20.11.250"
          }
        }]
       }
