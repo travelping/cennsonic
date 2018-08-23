@@ -19,11 +19,11 @@ RUN apk upgrade --no-cache --update && \
               --single-branch \
               --depth 1 \
               $GIT_URL \
-              $PROJECT && \
+              /$PROJECT && \
     pip install -r $PROJECT/requirements.txt && \
     apk del .build-deps
 
-ADD /infra /cluster/infra
-ADD /config /cluster/config
+COPY /config /cluster/config
+COPY /ansible /$PROJECT
 
 WORKDIR /$PROJECT
