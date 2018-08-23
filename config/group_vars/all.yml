@@ -1,3 +1,9 @@
+### SSH keys to provision
+### A key will be downloaded from https://gitlab.tpip.net/<user>.keys
+#ssh_users:
+#- user1
+#- user2
+
 # Valid bootstrap options (required): ubuntu, coreos, centos, none
 bootstrap_os: ubuntu
 

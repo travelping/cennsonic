@@ -1,5 +1,5 @@
 ---
-- name: "SSH key for {{ item }}"
+- name: "SSH keys"
   authorized_key:
     user: "{{ ansible_user }}"
     state: present

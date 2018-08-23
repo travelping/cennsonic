@@ -1,8 +1,8 @@
 ---
-- hosts: k8s-cluster
+- hosts: all
   gather_facts: False
   roles:
-    - {role: ssh-keys, tags: ssh-keys}
+    - {role: ssh-keys, tags: ssh-keys, when: ssh_users is defined}
 
 - hosts: kube-node
   gather_facts: False
