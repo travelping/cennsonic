@@ -13,8 +13,11 @@ First we install Ingress Controller, Default Backend and other necessary objects
 $ kubectl create -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/mandatory.yaml
 ```
 
-Then we create a Load Balancer service to expose the Ingress Controller
-deployment (requires [Private Token]):
+To access any ingress controlled services the controller itself should be
+exposed as a service. We expose it as load balancer service, therefore please
+make sure the [Load Balancer] is installed.
+
+Expose (requires [Private Token]):
 
 ```
 $ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/ingress/ingress-service.yaml?private_token=$PRIVATE_TOKEN
@@ -23,5 +26,6 @@ $ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/componen
 <!-- Links -->
 
 [Ingress]: https://kubernetes.io/docs/concepts/services-networking/ingress
+[Load Balancer]: loadbalancer.md
 
 [Private Token]: ../gitlab_private_token.md
