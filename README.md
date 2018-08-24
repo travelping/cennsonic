@@ -153,7 +153,7 @@ After the plain Kubernetes cluster is set up, additional components could be
 installed to fulfill application and operational needs.
 
 * [Helm →]
-* [Ingress →] **WiP**
+* [Ingress →]
 * [Network →]
 * [Storage →]
 * [Dashboard →]
