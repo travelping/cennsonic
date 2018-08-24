@@ -164,6 +164,7 @@ installed to fulfill application and operational needs.
 * [Dashboard →]
 * [Monitoring →] **WiP**
 * [Load Balancer →]
+* [Certificates Manager →] **WiP**
 
 ## Troubleshooting and FAQ
 
@@ -207,5 +208,6 @@ We will try to keep here known issues and the ways of it resolving.
 [Dashboard →]: docs/components/dashboard.md
 [Monitoring →]: docs/components/monitoring.md
 [Load Balancer →]: docs/components/loadbalancer.md
+[Certificates Manager →]: docs/components/certmanager.md
 
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md
