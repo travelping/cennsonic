@@ -153,12 +153,12 @@ After the plain Kubernetes cluster is set up, additional components could be
 installed to fulfill application and operational needs.
 
 * [Helm →]
+* [Ingress →] **WiP**
 * [Network →]
 * [Storage →]
 * [Dashboard →]
 * [Monitoring →] **WiP**
 * [Load Balancer →]
-* [Ingress Controller →] **WiP**
 
 ## Troubleshooting and FAQ
 
@@ -196,11 +196,11 @@ We will try to keep here known issues and the ways of it resolving.
 [Modifying a Cluster API access addresses →]: docs/access_addresses.md
 
 [Helm →]: docs/components/helm.md
+[Ingress →]: docs/components/ingress.md
 [Network →]: docs/components/network.md
 [Storage →]: docs/components/storage.md
 [Dashboard →]: docs/components/dashboard.md
 [Monitoring →]: docs/components/monitoring.md
 [Load Balancer →]: docs/components/loadbalancer.md
-[Ingress Controller →]: docs/components/ingress_controller.md
 
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md
