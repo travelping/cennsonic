@@ -45,9 +45,6 @@ See also:
 * [Setup Infrastructure on AWS →] **WiP**
 * [Setup Infrastructure on GCE →] **WiP**
 * [Setup Infrastructure on IBM →] **WiP**
-* [Turn Swap Off →] **WiP**
-* [Provision SSH Keys →] **WiP**
-* [Disable Sudo Password →] **WiP**
 
 ### Configuration
 
@@ -94,12 +91,20 @@ Let's have a look into the files:
      this option should be set to a list of the master nodes IP addresses
      reachable from the outside
 
- * all.yml — should not be changed in most of the cases, but if the nodes access
-   the Internet via proxy only, it should be specified by defining "http_proxy"
-   and "https_proxy" options.
+ * all.yml — defines settings for all the hosts in the cluster. Some useful are:
+
+   - ssh_users — list of users SSH keys to provision
+
+   - http(s)_proxy — specify if the nodes access the Internet via proxy only
 
 Makes sense to keep this configuration under version control if you plan to
 evolve this cluster. Well, also makes sense if you do not plan that.
+
+See also:
+
+* [Turn Swap Off →] **WiP**
+* [Provision SSH Keys →] **WiP**
+* [Disable Sudo Password →] **WiP**
 
 ### Deploy
 
