@@ -42,6 +42,7 @@ worker-[01:XX].nfv-k8s.example.net
 See also:
 
 * [Setup Infrastructure on vSphere →] **WiP**
+* [Setup Infrastructure with DRP →] **WiP**
 * [Setup Infrastructure on AWS →] **WiP**
 * [Setup Infrastructure on GCE →] **WiP**
 * [Setup Infrastructure on IBM →] **WiP**
@@ -185,6 +186,7 @@ We will try to keep here known issues and the ways of it resolving.
 [Kubespray in Docker →]: docs/kubespray_in_docker.md
 
 [Setup Infrastructure on vSphere →]: docs/vSphere.md
+[Setup Infrastructure with DRP →]: docs/DRP.md
 [Setup Infrastructure on IBM →]: docs/IBM.md
 [Setup Infrastructure on AWS →]: docs/AWS.md
 [Setup Infrastructure on GCE →]: docs/GCE.md
