@@ -8,10 +8,13 @@ GIT_SHA = $(shell git rev-parse HEAD | cut -c1-8)
 IMAGE = $(REGISTRY)/$(USER)/$(PROJECT):$(VERSION)
 IMAGE_LATEST = $(REGISTRY)/$(USER)/$(PROJECT):latest
 
-all:
+usage:
 	@echo "Usage: make <Command> [Options]"
 	@echo
 	@echo "Commands"
+	@echo "    install"
+	@echo "    uninstall"
+	@echo
 	@echo "    docker-build"
 	@echo "    docker-clean"
 	@echo "    docker-dist-clean"
@@ -26,6 +29,12 @@ all:
 	@echo "    PROJECT=<Image Name> (default: $(PROJECT))"
 	@echo "    USER=<Docker ID> (default: $(USER))"
 	@echo "    VERSION=<Version> (default: $(VERSION))"
+
+install:
+	install bin/$(PROJECT) /usr/local/bin/$(PROJECT)
+
+uninstall:
+	rm -f /usr/local/bin/$(PROJECT)
 
 docker-build:
 	docker build . -t $(IMAGE)
