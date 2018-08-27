@@ -1,0 +1,7 @@
+---
+- hosts: kube-node
+  tasks:
+  - name: "Rook clean up"
+    file:
+      path: /var/lib/rook/
+      state: absent
