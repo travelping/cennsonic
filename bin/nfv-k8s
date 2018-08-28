@@ -6,6 +6,9 @@ usage="\
 Usage: $(basename $0) <Action> [Options]\n\
 \n\
 Actions:\n\
+    init                   create initial cluster configuration\n\
+    cluster                deploy a Kubernetes cluster\n\
+    scale                  scale a Kubernetes cluster\n\
     ssh-keys               provision SSH keys\n\
     rook-clean-up          delete all the rook based data from the worker nodes\n\
     etcd-certs-symlinks    create symlinks for etcd cert files (used by Multus)\n\
@@ -29,6 +32,33 @@ done
 if [ -z "$action" ]; then
     echo -e "$usage"
     exit 2
+fi
+
+if [ "$action" = "init" ]; then
+    cluster="$1"
+    if [ -z "$cluster" ]; then
+        echo "Usage: $(basename $0) init <ClusterName>"
+        exit 2
+    fi
+    if [ -d "$cluster" ]; then
+        echo "Directory \"$cluster\" already exists."
+        exit 1
+    fi
+
+    mkdir -p "$cluster"
+    docker run \
+          --rm -v $PWD/$cluster:/$cluster \
+          travelping/nfv-k8s cp -r /cluster /$cluster
+
+    if [ "$uname" = "Darwin" ]; then
+        SED_EXT = "\"\""
+    fi
+
+    sample_cluster="nfv-k8s.example.net"
+    grep "$sample_cluster" -r "$cluster" | cut -d: -f1 | \
+        xargs -n1 sed -i "$SED_EXT" "s/$sample_cluster/$cluster/g"
+
+    exit 0
 fi
 
 if [ -n "$private_key" ]; then
