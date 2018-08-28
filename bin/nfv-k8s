@@ -28,13 +28,15 @@ Options:
 
 action="$1"; shift
 
-if [ "$action" = "init" ]; then
-    cluster="$1"; shift
-    if [ -z "$cluster" ]; then
-        echo "Usage: $(basename $0) init <ClusterName> [-n]"
-        exit 2
-    fi
-fi
+case "$action" in
+    init)
+        cluster="$1"; shift
+        if [ -z "$cluster" ]; then
+            echo "Usage: $(basename $0) init <ClusterName> [-n]"
+            exit 2
+        fi
+    ;;
+esac
 
 for i in "$@"; do
     case $i in
