@@ -23,16 +23,26 @@ Actions:\n\
 Options:
     --pk,--private-key=<Path>    SSH private key for the nodes access\n\
     -k,--ask-pass                ask for SSH password for the nodes access\n\
-    -K,--ask-become-pass         ask for sudo password when needed\n"
+    -K,--ask-become-pass         ask for sudo password when needed\n\
+    -n,--dry-run                 do not do anything, just show the plan"
 
-action="$1"
-shift
+action="$1"; shift
+
+if [ "$action" = "init" ]; then
+    cluster="$1"; shift
+    if [ -z "$cluster" ]; then
+        echo "Usage: $(basename $0) init <ClusterName> [-n]"
+        exit 2
+    fi
+fi
 
 for i in "$@"; do
     case $i in
+        -n|--dry-run) run=echo ;;
         --pk=*|--private-key=*) private_key="${i#*=}"; shift ;;
         -k|--ask-pass) extra_args="$extra_args --ask-pass" ;;
         -K|--ask-become-pass) extra_args="$extra_args --ask-become-pass" ;;
+        *) echo "Warning: invalid argument \"$i\"" ;;
     esac
 done
 
@@ -42,18 +52,13 @@ if [ -z "$action" ]; then
 fi
 
 if [ "$action" = "init" ]; then
-    cluster="$1"
-    if [ -z "$cluster" ]; then
-        echo "Usage: $(basename $0) init <ClusterName>"
-        exit 2
-    fi
     if [ -d "$cluster" ]; then
         echo "Directory \"$cluster\" already exists."
         exit 1
     fi
 
-    mkdir -p "$cluster"
-    docker run \
+    $run mkdir -p "$cluster"
+    $run docker run \
           --rm -v $PWD/$cluster:/$cluster \
           travelping/nfv-k8s cp -r /cluster /$cluster
 
@@ -62,8 +67,13 @@ if [ "$action" = "init" ]; then
     fi
 
     sample_cluster="nfv-k8s.example.net"
-    grep "$sample_cluster" -r "$cluster" | cut -d: -f1 | \
-        xargs -n1 sed -i "$SED_EXT" "s/$sample_cluster/$cluster/g"
+    if [ -z "$run" ]; then
+        find $(grep "$sample_cluster" -rl "$cluster") \
+            -exec sed -i "$SED_EXT" "s/$sample_cluster/$cluster/g" "{}" \;
+    else
+        $run find \$\(grep "$sample_cluster" -rl "$cluster"\) \
+            -exec sed -i \"$SED_EXT\" \"s/$sample_cluster/$cluster/g\" \"{}\" \\\;
+    fi
 
     exit 0
 fi
@@ -73,7 +83,7 @@ if [ -n "$private_key" ]; then
     extra_mount="$extra_mount -v $private_key:$container_private_key"
 fi
 
-docker run \
+$run docker run \
     --rm -it \
     -v $PWD/config:/cluster/config $extra_mount \
     travelping/nfv-k8s \
