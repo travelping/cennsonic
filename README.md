@@ -49,8 +49,22 @@ See also:
 
 ### Configuration
 
+The [nfv-k8s] tool might be helpful to shorten some commands from this guide.
+Download and install (requires [Private Token]):
+
+```
+$ wget https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/bin/nfv-k8s?private_token=$PRIVATE_TOKEN
+$ install nfv-k8s /usr/local/bin/nfv-k8s
+```
+
 Let's name our cluster "nfv-k8s.example.net" (any other name can be used)
 and get its initial configuration:
+
+```
+$ nfv-k8s init nfv-k8s.example.net
+```
+
+without "nfv-k8s":
 
 ```
 $ CLUSTER=nfv-k8s.example.net
@@ -110,6 +124,15 @@ See also:
 ### Deploy
 
 Once the configuration is ready, a plain Kubernetes cluster can be deployed:
+
+```
+$ nfv-k8s cluster nfv-k8s.example.net
+    [-k,--ask-pass] # if SSH password should be specified
+    [-K,--ask-become-pass] # if "sudo" password should be specified
+    [--pk,--private-key=<Path>] # if SSH private key should be specified
+```
+
+without "nfv-k8s":
 
 ```
 $ docker run \
@@ -215,3 +238,5 @@ We will try to keep here known issues and the ways of it resolving.
 [Certificates Manager →]: docs/components/certmanager.md
 
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md
+
+[Private Token]: docs/gitlab_private_token.md
