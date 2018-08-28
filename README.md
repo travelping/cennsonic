@@ -114,7 +114,7 @@ Once configuration is ready, plain Kubernetes cluster can be deployed:
 ```
 $ docker run \
         --rm -it -v $PWD/$CLUSTER/config:/cluster/config \
-        travelping/nfv-k8s ansible-playbook cluster.yml infra.yml \
+        travelping/nfv-k8s ansible-playbook cluster.yml etcd-certs-symlinks.yml \
         -vbi /cluster/config/hosts.ini
         [-k or --ask-pass] # if SSH password should be specified
         [-K or --ask-become-pass] # if "sudo" password should be specified

@@ -1,9 +1,0 @@
----
-- name: "Etcd certificates symlinks"
-  file:
-    src: "{{ item.src }}"
-    path: "/etc/ssl/etcd/ssl/{{ item.path }}"
-    state: link
-  with_items:
-  - { src: "node-{{ inventory_hostname }}.pem", path: "node.pem" }
-  - { src: "node-{{ inventory_hostname }}-key.pem", path: "node-key.pem" }

@@ -1,6 +1,6 @@
-### SSH keys to provision
-### A key will be downloaded from https://gitlab.tpip.net/<user>.keys
-#ssh_users:
+### SSH public keys to provision to all the nodes
+### A key will be downloaded from "https://gitlab.tpip.net/{{ user }}.keys"
+#ssh_keys:
 #- user1
 #- user2
 
