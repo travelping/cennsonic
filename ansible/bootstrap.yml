@@ -1,0 +1,8 @@
+---
+- hosts: all
+  gather_facts: False
+  tasks:
+  - name: Bootstrap | Install python 2.x
+    raw:
+      apt-get update && \
+      apt-get install -y python-minimal
