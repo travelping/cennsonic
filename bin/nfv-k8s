@@ -16,6 +16,7 @@ Actions:\n\
     cluster                deploy a Kubernetes cluster\n\
     scale                  scale a Kubernetes cluster\n\
     ssh-keys               provision SSH keys\n\
+    disable-sudo           disable sudo on all the nodes\n\
     rook-clean-up          delete all the rook based data from the worker nodes\n\
     etcd-certs-symlinks    create symlinks for etcd cert files (used by Multus)\n\
 \n\
