@@ -1,6 +1,44 @@
 #!/bin/bash
 
+container_private_key="/root/.ssh/key"
+
+usage="\
+Usage: $(basename $0) <Action> [Options]\n\
+\n\
+Actions:\n\
+    ssh-keys               provision SSH keys\n\
+    rook-clean-up          delete all the rook based data from the worker nodes\n\
+    etcd-certs-symlinks    create symlinks for etcd cert files (used by Multus)\n\
+\n\
+Options:
+    --pk,--private-key=<Path>    SSH private key for the nodes access\n\
+    -k,--ask-pass                ask for SSH password for the nodes access\n\
+    -K,--ask-become-pass         ask for sudo password when needed\n"
+
 action="$1"
 shift
 
-docker run --rm -it -v $PWD/config:/cluster/config travelping/nfv-k8s ansible-playbook "$action.yml" -vbi /cluster/config/hosts.ini $* 
+for i in "$@"; do
+    case $i in
+        --pk=*|--private-key=*) private_key="${i#*=}"; shift ;;
+        -k|--ask-pass) extra_args="$extra_args --ask-pass" ;;
+        -K|--ask-become-pass) extra_args="$extra_args --ask-become-pass" ;;
+    esac
+done
+
+if [ -z "$action" ]; then
+    echo -e "$usage"
+    exit 2
+fi
+
+if [ -n "$private_key" ]; then
+    extra_args="$extra_args --private-key=$container_private_key"
+    extra_mount="$extra_mount -v $private_key:$container_private_key"
+fi
+
+docker run \
+    --rm -it \
+    -v $PWD/config:/cluster/config "$extra_mount" \
+    travelping/nfv-k8s \
+        ansible-playbook "$action.yml" \
+        -vbi /cluster/config/hosts.ini "$extra_args"
