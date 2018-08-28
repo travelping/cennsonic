@@ -109,16 +109,18 @@ See also:
 
 ### Deploy
 
-Once configuration is ready, plain Kubernetes cluster can be deployed:
+Once the configuration is ready, a plain Kubernetes cluster can be deployed:
 
 ```
 $ docker run \
-        --rm -it -v $PWD/$CLUSTER/config:/cluster/config \
+        --rm -it \
+        -v $PWD/$CLUSTER/config:/cluster/config \
+        [-v $HOME/.ssh/id_rsa:/root/.ssh/key \] # if SSH private key should be specified
         travelping/nfv-k8s ansible-playbook cluster.yml etcd-certs-symlinks.yml \
         -vbi /cluster/config/hosts.ini
         [-k or --ask-pass] # if SSH password should be specified
         [-K or --ask-become-pass] # if "sudo" password should be specified
-        [--key-file ~/.ssh/id_rsa] # if SSH private key should be specified
+        [--key-file /root/.ssh/key] # if SSH private key should be specified
 ```
 
 If the deployment process succeeded the newly created cluster kubeconfig could
