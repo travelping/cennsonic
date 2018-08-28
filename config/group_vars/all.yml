@@ -4,6 +4,12 @@
 #- user1
 #- user2
 
+### SSH public keys to delete from all the nodes
+### A key will be compared to "https://gitlab.tpip.net/{{ user }}.keys"
+#no_ssh_keys
+#- user3
+#- user4
+
 # Valid bootstrap options (required): ubuntu, coreos, centos, none
 bootstrap_os: ubuntu
 
