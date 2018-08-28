@@ -1,7 +1,7 @@
 ---
 - hosts: kube-node
   tasks:
-  - name: "Etcd certificates symlinks"
+  - name: Etcd certificates symlinks
     file:
       src: "{{ item.src }}"
       path: "/etc/ssl/etcd/ssl/{{ item.path }}"
