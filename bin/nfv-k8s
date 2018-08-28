@@ -1,5 +1,7 @@
 #!/bin/bash
 
+version=0.1.0
+
 if [ ! "$(docker version 2>/dev/null)" ]; then
     echo "Docker is not installed."
     echo "Please refer https://docs.docker.com/install/#supported-platforms to install for your OS."
@@ -19,6 +21,8 @@ Actions:\n\
     disable-sudo           disable sudo on all the nodes\n\
     rook-clean-up          delete all the rook based data from the worker nodes\n\
     etcd-certs-symlinks    create symlinks for etcd cert files (used by Multus)\n\
+    help                   print this message
+    version                print version
 \n\
 Options:
     --pk,--private-key=<Path>    SSH private key for the nodes access\n\
@@ -36,6 +40,8 @@ case "$action" in
             exit 2
         fi
     ;;
+    version) echo "$version"; exit 0 ;;
+    -h|--help|help) echo -e "$usage"; exit 0 ;;
 esac
 
 for i in "$@"; do
