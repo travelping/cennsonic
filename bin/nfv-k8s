@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [ ! "$(docker version 2>/dev/null)" ]; then
+    echo "Docker is not installed."
+    echo "Please refer https://docs.docker.com/install/#supported-platforms to install for your OS."
+    exit 127
+fi
+
 container_private_key="/root/.ssh/key"
 
 usage="\
@@ -68,7 +74,7 @@ fi
 
 docker run \
     --rm -it \
-    -v $PWD/config:/cluster/config "$extra_mount" \
+    -v $PWD/config:/cluster/config $extra_mount \
     travelping/nfv-k8s \
         ansible-playbook "$action.yml" \
-        -vbi /cluster/config/hosts.ini "$extra_args"
+        -vbi /cluster/config/hosts.ini $extra_args
