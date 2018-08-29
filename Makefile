@@ -17,7 +17,7 @@ usage:
 	@echo
 	@echo "    docker-build"
 	@echo "    docker-clean"
-	@echo "    docker-dist-clean"
+	@echo "    docker-distclean"
 	@echo "    docker-push"
 	@echo "    docker-release"
 	@echo "    docker-local-release"
@@ -40,10 +40,10 @@ docker-build:
 	docker build . -t $(IMAGE)
 
 docker-clean:
-	docker rmi $(IMAGE)
+	docker rmi $(IMAGE) 2>/dev/null || true
 
 docker-distclean: docker-clean
-	docker rmi $(IMAGE_LATEST)
+	docker rmi $(IMAGE_LATEST) 2>/dev/null || true
 
 docker-push:
 	docker push $(IMAGE)
