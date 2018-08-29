@@ -240,3 +240,5 @@ We will try to keep here known issues and the ways of it resolving.
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md
 
 [Private Token]: docs/gitlab_private_token.md
+
+[nfv-k8s]: bin/nfv-k8s
