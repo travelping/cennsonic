@@ -1,0 +1,22 @@
+diff -ruN extra_playbooks/roles/etcd/tasks/certs_symlinks.yml extra_playbooks/roles/etcd/tasks/certs_symlinks.yml
+--- extra_playbooks/roles/etcd/tasks/certs_symlinks.yml	1970-01-01 01:00:00.000000000 +0100
++++ extra_playbooks/roles/etcd/tasks/certs_symlinks.yml	2018-08-29 10:07:09.000000000 +0200
+@@ -0,0 +1,9 @@
++---
++- name: Etcd certificates symlinks (used by Multus)
++  file:
++    src: "{{ item.src }}"
++    path: "/etc/ssl/etcd/ssl/{{ item.path }}"
++    state: link
++  with_items:
++  - { src: "node-{{ inventory_hostname }}.pem", path: "node.pem" }
++  - { src: "node-{{ inventory_hostname }}-key.pem", path: "node-key.pem" }
+diff -ruN extra_playbooks/roles/etcd/tasks/main.yml extra_playbooks/roles/etcd/tasks/main.yml
+--- extra_playbooks/roles/etcd/tasks/main.yml	2018-08-29 10:04:26.000000000 +0200
++++ extra_playbooks/roles/etcd/tasks/main.yml	2018-08-29 10:07:54.000000000 +0200
+@@ -73,3 +73,5 @@
+ 
+ - include_tasks: refresh_config.yml
+   when: is_etcd_master and etcd_cluster_setup
++
++- include_tasks: certs_symlinks.yml

@@ -27,3 +27,6 @@ COPY /config /cluster/config
 COPY /ansible /$PROJECT
 
 WORKDIR /$PROJECT
+
+RUN patch -p0 < kubespray.patch && \
+    rm kubespray.patch
