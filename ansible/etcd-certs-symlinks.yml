@@ -1,11 +1,5 @@
 ---
 - hosts: kube-node
+  gather_facts: False
   tasks:
-  - name: Etcd certificates symlinks
-    file:
-      src: "{{ item.src }}"
-      path: "/etc/ssl/etcd/ssl/{{ item.path }}"
-      state: link
-    with_items:
-    - { src: "node-{{ inventory_hostname }}.pem", path: "node.pem" }
-    - { src: "node-{{ inventory_hostname }}-key.pem", path: "node-key.pem" }
+  - include_tasks: extra_playbooks/roles/etcd/tasks/certs_symlinks.yml
