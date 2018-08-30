@@ -68,7 +68,7 @@ if [ "$action" = "init" ]; then
     $run mkdir -p "$cluster"
     $run docker run \
           --rm -v $PWD/$cluster:/$cluster \
-          travelping/nfv-k8s cp -r /cluster /$cluster
+          travelping/nfv-k8s cp -a /cluster/. /$cluster
 
     if [ "$uname" = "Darwin" ]; then
         SED_EXT = "\"\""
