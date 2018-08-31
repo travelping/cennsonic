@@ -130,7 +130,8 @@ evolve this cluster. Well, also makes sense if you do not plan that.
 Once the configuration is ready, a plain Kubernetes cluster can be deployed:
 
 ```
-$ nfv-k8s cluster nfv-k8s.example.net
+$ cd <Cluster Root Path>
+$ nfv-k8s cluster
     [-k,--ask-pass] # if SSH password should be specified
     [-K,--ask-become-pass] # if "sudo" password should be specified
     [--pk,--private-key=<Path>] # if SSH private key should be specified
@@ -139,9 +140,10 @@ $ nfv-k8s cluster nfv-k8s.example.net
 without "nfv-k8s":
 
 ```
+$ cd <Cluster Root Path>
 $ docker run \
         --rm -it \
-        -v $PWD/$CLUSTER/config:/cluster/config \
+        -v $PWD/config:/cluster/config \
         [-v $HOME/.ssh/id_rsa:/root/.ssh/key \] # if SSH private key should be specified
         travelping/nfv-k8s ansible-playbook cluster.yml etcd-certs-symlinks.yml \
         -vbi /cluster/config/hosts.ini
@@ -154,10 +156,9 @@ If the deployment process succeeded the newly created cluster kubeconfig could
 be merged into the main kubeconfig file:
 
 ```
-$ KUBECONFIG=$CLUSTER/config/artifacts/admin.conf:~/.kube/config \
-  kubectl config view --flatten > config
+$ KUBECONFIG=config/artifacts/admin.conf:~/.kube/config kubectl config view --flatten > config.new
 $ cp ~/.kube/config ~/.kube/config.bkp # backup config if feel unsafe
-$ mv config ~/.kube/config
+$ mv config.new ~/.kube/config
 ```
 
 It is not recommended to put this file under version control, therefore it
