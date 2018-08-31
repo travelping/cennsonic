@@ -23,6 +23,7 @@ RUN apk upgrade --no-cache --update && \
     pip install -r $PROJECT/requirements.txt && \
     apk del .build-deps
 
+COPY /infra /cluster/infra
 COPY /config /cluster/config
 COPY /ansible /$PROJECT
 
