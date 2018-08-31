@@ -53,6 +53,9 @@ See also:
 * [Setup Infrastructure on AWS →] **WiP**
 * [Setup Infrastructure on GCE →] **WiP**
 * [Setup Infrastructure on IBM →] **WiP**
+* [Turn Swap Off →] **WiP**
+* [Provision SSH Keys →] **WiP**
+* [Disable Sudo Password →] **WiP**
 
 ### Configuration
 
@@ -121,12 +124,6 @@ Let's have a look into the files:
 
 Makes sense to keep this configuration under version control if you plan to
 evolve this cluster. Well, also makes sense if you do not plan that.
-
-See also:
-
-* [Turn Swap Off →] **WiP**
-* [Provision SSH Keys →] **WiP**
-* [Disable Sudo Password →] **WiP**
 
 ### Deploy
 
