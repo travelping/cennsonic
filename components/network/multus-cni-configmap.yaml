@@ -30,11 +30,15 @@ data:
            "kubeconfig": "/etc/kubernetes/node-kubeconfig.yaml"
          }
        },{
+         "name": "net0",
          "type": "macvlan",
          "master": "eth0",
          "ipam": {
            "type": "host-local",
            "subnet": "172.20.11.0/24"
+           ### Note that this example range limits the whole cluster for 50 pods
+           ### As 50 (250-200) IP addresses can be assigned only.
+           ### Remove these lines (all comments including range) if will not use.
            #,"rangeStart": "172.20.11.200",
            #"rangeEnd": "172.20.11.250"
          }
