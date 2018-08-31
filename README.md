@@ -3,6 +3,13 @@
 Set of tools and guides for [NFV] enabled [Kubernetes] cluster setup and
 operations.
 
+* [Setup](#setup)
+  * [Infrastructure](#infrastructure)
+  * [Configuration](#configuration)
+  * [Deploy](#deploy)
+  * [Components](#components)
+* [Troubleshooting and FAQ](#troubleshooting-and-faq)
+
 ## Setup
 
 The NFV cluster is based on a regular Kubernetes cluster, so we start from
