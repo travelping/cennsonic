@@ -20,16 +20,16 @@ range of IP addresses available for allocation. Copy the [MetalLB configuration
 manifest] to your cluster location, for example (requires [Private Token]):
 
 ```
-$ CLUSTER=<Cluster Root Path>
-$ mkdir -p $CLUSTER/components/loadbalancer
-$ curl https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/loadbalancer/metallb-config.yaml?private_token=$PRIVATE_TOKEN >> $CLUSTER/components/loadbalancer/metallb-config.yaml
+$ cd <Cluster Root Path>
+$ mkdir -p components/loadbalancer
+$ curl https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/loadbalancer/metallb-config.yaml?private_token=$PRIVATE_TOKEN >> components/loadbalancer/metallb-config.yaml
 ```
 
 and change the [MetalLB IP range] according to your needs. When the change
 is ready, create the configuration:
 
 ```
-$ kubectl create -f $CLUSTER/components/loadbalancer/metallb-config.yaml
+$ kubectl create -f components/loadbalancer/metallb-config.yaml
 ```
 
 See also:
@@ -41,7 +41,7 @@ See also:
 To change the IP range, edit the configuration file again and apply it:
 
 ```
-$ kubectl apply -f $CLUSTER/components/loadbalancer/metallb-config.yaml
+$ kubectl apply -f components/loadbalancer/metallb-config.yaml
 ```
 
 The load balancer does not need to be restarted. See the speaker logs for the

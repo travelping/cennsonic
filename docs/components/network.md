@@ -20,9 +20,9 @@ the section below.
 Download sample Multus configuration file (requires [Private Token]):
 
 ```
-$ CLUSTER=<Cluster Root Path>
-$ mkdir -p $CLUSTER/components/network
-$ curl https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/network/multus-cni-configmap.yaml?private_token=$PRIVATE_TOKEN >> $CLUSTER/components/network/multus-cni-configmap.yaml
+$ cd <Cluster Root Path>
+$ mkdir -p components/network
+$ curl https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/network/multus-cni-configmap.yaml?private_token=$PRIVATE_TOKEN >> components/network/multus-cni-configmap.yaml
 ```
 
 Replace "ETCD_ENDPOINTS" with the output of this command (gets current cluster
@@ -38,7 +38,7 @@ a master device name of the interface that available on the nodes.
 Create the configuration:
 
 ```
-$ kubectl create -f $CLUSTER/components/network/multus-cni-configmap.yaml
+$ kubectl create -f components/network/multus-cni-configmap.yaml
 ```
 
 ### Now Installation
@@ -57,7 +57,7 @@ specified subnet(s) and range(s).
 To make any changes, apply the changed configuration file:
 
 ```
-$ kubectl apply -f $CLUSTER/components/network/multus-cni-configmap.yaml
+$ kubectl apply -f components/network/multus-cni-configmap.yaml
 ```
 
 and restart the pods, for example this way:
@@ -87,16 +87,16 @@ suppose to be used by the pods. Copy the [VXLAN Network Configuration] sample
 manifest to your cluster location, for example (requires [Private Token]):
 
 ```
-$ CLUSTER=<Cluster Root Path>
-$ mkdir -p $CLUSTER/components/network
-$ curl -s https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/network/kube-vxlan-controller.yaml?private_token=$PRIVATE_TOKEN | head -n29 | tail -n10 >> $CLUSTER/components/network/kube-vxlan-controller-networks.yaml
+$ cd <Cluster Root Path>
+$ mkdir -p components/network
+$ curl -s https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/network/kube-vxlan-controller.yaml?private_token=$PRIVATE_TOKEN | head -n29 | tail -n10 >> components/network/kube-vxlan-controller-networks.yaml
 ```
 
 and change the network set according to your needs. When the change is ready,
 apply the configuration:
 
 ```
-$ kubectl apply -f $CLUSTER/components/network/kube-vxlan-controller-networks.yaml
+$ kubectl apply -f components/network/kube-vxlan-controller-networks.yaml
 ```
 
 <!-- Links -->

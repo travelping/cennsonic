@@ -13,7 +13,7 @@ this order):
 - [Rook Cluster]
 - [Rook Storage Class]
 
-so, we create them using the manifests (requires [Private Token]):
+We create them using the manifests (requires [Private Token]):
 
 ```
 # Rook operator
