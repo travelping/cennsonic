@@ -1,10 +1,19 @@
 # Dashboard
 
-After the plain cluster setup is complete, [Kubernetes Dashboard] is installed
-with minimal privileges. That blocks it from providing some information about
-the cluster. Therefore we increse its privileges.
+[Kubernetes Dashboard] is a general purpose, web-based UI for Kubernetes
+clusters. It allows users to manage applications running in the cluster and
+troubleshoot them, as well as manage the cluster itself.
 
 ## Setup
+
+To install dashboard:
+
+```
+$ kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+```
+
+Dashboard is now installed with minimal privileges. That blocks it from
+providing some information about the cluster.
 
 We increase privileges of the service account used by the dashboard deployment
 by binding it to the "cluster-admin" role. For that we use the [RBAC Dashboard]
