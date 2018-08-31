@@ -5,10 +5,11 @@ To fullfil network requirements we install Multus and Kube VXLAN Controller.
 ## Multus
 
 The default network operations between the pods are done using the [Calico]
-managed network interfaces. Some cases (some VNFs) require different ways of
-network management one of which is satisfied with [Macvlan] networks.
+managed network interfaces. Some cases require different ways of network
+management one of which is satisfied with [Macvlan] networks.
 
-[Multus] is used to have both types of network interfaces in the pods.
+[Multus] is used to delegate pod network management to both Calico and Macvlan
+for having both types of network interfaces in the pods.
 
 ### Installation
 
