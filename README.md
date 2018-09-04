@@ -53,9 +53,12 @@ See also:
 * [Setup Infrastructure on AWS →] **WiP**
 * [Setup Infrastructure on GCE →] **WiP**
 * [Setup Infrastructure on IBM →] **WiP**
-* [Turn Swap Off →] **WiP**
-* [Provision SSH Keys →] **WiP**
-* [Disable Sudo Password →] **WiP**
+
+Requires [Configuration](#configuration):
+
+* [Turn Swap Off →]
+* [Provision SSH Keys →]
+* [Disable Sudo Password →]
 
 ### Configuration
 
@@ -67,8 +70,8 @@ $ wget https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/bin/nfv-k8s?private_t
 $ install nfv-k8s /usr/local/bin/nfv-k8s
 ```
 
-Let's name our cluster "nfv-k8s.example.net" (any other name can be used)
-and get its initial configuration:
+Let's name our cluster "nfv-k8s.example.net" (any other name can be used) and
+get its initial configuration:
 
 ```
 $ nfv-k8s init nfv-k8s.example.net
@@ -218,7 +221,7 @@ We will try to keep here known issues and the ways of it resolving.
 [Setup Infrastructure on GCE →]: docs/infra/gce.md
 
 [Turn Swap Off →]: docs/infra/turn_swap_off.md
-[Provision SSH Keys →]: docs/infra/ssh.md
+[Provision SSH Keys →]: docs/infra/ssh_keys.md
 [Disable Sudo Password →]: docs/infra/disable_sudo_password.md
 
 [Users and Roles →]: docs/users_and_roles.md
