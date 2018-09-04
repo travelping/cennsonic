@@ -194,7 +194,7 @@ installed to fulfill application and operational needs.
 * [Dashboard →]
 * [Monitoring →] **WiP**
 * [Load Balancer →]
-* [Certificates Manager →] **WiP**
+* [Certificates Manager →]
 
 ## Troubleshooting and FAQ
 
