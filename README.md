@@ -111,16 +111,12 @@ Let's have a look into the files:
 
    - cluster_name — use your name if differs from "nfv-k8s.example.net"
 
-   - supplementary_addresses\_in\_ssl\_keys — if the "ip" variables in the
-     "hosts.ini" file are set to IP addresses non-reachable from the outside,
-     this option should be set to a list of the master nodes IP addresses
-     reachable from the outside
+   - supplementary_addresses\_in\_ssl\_keys — list of all the IP addresses and
+     DNS names that might be used to access Kubernetes API of the cluster
 
- * all.yml — defines settings for all the hosts in the cluster. Some useful are:
-
-   - ssh_users — list of users SSH keys to provision
-
-   - http(s)_proxy — specify if the nodes access the Internet via proxy only
+ * all.yml — defines settings for all the hosts in the cluster. During the
+   deployment the useful might be "http(s)_proxy". Should be specified if the
+   nodes access the Internet via proxy only.
 
 Makes sense to keep this configuration under version control if you plan to
 evolve this cluster. Well, also makes sense if you do not plan that.
@@ -145,7 +141,7 @@ $ docker run \
         --rm -it \
         -v $PWD/config:/cluster/config \
         [-v $HOME/.ssh/id_rsa:/root/.ssh/key \] # if SSH private key should be specified
-        travelping/nfv-k8s ansible-playbook deploy.yml etcd-certs-symlinks.yml \
+        travelping/nfv-k8s ansible-playbook deploy.yml \
         -vbi /cluster/config/hosts.ini
         [-k or --ask-pass] # if SSH password should be specified
         [-K or --ask-become-pass] # if "sudo" password should be specified
