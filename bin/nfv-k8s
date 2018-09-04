@@ -15,7 +15,7 @@ Usage: $(basename $0) <Action> [Options]\n\
 \n\
 Actions:\n\
     init                   create initial cluster configuration\n\
-    cluster                deploy a Kubernetes cluster\n\
+    deploy                 deploy a Kubernetes cluster\n\
     scale                  scale a Kubernetes cluster\n\
     ssh-keys               provision SSH keys\n\
     disable-sudo           disable sudo on all the nodes\n\
