@@ -49,7 +49,7 @@ worker-[01:XX].nfv-k8s.example.net
 See also:
 
 * [Setup Infrastructure on vSphere →] **WiP**
-* [Setup Infrastructure with DRP →] **WiP**
+* [Setup Infrastructure on Packet →] **WiP**
 * [Setup Infrastructure on AWS →] **WiP**
 * [Setup Infrastructure on GCE →] **WiP**
 * [Setup Infrastructure on IBM →] **WiP**
@@ -211,20 +211,20 @@ We will try to keep here known issues and the ways of it resolving.
 
 [Kubespray in Docker →]: docs/kubespray_in_docker.md
 
-[Setup Infrastructure on vSphere →]: docs/vSphere.md
-[Setup Infrastructure with DRP →]: docs/DRP.md
-[Setup Infrastructure on IBM →]: docs/IBM.md
-[Setup Infrastructure on AWS →]: docs/AWS.md
-[Setup Infrastructure on GCE →]: docs/GCE.md
+[Setup Infrastructure on vSphere →]: docs/infra/vsphere.md
+[Setup Infrastructure on Packet →]: docs/infra/packet.md
+[Setup Infrastructure on IBM →]: docs/infra/ibm.md
+[Setup Infrastructure on AWS →]: docs/infra/aws.md
+[Setup Infrastructure on GCE →]: docs/infra/gce.md
 
-[Provision SSH Keys →]: docs/SSH_keys.md
-[Turn Swap Off →]: docs/turn_swap_off.md
-[Disable Sudo Password →]: docs/disable_sudo_password.md
+[Turn Swap Off →]: docs/infra/turn_swap_off.md
+[Provision SSH Keys →]: docs/infra/ssh.md
+[Disable Sudo Password →]: docs/infra/disable_sudo_password.md
 
 [Users and Roles →]: docs/users_and_roles.md
 [Scaling a Cluster →]: docs/scaling.md
 [Upgrading a Cluster →]: docs/upgrade.md
-[OS Kernel and Security Updates →]: docs/OS_update.md
+[OS Kernel and Security Updates →]: docs/os_update.md
 [Modifying Kubelet Start Arguments →]: docs/kubelet.md
 [CIS Kubernetes Benchmark Compliance →]: docs/cis_benchmark.md
 [Modifying a Cluster API access addresses →]: docs/access_addresses.md
