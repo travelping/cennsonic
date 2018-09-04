@@ -35,12 +35,13 @@ data:
          "master": "eth0",
          "ipam": {
            "type": "host-local",
-           "subnet": "172.20.11.0/24"
+           "subnet": "172.16.0.0/24"
+           ### Example of IP addresses range, change according to your needs.
            ### Note that this example range limits the whole cluster for 50 pods
-           ### As 50 (250-200) IP addresses can be assigned only.
-           ### Remove these lines (all comments including range) if will not use.
-           #,"rangeStart": "172.20.11.200",
-           #"rangeEnd": "172.20.11.250"
+           ### As 50 (250 minus 200) IP addresses can be assigned only.
+           ### Remove these lines (all comments including range) if do not use.
+           #,"rangeStart": "172.16.0.200",
+           #"rangeEnd": "172.16.0.250"
          }
        }]
       }
