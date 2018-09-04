@@ -31,5 +31,5 @@ resource "ibm_compute_vm_instance" "worker-nfv-k8s-example-net" {
     disks = [100]
     hourly_billing = true
     ssh_key_ids = ["${data.ibm_compute_ssh_key.public_key.id}"]
-    tags = ["worker", "nvf-k8s", "fra02"]
+    tags = ["worker", "nfv-k8s", "fra02"]
 }
