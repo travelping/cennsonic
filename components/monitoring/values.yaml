@@ -1,0 +1,9 @@
+prometheus:
+  server:
+    persistentVolume:
+      storageClass: rook-ceph-block
+      size: 50Gi
+grafana:
+  server:
+    persistentVolume:
+      storageClass: rook-ceph-block
