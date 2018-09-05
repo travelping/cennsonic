@@ -3,6 +3,9 @@ prometheus:
     persistentVolume:
       storageClass: rook-ceph-block
       size: 50Gi
+  alertmanager:
+    persistentVolume:
+      storageClass: rook-ceph-block
 grafana:
   server:
     persistentVolume:
