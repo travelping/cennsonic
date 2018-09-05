@@ -1,6 +1,6 @@
 REGISTRY = docker.io
 USER = travelping
-PROJECT = nfv-k8s
+PROJECT = cennsonic
 VERSION = $(shell cat bin/$(PROJECT) | grep version= | cut -d= -f2)
 
 GIT_SHA = $(shell git rev-parse HEAD | cut -c1-8)

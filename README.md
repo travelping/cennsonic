@@ -1,6 +1,9 @@
-# NFV K8s
+# Cennsonic
 
-Set of tools and guides for [NFV] enabled [Kubernetes] cluster setup and
+Cennso is cloud enabled network service operations. And Cennsonic is a Cennso
+network integration cluster.
+
+Defines set of tools and guides for [NFV] enabled [Kubernetes] cluster setup and
 operations.
 
 * [Setup](#setup)
@@ -33,17 +36,17 @@ satisfy the following conditioins:
 Optionally, sudo password could be disabled and needed SSH keys provisioned.
 
 The recommended way of naming nodes is the following. Assuming your cluster
-is named "nfv-k8s.example.net" then for a single host setup use:
+is named "cennsonic.example.net" then for a single host setup use:
 
 ```
-single.nfv-k8s.example.net
+single.cennsonic.example.net
 ```
 
 for a multi-host setup use:
 
 ```
-master-[01:XX].nfv-k8s.example.net
-worker-[01:XX].nfv-k8s.example.net
+master-[01:XX].cennsonic.example.net
+worker-[01:XX].cennsonic.example.net
 ```
 
 See also:
@@ -62,36 +65,36 @@ Requires [Configuration](#configuration):
 
 ### Configuration
 
-The [nfv-k8s] tool might be helpful to shorten some commands from this guide.
+The [Cennsonic Tool] might be helpful to shorten some commands from this guide.
 Download and install (requires [Private Token]):
 
 ```
-$ wget https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/bin/nfv-k8s?private_token=$PRIVATE_TOKEN
-$ install nfv-k8s /usr/local/bin/nfv-k8s
+$ wget https://gitlab.tpip.net/aalferov/cennsonic/raw/master/bin/cennsonic?private_token=$PRIVATE_TOKEN
+$ install cennsonic /usr/local/bin/cennsonic
 ```
 
-Let's name our cluster "nfv-k8s.example.net" (any other name can be used) and
+Let's name our cluster "cennsonic.example.net" (any other name can be used) and
 get its initial configuration:
 
 ```
-$ nfv-k8s init nfv-k8s.example.net
+$ cennsonic init cennsonic.example.net
 ```
 
-without "nfv-k8s":
+without "cennsonic":
 
 ```
-$ CLUSTER=nfv-k8s.example.net
+$ CLUSTER=cennsonic.example.net
 $ mkdir $CLUSTER
 $ docker run \
         --rm -v $PWD/$CLUSTER:/$CLUSTER \
-        travelping/nfv-k8s cp -r /cluster /$CLUSTER
+        travelping/cennsonic cp -r /cluster /$CLUSTER
 ```
 
 that should end up with the following structure:
 
 ```
 $ tree $CLUSTER
-nfv-k8s.example.net
+cennsonic.example.net
 └── config
     ├── group_vars
     │   ├── all.yml
@@ -112,7 +115,7 @@ Let's have a look into the files:
 
    - kube_version — Kubernetes version
 
-   - cluster_name — use your name if differs from "nfv-k8s.example.net"
+   - cluster_name — use your name if differs from "cennsonic.example.net"
 
    - supplementary_addresses\_in\_ssl\_keys — list of all the IP addresses and
      DNS names that might be used to access Kubernetes API of the cluster
@@ -130,13 +133,13 @@ Once the configuration is ready, a plain Kubernetes cluster can be deployed:
 
 ```
 $ cd <Cluster Root Path>
-$ nfv-k8s deploy
+$ cennsonic deploy
     [-k,--ask-pass] # if SSH password should be specified
     [-K,--ask-become-pass] # if "sudo" password should be specified
     [--pk,--private-key=<Path>] # if SSH private key should be specified
 ```
 
-without "nfv-k8s":
+without "cennsonic":
 
 ```
 $ cd <Cluster Root Path>
@@ -144,7 +147,7 @@ $ docker run \
         --rm -it \
         -v $PWD/config:/cluster/config \
         [-v $HOME/.ssh/id_rsa:/root/.ssh/key \] # if SSH private key should be specified
-        travelping/nfv-k8s ansible-playbook deploy.yml \
+        travelping/cennsonic ansible-playbook deploy.yml \
         -vbi /cluster/config/hosts.ini
         [-k or --ask-pass] # if SSH password should be specified
         [-K or --ask-become-pass] # if "sudo" password should be specified
@@ -210,6 +213,7 @@ We will try to keep here known issues and the ways of it resolving.
 [kubectl]: https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl
 [Kubespray]: https://github.com/kubernetes-incubator/kubespray
 [Kubernetes]: https://kubernetes.io
+[Cennsonic Tool]: bin/cennsonic
 [Ubuntu 16.04 LTS]: http://releases.ubuntu.com/16.04
 
 [Kubespray in Docker →]: docs/kubespray_in_docker.md
@@ -244,5 +248,3 @@ We will try to keep here known issues and the ways of it resolving.
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md
 
 [Private Token]: docs/gitlab_private_token.md
-
-[nfv-k8s]: bin/nfv-k8s

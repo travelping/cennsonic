@@ -69,13 +69,13 @@ if [ "$action" = "init" ]; then
     $run mkdir -p "$cluster"
     $run docker run \
           --rm -v $PWD/$cluster:/$cluster \
-          travelping/nfv-k8s cp -a /cluster/. /$cluster
+          travelping/cennsonic cp -a /cluster/. /$cluster
 
     if [ "$uname" = "Darwin" ]; then
         SED_EXT = "\"\""
     fi
 
-    sample_cluster="nfv-k8s.example.net"
+    sample_cluster="cennsonic.example.net"
     if [ -z "$run" ]; then
         find $(grep "$sample_cluster" -rl "$cluster") \
             -exec sed -i "$SED_EXT" "s/$sample_cluster/$cluster/g" "{}" \;
@@ -95,6 +95,6 @@ fi
 $run docker run \
     --rm -it \
     -v $PWD/config:/cluster/config $extra_mount \
-    travelping/nfv-k8s \
+    travelping/cennsonic \
         ansible-playbook "$action.yml" \
         -vbi /cluster/config/hosts.ini $extra_args

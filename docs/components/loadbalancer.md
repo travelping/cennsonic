@@ -22,7 +22,7 @@ manifest] to your cluster location, for example (requires [Private Token]):
 ```
 $ cd <Cluster Root Path>
 $ mkdir -p components/loadbalancer
-$ curl https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/loadbalancer/metallb-config.yaml?private_token=$PRIVATE_TOKEN >> components/loadbalancer/metallb-config.yaml
+$ curl https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/loadbalancer/metallb-config.yaml?private_token=$PRIVATE_TOKEN >> components/loadbalancer/metallb-config.yaml
 ```
 
 and change the [MetalLB IP range] according to your needs. When the change
@@ -70,7 +70,7 @@ Using the [Example manifest] we create two load balancers with use of the
 same IP address (requires [Private Token]):
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
 ```
 
 Iperf3 client is needed to verify the server works as expected. Please refer the
@@ -114,7 +114,7 @@ iperf3: error - unable to connect to server: Network is unreachable
 Do delete all the example related resources (requires [Private Token]):
 
 ```
-$ kubectl delete -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl delete -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
 $ kubectl delete deployment iperf3-server
 ```
 

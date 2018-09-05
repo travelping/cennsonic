@@ -5,7 +5,7 @@ need to clone it or to be signed in on the Gitlab portal. Therefore if you see
 a link containing "private_token" in the query, for example:
 
 ```
-https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/README.md?private_token=$PRIVATE_TOKEN
+https://gitlab.tpip.net/aalferov/cennsonic/raw/master/README.md?private_token=$PRIVATE_TOKEN
 ```
 
 that assumes token based authentication to access the file directly and the

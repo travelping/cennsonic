@@ -23,7 +23,7 @@ Download sample Multus configuration file (requires [Private Token]):
 ```
 $ cd <Cluster Root Path>
 $ mkdir -p components/network
-$ curl https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/network/multus-cni-configmap.yaml?private_token=$PRIVATE_TOKEN >> components/network/multus-cni-configmap.yaml
+$ curl https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/network/multus-cni-configmap.yaml?private_token=$PRIVATE_TOKEN >> components/network/multus-cni-configmap.yaml
 ```
 
 Replace "ETCD_ENDPOINTS" with the output of this command (gets current cluster
@@ -48,7 +48,7 @@ After the configuration is in place, install Multus CNI itself
 (requires [Private Token]):
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/network/multus-cni-daemonset.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/network/multus-cni-daemonset.yaml?private_token=$PRIVATE_TOKEN
 ```
 
 To validate installation create a pod and verify it contains network
@@ -78,7 +78,7 @@ the pods.
 The controller could be installed this way (requires [Private Token]):
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/network/kube-vxlan-controller.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/network/kube-vxlan-controller.yaml?private_token=$PRIVATE_TOKEN
 ```
 
 ### Configuration
@@ -90,7 +90,7 @@ manifest to your cluster location, for example (requires [Private Token]):
 ```
 $ cd <Cluster Root Path>
 $ mkdir -p components/network
-$ curl -s https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/network/kube-vxlan-controller.yaml?private_token=$PRIVATE_TOKEN | head -n29 | tail -n10 >> components/network/kube-vxlan-controller-networks.yaml
+$ curl -s https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/network/kube-vxlan-controller.yaml?private_token=$PRIVATE_TOKEN | head -n29 | tail -n10 >> components/network/kube-vxlan-controller-networks.yaml
 ```
 
 and change the network set according to your needs. When the change is ready,

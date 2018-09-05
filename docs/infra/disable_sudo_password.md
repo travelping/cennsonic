@@ -8,12 +8,12 @@ Run this command to disable sudo password:
 
 ```
 $ cd <Cluster Root Path>
-$ nfv-k8s disable-sudo -K
+$ cennsonic disable-sudo -K
     [-k,--ask-pass] # if SSH password should be specified
     [--pk,--private-key=<Path>] # if SSH private key should be specified
 ```
 
-without "nfv-k8s":
+without "cennsonic":
 
 ```
 $ cd <Cluster Root Path>
@@ -21,7 +21,7 @@ $ docker run \
         --rm -it \
         -v $PWD/config:/cluster/config \
         [-v $HOME/.ssh/id_rsa:/root/.ssh/key \] # if SSH private key should be specified
-        travelping/nfv-k8s ansible-playbook disable-sudo.yml \
+        travelping/cennsonic ansible-playbook disable-sudo.yml \
         -vbi /cluster/config/hosts.ini -K
         [-k or --ask-pass] # if SSH password should be specified
         [--key-file /root/.ssh/key] # if SSH private key should be specified

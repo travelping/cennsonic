@@ -20,7 +20,7 @@ make sure the [Load Balancer] is installed.
 Expose (requires [Private Token]):
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/nfv-k8s/raw/master/components/ingress/ingress-service.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/ingress/ingress-service.yaml?private_token=$PRIVATE_TOKEN
 ```
 
 <!-- Links -->
