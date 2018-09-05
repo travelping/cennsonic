@@ -17,10 +17,10 @@ providing some information about the cluster.
 
 We increase privileges of the service account used by the dashboard deployment
 by binding it to the "cluster-admin" role. For that we use the [RBAC Dashboard]
-manifest to create the corresponding binding (requires [Private Token]):
+manifest to create the corresponding binding:
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/dashboard/dashboard-rbac.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/dashboard/dashboard-rbac.yaml
 ```
 
 ## Access
@@ -46,5 +46,3 @@ $ kubectl -n kube-system get secret -o jsonpath='{.items[?(@.metadata.annotation
 
 [RBAC Dashboard]: ../../components/dashboard/dashboard-rbac.yaml
 [Kubernetes Dashboard]: https://github.com/kubernetes/dashboard
-
-[Private Token]: ../gitlab_private_token.md

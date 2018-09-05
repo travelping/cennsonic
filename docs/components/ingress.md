@@ -17,15 +17,13 @@ To access any ingress controlled services the controller itself should be
 exposed as a service. We expose it as load balancer service, therefore please
 make sure the [Load Balancer] is installed.
 
-Expose (requires [Private Token]):
+Expose:
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/ingress/ingress-service.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/ingress/ingress-service.yaml
 ```
 
 <!-- Links -->
 
 [Ingress]: https://kubernetes.io/docs/concepts/services-networking/ingress
 [Load Balancer]: loadbalancer.md
-
-[Private Token]: ../gitlab_private_token.md

@@ -17,12 +17,12 @@ $ kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.7.3/manif
 
 After installation it should be provided with [Layer2 configuration] describing
 range of IP addresses available for allocation. Copy the [MetalLB configuration
-manifest] to your cluster location, for example (requires [Private Token]):
+manifest] to your cluster location, for example:
 
 ```
 $ cd <Cluster Root Path>
 $ mkdir -p components/loadbalancer
-$ curl https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/loadbalancer/metallb-config.yaml?private_token=$PRIVATE_TOKEN >> components/loadbalancer/metallb-config.yaml
+$ curl https://raw.githubusercontent.com/travelping/cennsonic/master/components/loadbalancer/metallb-config.yaml >> components/loadbalancer/metallb-config.yaml
 ```
 
 and change the [MetalLB IP range] according to your needs. When the change
@@ -67,10 +67,10 @@ $ kubectl run iperf3-server --image=aialferov/nettools --command -- iperf3 -s
 
 Using the [Example manifest] we create two load balancers with use of the
 [MetalLB IP address sharing] feature to serve both TCP and UDP traffic on the
-same IP address (requires [Private Token]):
+same IP address:
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/loadbalancer/example.yaml
 ```
 
 Iperf3 client is needed to verify the server works as expected. Please refer the
@@ -111,10 +111,10 @@ iperf3: error - unable to connect to server: Network is unreachable
 
 ### Example Clean Up
 
-Do delete all the example related resources (requires [Private Token]):
+Do delete all the example related resources:
 
 ```
-$ kubectl delete -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/loadbalancer/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl delete -f https://raw.githubusercontent.com/travelping/cennsonic/raw/master/components/loadbalancer/example.yaml
 $ kubectl delete deployment iperf3-server
 ```
 
@@ -131,5 +131,3 @@ $ kubectl delete deployment iperf3-server
 [MetalLB configuration manifest]: ../../components/loadbalancer/metallb-config.yaml
 
 [Layer 2 Mode Tutorial →]: https://metallb.universe.tf/tutorial/layer2
-
-[Private Token]: ../gitlab_private_token.md

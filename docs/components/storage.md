@@ -13,17 +13,17 @@ this order):
 - [Rook Cluster]
 - [Rook Storage Class]
 
-We create them using the manifests (requires [Private Token]):
+We create them using the manifests:
 
 ```
 # Rook operator
-$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/storage/rook-operator.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/rook-operator.yaml
 
 # Rook cluster
-$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/storage/rook-cluster.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/rook-cluster.yaml
 
 # Rook storage class
-$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/storage/rook-storageclass.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/rook-storageclass.yaml
 ```
 
 See also:
@@ -36,10 +36,10 @@ See also:
 
 After installation, the "rook-ceph-block" value can be used as a storage class
 name for [PVC]. We create a [StatefulSet] defined in the [Usage Example] to
-demonstrate that (requires [Private Token]):
+demonstrate that:
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
 ```
 
 Now we can store something in the mounted directory, remove the StatefulSet,
@@ -52,12 +52,12 @@ $ kubectl exec rook-usage-example-0 cat /data/rook-usage-example/1.txt
 1
 
 # Delete StatefulSet
-$ kubectl delete -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl delete -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
 service "rook-usage-example" deleted
 statefulset.apps "rook-usage-example" deleted
 
 # Create StatefulSet again
-$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
 service "rook-usage-example" created
 statefulset.apps "rook-usage-example" created
 
@@ -67,11 +67,11 @@ $ kubectl exec rook-usage-example-0 cat /data/rook-usage-example/1.txt
 ```
 
 To remove the StatefulSet and the used Volume comletely we have to remove [PVC]
-also (requires [Private Token]):
+also:
 
 ```
 # Delete StatefulSet
-$ kubectl delete -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl delete -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
 service "rook-usage-example" deleted
 statefulset.apps "rook-usage-example" deleted
 
@@ -80,12 +80,11 @@ $ kubectl delete pvc rook-usage-example-rook-usage-example-0
 persistentvolumeclaim "rook-usage-example-rook-usage-example-0" deleted
 ```
 
-Now after creation the workload again, our data is gone (requires [Private
-Token]):
+Now after creation the workload again, our data is gone:
 
 ```
 # Create StatefulSet again
-$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
 service "rook-usage-example" created
 statefulset.apps "rook-usage-example" created
 
@@ -97,10 +96,10 @@ command terminated with exit code 1
 
 ### Example Clean Up
 
-To delete all the example related objects (requires [Private Token]):
+To delete all the example related objects:
 
 ```
-$ kubectl delete -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/storage/example.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl delete -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
 $ kubectl delete pvc rook-usage-example-rook-usage-example-0
 ```
 
@@ -119,5 +118,3 @@ $ kubectl delete pvc rook-usage-example-rook-usage-example-0
 [Storage Resize →]: resize.md
 [Storage Backup and Restore →]: backup_and_restore.md
 [Rook Quick Start (Ceph Storage) →]: https://rook.io/docs/rook/v0.8/ceph-quickstart.html
-
-[Private Token]: ../gitlab_private_token.md

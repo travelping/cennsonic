@@ -70,10 +70,10 @@ Requires [Configuration](#configuration):
 ### Configuration
 
 The [Cennsonic Tool] might be helpful to shorten some commands from this guide.
-Download and install (requires [Private Token]):
+Download and install:
 
 ```
-$ wget https://gitlab.tpip.net/aalferov/cennsonic/raw/master/bin/cennsonic?private_token=$PRIVATE_TOKEN
+$ wget https://raw.githubusercontent.com/travelping/cennsonic/master/bin/cennsonic
 $ install cennsonic /usr/local/bin/cennsonic
 ```
 
@@ -251,8 +251,6 @@ We will try to keep here known issues and the ways of it resolving.
 [Certificates Manager →]: docs/components/certmanager.md
 
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md
-
-[Private Token]: docs/gitlab_private_token.md
 
 <!-- Badges -->
 [Apache 2.0 badge]: https://img.shields.io/badge/License-Apache%202.0-yellowgreen.svg

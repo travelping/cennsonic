@@ -18,12 +18,12 @@ the section below.
 
 ### Configuration
 
-Download sample Multus configuration file (requires [Private Token]):
+Download sample Multus configuration file:
 
 ```
 $ cd <Cluster Root Path>
 $ mkdir -p components/network
-$ curl https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/network/multus-cni-configmap.yaml?private_token=$PRIVATE_TOKEN >> components/network/multus-cni-configmap.yaml
+$ curl https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni-configmap.yaml >> components/network/multus-cni-configmap.yaml
 ```
 
 Replace "ETCD_ENDPOINTS" with the output of this command (gets current cluster
@@ -44,11 +44,10 @@ $ kubectl create -f components/network/multus-cni-configmap.yaml
 
 ### Now Installation
 
-After the configuration is in place, install Multus CNI itself
-(requires [Private Token]):
+After the configuration is in place, install Multus CNI itself:
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/network/multus-cni-daemonset.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni-daemonset.yaml
 ```
 
 To validate installation create a pod and verify it contains network
@@ -75,22 +74,22 @@ the pods.
 
 ### Installation
 
-The controller could be installed this way (requires [Private Token]):
+The controller could be installed this way:
 
 ```
-$ kubectl create -f https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/network/kube-vxlan-controller.yaml?private_token=$PRIVATE_TOKEN
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/kube-vxlan-controller.yaml
 ```
 
 ### Configuration
 
 After installation it could be provided with custom set of VXLAN networks that
 suppose to be used by the pods. Copy the [VXLAN Network Configuration] sample
-manifest to your cluster location, for example (requires [Private Token]):
+manifest to your cluster location, for example:
 
 ```
 $ cd <Cluster Root Path>
 $ mkdir -p components/network
-$ curl -s https://gitlab.tpip.net/aalferov/cennsonic/raw/master/components/network/kube-vxlan-controller.yaml?private_token=$PRIVATE_TOKEN | head -n29 | tail -n10 >> components/network/kube-vxlan-controller-networks.yaml
+$ curl -s https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/kube-vxlan-controller.yaml | head -n29 | tail -n10 >> components/network/kube-vxlan-controller-networks.yaml
 ```
 
 and change the network set according to your needs. When the change is ready,
@@ -108,5 +107,3 @@ $ kubectl apply -f components/network/kube-vxlan-controller-networks.yaml
 [Kube VXLAN Controller]: http://github.com/openvnf/kube-vxlan-controller
 
 [VXLAN Network Configuration]: ../../components/network/kube-vxlan-controller.yaml#L20-29
-
-[Private Token]: ../gitlab_private_token.md
