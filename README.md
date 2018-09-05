@@ -1,6 +1,10 @@
 # Cennsonic
 
-Cennso is cloud enabled network service operations. And Cennsonic is a Cennso
+[![License: Apache 2.0][Apache 2.0 badge]][Apache 2.0]
+[![Version badge]]()
+[![Unstable badge]]()
+
+Cennso is cloud enabled network service operations. Cennsonic is a Cennso
 network integration cluster.
 
 Defines set of tools and guides for [NFV] enabled [Kubernetes] cluster setup and
@@ -207,6 +211,7 @@ We will try to keep here known issues and the ways of it resolving.
 
 <!-- Links -->
 
+[Apache 2.0]: https://opensource.org/licenses/Apache-2.0
 [NFV]: https://en.wikipedia.org/wiki/Network_function_virtualization
 [Docker]: https://docs.docker.com
 [Docker image]: Dockerfile
@@ -248,3 +253,8 @@ We will try to keep here known issues and the ways of it resolving.
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md
 
 [Private Token]: docs/gitlab_private_token.md
+
+<!-- Badges -->
+[Apache 2.0 badge]: https://img.shields.io/badge/License-Apache%202.0-yellowgreen.svg
+[Unstable badge]: https://img.shields.io/badge/state-unstable-red.svg
+[Version badge]: https://img.shields.io/badge/version-0.1.0-blue.svg
