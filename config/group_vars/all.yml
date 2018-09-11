@@ -1,13 +1,13 @@
 ### SSH public keys to provision to all the nodes
 ### A key will be downloaded from "{{ user_key_link }}.keys"
-### assuming user keylink is somewhat like "https://github.com/username"
+### assuming a "user_key_link" is somewhat like "https://github.com/username"
 #ssh_keys:
 #- user_key_link1
 #- user_key_link2
 
 ### SSH public keys to delete from all the nodes
 ### A key will be compared to "{{ user_key_link }}.keys"
-### assuming user keylink is somewhat like "https://github.com/username"
+### assuming a "user_key_link" is somewhat like "https://github.com/username"
 #no_ssh_keys
 #- user_key_link3
 #- user_key_link4
