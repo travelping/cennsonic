@@ -33,3 +33,10 @@ resource "ibm_compute_vm_instance" "worker-cennsonic-example-net" {
     ssh_key_ids = ["${data.ibm_compute_ssh_key.public_key.id}"]
     tags = ["worker", "cennsonic", "fra02"]
 }
+
+#data "ibm_compute_vm_instance" "worker-cennsonic-example-net" {
+#    count = 0
+#    hostname = "worker-0${count.index + 1}"
+#    domain = "cennsonic.example.net"
+#    most_recent = true
+#}
