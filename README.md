@@ -1,6 +1,6 @@
 # Cennsonic
 
-[![License: Apache 2.0][Apache 2.0 badge]][Apache 2.0]
+[![License: Apache-2.0][Apache 2.0 badge]][Apache 2.0]
 [![Version badge]]()
 [![Unstable badge]]()
 
