@@ -159,11 +159,17 @@ $ docker run \
 ```
 
 If the deployment process succeeded the newly created cluster kubeconfig could
-be merged into the main kubeconfig file:
+be merged into the main kubeconfig file. The existing config will be changed
+so backup it if feel unsafe:
+
+```
+$ cp ~/.kube/config ~/.kube/config.bkp
+```
+
+Merge the new config into the existing one:
 
 ```
 $ KUBECONFIG=config/artifacts/admin.conf:~/.kube/config kubectl config view --flatten > config.new
-$ cp ~/.kube/config ~/.kube/config.bkp # backup config if feel unsafe
 $ mv config.new ~/.kube/config
 ```
 
