@@ -16,7 +16,7 @@ and edit:
 Each item will be used as a link to download a key from.
 
 After the changes are ready run this command to actualise the desired SSH keys
-state on the cluster nodes:
+state on the cluster nodes (requires [Bootstrap]):
 
 ```
 $ cd <Cluster Root Path>
@@ -40,3 +40,6 @@ $ docker run \
         [-K or --ask-become-pass] # if "sudo" password should be specified
         [--key-file /root/.ssh/key] # if SSH private key should be specified
 ```
+
+<!-- Links -->
+[Bootstrap]: bootstrap.md

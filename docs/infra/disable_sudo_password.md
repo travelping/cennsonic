@@ -4,7 +4,7 @@ Cluster deployment and further operations require privileged access that is
 often get by "sudo" that might require password. If you wish to avoid asking
 for password you can disable it.
 
-Run this command to disable sudo password:
+Run this command to disable sudo password (requires [Bootstrap]):
 
 ```
 $ cd <Cluster Root Path>
@@ -26,3 +26,6 @@ $ docker run \
         [-k or --ask-pass] # if SSH password should be specified
         [--key-file /root/.ssh/key] # if SSH private key should be specified
 ```
+
+<!-- Links -->
+[Bootstrap]: bootstrap.md
