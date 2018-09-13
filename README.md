@@ -1,8 +1,8 @@
 # Cennsonic
 
-[![License: Apache-2.0][Apache 2.0 badge]][Apache 2.0]
-[![Version badge]]()
-[![Unstable badge]]()
+[![License: Apache-2.0][Apache 2.0 Badge]][Apache 2.0]
+![Version Badge]
+![Unstable Badge]
 
 Cennso is cloud enabled network service operations. Cennsonic is a Cennso
 network integration cluster.
@@ -122,7 +122,9 @@ Let's have a look into the files:
    - cluster_name — use your name if differs from "cennsonic.example.net"
 
    - supplementary_addresses\_in\_ssl\_keys — list of all the IP addresses and
-     DNS names that might be used to access Kubernetes API of the cluster
+     DNS names that might be used to access Kubernetes API of the cluster.
+     Make sure to specify here list of IP addresses that you are going to use
+     to access the Kubernetes API server
 
  * all.yml — defines settings for all the hosts in the cluster. During the
    deployment the useful might be "http(s)_proxy". Should be specified if the
@@ -166,7 +168,16 @@ so backup it if feel unsafe:
 $ cp ~/.kube/config ~/.kube/config.bkp
 ```
 
-Merge the new config into the existing one:
+If you specified internal IP addresses for the nodes ("ip=") in the
+"config/hosts.ini" file, one of them will be used in the generated kubeconfig
+by default and therefore the cluster API will not be reachable from the outside.
+Change the server address to one of the public ones before merging:
+
+```
+$ kubectl config set-cluster $(basename $(pwd)) --server=https://<Public IP>:6443 --kubeconfig=config/artifacts/admin.conf
+```
+
+Now you can merge the new config into the existing one:
 
 ```
 $ KUBECONFIG=config/artifacts/admin.conf:~/.kube/config kubectl config view --flatten > config.new
@@ -259,6 +270,6 @@ We will try to keep here known issues and the ways of it resolving.
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md
 
 <!-- Badges -->
-[Apache 2.0 badge]: https://img.shields.io/badge/License-Apache%202.0-yellowgreen.svg
-[Unstable badge]: https://img.shields.io/badge/state-unstable-red.svg
-[Version badge]: https://img.shields.io/badge/version-0.1.0-blue.svg
+[Apache 2.0 Badge]: https://img.shields.io/badge/License-Apache%202.0-yellowgreen.svg?style=flat-square
+[Unstable Badge]: https://img.shields.io/badge/state-unstable-red.svg?style=flat-square
+[Version Badge]: https://img.shields.io/badge/version-0.1.0-blue.svg?style=flat-square
