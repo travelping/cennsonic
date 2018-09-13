@@ -25,7 +25,7 @@ so [Docker] is required. Also [kubectl] is required for cluster operations.
 
 See also:
 
-* [Kubespray in Docker →] **WiP**
+* [Kubespray in Docker →] **NYI**
 
 ### Infrastructure
 
@@ -55,11 +55,11 @@ worker-[01:XX].cennsonic.example.net
 
 See also:
 
-* [Setup Infrastructure on vSphere →] **WiP**
-* [Setup Infrastructure on Packet →] **WiP**
-* [Setup Infrastructure on AWS →] **WiP**
-* [Setup Infrastructure on GCE →] **WiP**
-* [Setup Infrastructure on IBM →] **WiP**
+* [Setup Infrastructure on vSphere →] **NYI**
+* [Setup Infrastructure on Packet →] **NYI**
+* [Setup Infrastructure on AWS →] **NYI**
+* [Setup Infrastructure on GCE →] **NYI**
+* [Setup Infrastructure on IBM →] **NYI**
 
 Requires [Configuration](#configuration):
 
@@ -198,13 +198,13 @@ $ kubectl get pods --all-namespaces
 
 See also:
 
-* [Users and Roles →] **WiP**
-* [Scaling a Cluster →] **WiP**
-* [Upgrading a Cluster →] **WiP**
-* [OS Kernel and Security Updates →] **WiP**
-* [Modifying Kubelet Start Arguments →] **WiP**
-* [CIS Kubernetes Benchmark Compliance →] **WiP**
-* [Modifying a Cluster API access addresses →] **WiP**
+* [Users and Roles →] **NYI**
+* [Scaling a Cluster →] **NYI**
+* [Upgrading a Cluster →] **NYI**
+* [OS Kernel and Security Updates →] **NYI**
+* [Modifying Kubelet Start Arguments →] **NYI**
+* [CIS Kubernetes Benchmark Compliance →] **NYI**
+* [Modifying a Cluster API access addresses →] **NYI**
 
 ### Components
 
@@ -216,9 +216,9 @@ installed to fulfill application and operational needs.
 * [Network →]
 * [Storage →]
 * [Dashboard →]
-* [Monitoring →] **WiP**
+* [Monitoring →] **NYI**
 * [Load Balancer →]
-* [Certificates Manager →]
+* [Certificates Manager →] **WiP**
 
 ## Troubleshooting and FAQ
 
