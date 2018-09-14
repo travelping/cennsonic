@@ -31,9 +31,7 @@ Afterwards it is possible to access the dashboard with help of Kubernetes proxy:
 $ kubectl proxy
 ```
 
-Now the dashboard is available at this URL:
-[http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy]
-(http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy)
+Now it is available at [Proxy URL].
 
 It will require a token to authenticate, which could be extracted from the
 corresponding account this way:
@@ -44,5 +42,6 @@ $ kubectl -n kube-system get secret -o jsonpath='{.items[?(@.metadata.annotation
 
 <!-- Links -->
 
+[Proxy URL]: http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy
 [RBAC Dashboard]: ../../components/dashboard/dashboard-rbac.yaml
 [Kubernetes Dashboard]: https://github.com/kubernetes/dashboard
