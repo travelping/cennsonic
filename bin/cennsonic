@@ -68,20 +68,23 @@ if [ "$action" = "init" ]; then
 
     $run mkdir -p "$cluster"
     $run docker run \
+          -e UID:$UID \
           --rm -v $PWD/$cluster:/$cluster \
-          travelping/cennsonic cp -a /cluster/. /$cluster
+          travelping/cennsonic sh -c \
+              "cp -a /cluster/. /$cluster && \
+               chown -R $UID:$UID /$cluster"
 
-    if [ "$uname" = "Darwin" ]; then
-        SED_EXT = "\"\""
+    if [ "$(uname)" = "Darwin" ]; then
+        SED_EXT="\"\""
     fi
 
     sample_cluster="cennsonic.example.net"
     if [ -z "$run" ]; then
         find $(grep "$sample_cluster" -rl "$cluster") \
-            -exec sed -i "$SED_EXT" "s/$sample_cluster/$cluster/g" "{}" \;
+            -exec sed -i $SED_EXT "s/$sample_cluster/$cluster/g" "{}" \;
     else
         $run find \$\(grep "$sample_cluster" -rl "$cluster"\) \
-            -exec sed -i \"$SED_EXT\" \"s/$sample_cluster/$cluster/g\" \"{}\" \\\;
+            -exec sed -i $SED_EXT \"s/$sample_cluster/$cluster/g\" \"{}\" \\\;
     fi
 
     exit 0
