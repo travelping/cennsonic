@@ -15,6 +15,8 @@ usage:
 	@echo "    install"
 	@echo "    uninstall"
 	@echo
+	@echo "    git-release"
+	@echo
 	@echo "    docker-build"
 	@echo "    docker-clean"
 	@echo "    docker-distclean"
@@ -35,6 +37,10 @@ install:
 
 uninstall:
 	rm -f /usr/local/bin/$(PROJECT)
+
+git-release:
+	git tag -a $(VERSION)
+	git push origin $(VERSION)
 
 docker-build:
 	docker build . -t $(IMAGE)
