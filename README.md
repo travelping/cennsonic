@@ -1,7 +1,7 @@
 # Cennsonic
 
 [![License: Apache-2.0][Apache 2.0 Badge]][Apache 2.0]
-![Version Badge]
+[![GitHub Release Badge]][GitHub Releases]
 ![Unstable Badge]
 
 Cennso is cloud enabled network service operations. Cennsonic is a Cennso
@@ -229,6 +229,7 @@ We will try to keep here known issues and the ways of it resolving.
 <!-- Links -->
 
 [Apache 2.0]: https://opensource.org/licenses/Apache-2.0
+[GitHub Releases]: https://github.com/travelping/cennsonic/releases
 [NFV]: https://en.wikipedia.org/wiki/Network_function_virtualization
 [Docker]: https://docs.docker.com
 [Docker image]: Dockerfile
@@ -272,4 +273,4 @@ We will try to keep here known issues and the ways of it resolving.
 <!-- Badges -->
 [Apache 2.0 Badge]: https://img.shields.io/badge/License-Apache%202.0-yellowgreen.svg?style=flat-square
 [Unstable Badge]: https://img.shields.io/badge/state-unstable-red.svg?style=flat-square
-[Version Badge]: https://img.shields.io/badge/version-0.1.0-blue.svg?style=flat-square
+[GitHub Release Badge]: https://img.shields.io/github/release/travelping/cennsonic/all.svg?style=flat-square
