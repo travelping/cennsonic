@@ -46,10 +46,10 @@ docker-build:
 	docker build . -t $(IMAGE)
 
 docker-clean:
-	docker rmi $(IMAGE) 2>/dev/null || true
+	docker system prune -f --filter label=project=$(PROJECT)
 
 docker-distclean: docker-clean
-	docker rmi $(IMAGE_LATEST) 2>/dev/null || true
+	docker images -qf label=project=cennsonic | docker rmi
 
 docker-push:
 	docker push $(IMAGE)
