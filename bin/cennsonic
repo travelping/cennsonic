@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.1.0
+version=0.2.0
 
 if [ ! "$(docker version 2>/dev/null)" ]; then
     echo "Docker is not installed."
@@ -70,7 +70,7 @@ if [ "$action" = "init" ]; then
     $run docker run \
           -e UID:$UID \
           --rm -v $PWD/$cluster:/$cluster \
-          travelping/cennsonic sh -c \
+          travelping/cennsonic:$version sh -c \
               "cp -a /cluster/. /$cluster && \
                chown -R $UID:$UID /$cluster"
 
@@ -98,6 +98,6 @@ fi
 $run docker run \
     --rm -it \
     -v $PWD/config:/cluster/config $extra_mount \
-    travelping/cennsonic \
+    travelping/cennsonic:$version \
         ansible-playbook "$action.yml" \
         -vbi /cluster/config/hosts.ini $extra_args

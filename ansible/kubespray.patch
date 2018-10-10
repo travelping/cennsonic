@@ -14,9 +14,10 @@ diff -ruN extra_playbooks/roles/etcd/tasks/certs_symlinks.yml extra_playbooks/ro
 diff -ruN extra_playbooks/roles/etcd/tasks/main.yml extra_playbooks/roles/etcd/tasks/main.yml
 --- extra_playbooks/roles/etcd/tasks/main.yml	2018-08-29 10:04:26.000000000 +0200
 +++ extra_playbooks/roles/etcd/tasks/main.yml	2018-08-29 10:07:54.000000000 +0200
-@@ -73,3 +73,5 @@
+@@ -60,3 +60,5 @@
  
+ # state insted of `new`.
  - include_tasks: refresh_config.yml
-   when: is_etcd_master and etcd_cluster_setup
+   when: is_etcd_master
 +
 +- include_tasks: certs_symlinks.yml

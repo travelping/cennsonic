@@ -1,7 +1,7 @@
 FROM alpine:3.8
 
 ARG PROJECT=cennsonic
-ARG KUBESPRAY_VERSION=2.5.0
+ARG KUBESPRAY_VERSION=2.7.0
 ARG GIT_URL=https://github.com/kubernetes-incubator/kubespray
 
 RUN apk upgrade --no-cache --update && \
