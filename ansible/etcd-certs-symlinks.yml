@@ -1,5 +1,0 @@
----
-- hosts: kube-node
-  gather_facts: False
-  tasks:
-  - include_tasks: extra_playbooks/roles/etcd/tasks/certs_symlinks.yml

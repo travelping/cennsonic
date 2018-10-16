@@ -15,9 +15,9 @@ data:
          "cniVersion":"0.3.1",
          "type": "calico",
          "etcd_endpoints": "ETCD_ENDPOINTS",
-         "etcd_cert_file": "/etc/ssl/etcd/ssl/node.pem",
-         "etcd_key_file": "/etc/ssl/etcd/ssl/node-key.pem",
-         "etcd_ca_cert_file": "/etc/ssl/etcd/ssl/ca.pem",
+         "etcd_cert_file": "/etc/calico/certs/cert.crt",
+         "etcd_key_file": "/etc/calico/certs/key.pem",
+         "etcd_ca_cert_file": "/etc/calico/certs/ca_cert.crt",
 
          "log_level": "info",
          "masterplugin": true,
@@ -35,13 +35,13 @@ data:
          "master": "eth0",
          "ipam": {
            "type": "host-local",
-           "subnet": "172.16.0.0/24"
+           "subnet": "172.72.0.0/24"
            ### Example of IP addresses range, change according to your needs.
            ### Note that this example range limits the whole cluster for 50 pods
            ### As 50 (250 minus 200) IP addresses can be assigned only.
            ### Remove these lines (all comments including range) if do not use.
-           #,"rangeStart": "172.16.0.200",
-           #"rangeEnd": "172.16.0.250"
+           #,"rangeStart": "172.72.0.200",
+           #"rangeEnd": "172.72.0.250"
          }
        }]
       }

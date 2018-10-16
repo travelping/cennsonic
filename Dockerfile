@@ -1,7 +1,7 @@
 FROM alpine:3.8
 
 ARG PROJECT=cennsonic
-ARG KUBESPRAY_VERSION=2.7.0
+ARG KUBESPRAY_VERSION=2.6.0
 ARG GIT_URL=https://github.com/kubernetes-incubator/kubespray
 
 LABEL project=$PROJECT
@@ -22,6 +22,7 @@ RUN apk upgrade --no-cache --update && \
               --depth 1 \
               $GIT_URL \
               /$PROJECT && \
+    rm -rf $PROJECT/.git && \
     pip install -r $PROJECT/requirements.txt && \
     apk del .build-deps
 
@@ -31,6 +32,4 @@ COPY /ansible /$PROJECT
 
 WORKDIR /$PROJECT
 
-RUN patch -p0 < kubespray.patch && \
-    rm kubespray.patch && \
-    ln -s cluster.yml deploy.yml
+RUN ln -s cluster.yml deploy.yml

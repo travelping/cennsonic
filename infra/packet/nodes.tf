@@ -15,7 +15,7 @@ resource "packet_device" "master" {
     facility = "ams1"
     billing_cycle = "hourly"
     plan = "baremetal_0"
-    operating_system = "ubuntu_16_04"
+    operating_system = "coreos_stable"
     project_id = "${var.packet_project_id}"
 
     provisioner "local-exec" {
@@ -29,7 +29,7 @@ resource "packet_device" "worker" {
     facility = "ams1"
     billing_cycle = "hourly"
     plan = "baremetal_0"
-    operating_system = "ubuntu_16_04"
+    operating_system = "coreos_stable"
     project_id = "${var.packet_project_id}"
 
     provisioner "local-exec" {
