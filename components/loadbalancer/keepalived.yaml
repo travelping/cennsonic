@@ -1,0 +1,37 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: keepalived
+  namespace: keepalived-system
+  labels:
+    app: keepalived
+spec:
+  selector:
+    matchLabels:
+      app: keepalived
+  template:
+    metadata:
+      labels:
+        app: keepalived
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: "true"
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      hostNetwork: true
+      containers:
+      - name: keepalived
+        image: aialferov/keepalived:2.0.7
+        args: ["-nl"]
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+        volumeMounts:
+        - name: config
+          mountPath: /etc/keepalived
+      volumes:
+      - name: config
+        configMap:
+          name: keepalived-config
