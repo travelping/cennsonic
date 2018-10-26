@@ -4,7 +4,7 @@ K8S_VERSION=v1.12.1 # https://github.com/kubernetes/kubernetes/releases
 CNI_VERSION=v0.7.1 # https://github.com/containernetworking/plugins/releases
 CRICTL_VERSION=v1.12.0 # https://github.com/kubernetes-incubator/cri-tools/releases
 
-usage=$(cat <<EOF
+usage=`cat <<EOF
 Usage: kube-tools install [Options]
 
 Options
@@ -18,7 +18,7 @@ Options
     --crictl-url=<URL>         crictl URL to download
     --without-kubectl          to skip kubectl installation
     --without-master-images    to skip pulling master images
-EOF)
+EOF`
 
 if [ "$1" != "install" ]; then
     echo "$usage"
@@ -96,5 +96,5 @@ echo && echo "Enabling docker..." && sudo systemctl enable docker
 $PULL_MASTER_IMAGES && {
     echo
     echo "Pulling master images..."
-    kubeadm config images pull
+    /opt/bin/kubeadm config images pull --kubernetes-version $K8S_VERSION
 }
