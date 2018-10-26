@@ -1,22 +1,20 @@
 #!/bin/bash
 
 #K8S_VERSION=v1.12.1 # https://github.com/kubernetes/kubernetes/releases
-CNI_VERSION=v0.7.1 # https://github.com/containernetworking/plugins/releases
-CRICTL_VERSION=v1.12.0 # https://github.com/kubernetes-incubator/cri-tools/releases
+#CNI_VERSION=v0.7.1 # https://github.com/containernetworking/plugins/releases
+#CRICTL_VERSION=v1.12.0 # https://github.com/kubernetes-incubator/cri-tools/releases
 
 usage=`cat <<EOF
 Usage: kube-tools install <Version> [Options]
 
 Options
-    --k8s-tools-url=<URL>      kube{adm,let,ctl} URL to download
-    --with-cni                 to install CNI plugins
-    --cni-version=<Version>    CNI plugins version (default: $CNI_VERSION)
-    --cni-plugins-url=<URL>    CNI plugins URL to download
-    --with-crictl              to install crictl plugins
-    --crictl-version=<Version> crictl version (default: $CRICTL_VERSION)
-    --crictl-url=<URL>         crictl URL to download
-    --without-kubectl          to skip kubectl installation
-    --without-master-images    to skip pulling master images
+    --with-cni=<Version>     install CNI plugins of the specified version
+    --with-crictl=<Version>  install crictl of the specified version
+    --without-kubectl        skip kubectl installation
+    --without-master-images  skip pulling master images
+    --k8s-tools-url=<URL>    kube{adm,let,ctl} URL to download
+    --cni-url=<URL>          CNI plugins URL to download
+    --crictl-url=<URL>       crictl URL to download
 EOF`
 
 if [ "$1" != "install" ] || [ -z "$2" ]; then
@@ -27,29 +25,25 @@ fi
 K8S_VERSION="$2"
 
 INSTALL_KUBECTL=true
-INSTALL_CNI=false
-INSTALL_CRICTL=false
 PULL_MASTER_IMAGES=true
 
 shift 2
 
 for i in "$@"; do
     case $i in
-        --k8s-tools-url=*) K8S_TOOLS_URL="${i#*=}"; shift ;;
-        --cni-version=*) CNI_VERSION="${i#*=}"; shift ;;
-        --cni-plugins-url=*) CNI_PLUGINS_URL="${i#*=}"; shift ;;
-        --crictl-version=*) CRICTL_VERSION="${i#*=}"; shift ;;
-        --crictl-url=*) CRICTL_URL="${i#*=}"; shift ;;
-        --with-cni) INSTALL_CNI=true; shift ;;
-        --with-crictl) INSTALL_CRICTL=true; shift ;;
+        --with-cni=*) CNI_VERSION="${i#*=}"; shift ;;
+        --with-crictl=*) CRICTL_VERSION="${i#*=}"; shift ;;
         --without-kubectl) INSTALL_KUBECTL=false; shift ;;
         --without-master-images) PULL_MASTER_IMAGES=false; shift ;;
-        *) >&2 echo "Unknown argument: $i"; exit 1; shift ;;
+        --k8s-tools-url=*) K8S_TOOLS_URL="${i#*=}"; shift ;;
+        --cni-url=*) CNI_URL="${i#*=}"; shift ;;
+        --crictl-url=*) CRICTL_URL="${i#*=}"; shift ;;
+        *) >&2 echo "Unknown argument: $i"; exit 2; shift ;;
     esac
 done
 
 K8S_TOOLS_URL="${K8S_TOOLS_URL:-https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64}"
-CNI_PLUGINS_URL="${CNI_PLUGINS_URL:-https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}}"
+CNI_URL="${CNI_URL:-https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}}"
 CRICTL_URL="${CRICTL_URL:-https://github.com/kubernetes-incubator/cri-tools/releases/download/${CRICTL_VERSION}}"
 
 KUBEADM_CONF_URL="https://raw.githubusercontent.com/kubernetes/kubernetes/${K8S_VERSION}/build/debs/10-kubeadm.conf"
@@ -75,23 +69,24 @@ $INSTALL_KUBECTL && {
     sudo install kubectl /opt/bin && rm kubectl
 }
 
-$INSTALL_CNI && {
+if [ -n "$CNI_VERSION" ]; then
     echo
     echo "Installing CNI plugins ${CNI_VERSION}..."
     sudo mkdir -p /opt/cni/bin
-    curl -L $CNI_PLUGINS_URL/cni-plugins-amd64-${CNI_VERSION}.tgz | \
-        sudo tar -C /opt/cni/bin -xz
-}
+    curl -L $CNI_URL/cni-plugins-amd64-${CNI_VERSION}.tgz | sudo tar -C /opt/cni/bin -xz
+fi
 
-$INSTALL_CRICTL && {
+if [ -n "$CRICTL_VERSION" ]; then
     echo
     echo "Installing crictl ${CRICTL_VERSION}..."
-    curl -L $CRICTL_URL/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz | \
-        sudo tar -C /opt/bin -xz
-}
+    curl -L $CRICTL_URL/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz | sudo tar -C /opt/bin -xz
+fi
 
-echo && echo "Enabling kubelet..." && sudo systemctl enable kubelet
-echo && echo "Enabling docker..." && sudo systemctl enable docker
+for SERVICE in kubelet docker; do
+    echo
+    echo "Enabling $SERVICE..."
+    echo "sudo systemctl enable $SERVICE"
+done
 
 $PULL_MASTER_IMAGES && {
     echo
