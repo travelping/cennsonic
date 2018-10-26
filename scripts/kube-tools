@@ -1,14 +1,13 @@
 #!/bin/bash
 
-K8S_VERSION=v1.12.1 # https://github.com/kubernetes/kubernetes/releases
+#K8S_VERSION=v1.12.1 # https://github.com/kubernetes/kubernetes/releases
 CNI_VERSION=v0.7.1 # https://github.com/containernetworking/plugins/releases
 CRICTL_VERSION=v1.12.0 # https://github.com/kubernetes-incubator/cri-tools/releases
 
 usage=`cat <<EOF
-Usage: kube-tools install [Options]
+Usage: kube-tools install <Version> [Options]
 
 Options
-    --k8s-version=<Version>    kube{adm,let,ctl} version (default: $K8S_VERSION)
     --k8s-tools-url=<URL>      kube{adm,let,ctl} URL to download
     --with-cni                 to install CNI plugins
     --cni-version=<Version>    CNI plugins version (default: $CNI_VERSION)
@@ -20,21 +19,22 @@ Options
     --without-master-images    to skip pulling master images
 EOF`
 
-if [ "$1" != "install" ]; then
+if [ "$1" != "install" ] || [ -z "$2" ]; then
     echo "$usage"
     exit 2
 fi
 
-shift
+K8S_VERSION="$2"
 
 INSTALL_KUBECTL=true
 INSTALL_CNI=false
 INSTALL_CRICTL=false
 PULL_MASTER_IMAGES=true
 
+shift 2
+
 for i in "$@"; do
     case $i in
-        --k8s-version=*) K8S_VERSION="${i#*=}"; shift ;;
         --k8s-tools-url=*) K8S_TOOLS_URL="${i#*=}"; shift ;;
         --cni-version=*) CNI_VERSION="${i#*=}"; shift ;;
         --cni-plugins-url=*) CNI_PLUGINS_URL="${i#*=}"; shift ;;
@@ -78,7 +78,7 @@ $INSTALL_KUBECTL && {
 $INSTALL_CNI && {
     echo
     echo "Installing CNI plugins ${CNI_VERSION}..."
-    echo "sudo mkdir -p /opt/cni/bin"
+    sudo mkdir -p /opt/cni/bin
     curl -L $CNI_PLUGINS_URL/cni-plugins-amd64-${CNI_VERSION}.tgz | \
         sudo tar -C /opt/cni/bin -xz
 }
