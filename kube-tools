@@ -1,0 +1,95 @@
+#!/bin/bash
+
+K8S_VERSION=v1.12.1 # https://github.com/kubernetes/kubernetes/releases
+CNI_VERSION=v0.7.1 # https://github.com/containernetworking/plugins/releases
+CRICTL_VERSION=v1.12.0 # https://github.com/kubernetes-incubator/cri-tools/releases
+
+usage=$(cat <<EOF
+Usage: kube-tools install [Options]
+
+Options
+    --k8s-version=<Version>    kube{adm,let,ctl} version (default: $K8S_VERSION)
+    --k8s-tools-url=<URL>      kube{adm,let,ctl} URL to download
+    --with-cni                 to install CNI plugins
+    --cni-version=<Version>    CNI plugins version (default: $CNI_VERSION)
+    --cni-plugins-url=<URL>    CNI plugins URL to download
+    --with-crictl              to install crictl plugins
+    --crictl-version=<Version> crictl version (default: $CRICTL_VERSION)
+    --crictl-url=<URL>         crictl URL to download
+    --without-kubectl          to skip kubectl installation
+    --without-master-images    to skip pulling master images
+EOF)
+
+if [ "$1" != "install" ]; then
+    echo "$usage"
+    exit 2
+fi
+
+shift
+
+for i in "$@"; do
+    case $i in
+        --k8s-version=*) K8S_VERSION="${i#*=}"; shift ;;
+        --k8s-tools-url=*) K8S_TOOLS_URL="${i#*=}"; shift ;;
+        --cni-version=*) CNI_VERSION="${i#*=}"; shift ;;
+        --cni-plugins-url=*) CNI_PLUGINS_URL="${i#*=}"; shift ;;
+        --crictl-version=*) CRICTL_VERSION="${i#*=}"; shift ;;
+        --crictl-url=*) CRICTL_URL="${i#*=}"; shift ;;
+        --with-cni) WITH_CNI=; shift ;;
+        --with-crictl) WITH_CRICTL=; shift ;;
+        --without-kubectl) WITHOUT_KUBECTL=; shift ;;
+        --without-master-images) WITHOUT_MASTER_IMAGES=; shift ;;
+        *) >&2 echo "Unknown argument: $i"; shift ;;
+    esac
+done
+
+K8S_TOOLS_URL="${K8S_TOOLS_URL:-https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64}"
+CNI_PLUGINS_URL="${CNI_PLUGINS_URL:-https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}}"
+CRICTL_URL="${CRICTL_URL:-https://github.com/kubernetes-incubator/cri-tools/releases/download/${CRICTL_VERSION}}"
+
+KUBEADM_CONF_URL="https://raw.githubusercontent.com/kubernetes/kubernetes/${K8S_VERSION}/build/debs/10-kubeadm.conf"
+KUBELET_SERVICE_URL="https://raw.githubusercontent.com/kubernetes/kubernetes/${K8S_VERSION}/build/debs/kubelet.service"
+
+echo "Installing kubeadm and kubelet ${K8S_VERSION}..."
+
+echo "sudo mkdir -p /opt/bin"
+echo "curl -L --remote-name-all $K8S_TOOLS_URL/{kubeadm,kubelet}"
+echo "sudo install {kubeadm,kubelet} /opt/bin && rm {kubeadm,kubelet}"
+
+echo "curl -sSL $KUBEADM_CONF_URL | sed "s:/usr/bin:/opt/bin:g" > 10-kubeadm.conf"
+echo "sudo mkdir -p /etc/systemd/system/kubelet.service.d"
+echo "sudo mv 10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+
+echo "curl -sSL $KUBELET_SERVICE_URL | sed "s:/usr/bin:/opt/bin:g" > kubelet.service"
+echo "sudo mv kubelet.service /etc/systemd/system/kubelet.service"
+
+if [ -z ${WITHOUT_KUBECTL+x} ]; then
+    echo
+    echo "Installing kubectl ${K8S_VERSION}..."
+    echo "curl -LO $K8S_TOOLS_URL/kubectl"
+    echo "sudo install kubectl /opt/bin && rm kubectl"
+fi
+
+if [ ! -z ${WITH_CNI+x} ]; then
+    echo
+    echo "Installing CNI plugins ${CNI_VERSION}..."
+    echo "sudo mkdir -p /opt/cni/bin"
+    echo "curl -L $CNI_PLUGINS_URL/cni-plugins-amd64-${CNI_VERSION}.tgz | \
+        sudo tar -C /opt/cni/bin -xz"
+fi
+
+if [ ! -z ${WITH_CRICTL+x} ]; then
+    echo
+    echo "Installing crictl ${CRICTL_VERSION}..."
+    echo "curl -L $CRICTL_URL/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz | \
+        sudo tar -C /opt/bin -xz"
+fi
+
+echo && echo "Enabling kubelet..." && echo "sudo systemctl enable kubelet"
+echo && echo "Enabling docker..." && echo "sudo systemctl enable docker"
+
+if [ -z ${WITHOUT_MASTER_IMAGES+x} ]; then
+    echo
+    echo "Pulling master images..."
+    echo "kubeadm config images pull"
+fi
