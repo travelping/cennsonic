@@ -62,7 +62,7 @@ availability on the same IP address.
 First, we deploy the Iperf3 server:
 
 ```
-$ kubectl run iperf3-server --image=aialferov/nettools --command -- iperf3 -s
+$ kubectl run iperf3-server --image=aialferov/iperf3 -s
 ```
 
 Using the [Example manifest] we create two load balancers with use of the
