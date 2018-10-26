@@ -27,6 +27,11 @@ fi
 
 shift
 
+INSTALL_KUBECTL=true
+INSTALL_CNI=false
+INSTALL_CRICTL=false
+PULL_MASTER_IMAGES=true
+
 for i in "$@"; do
     case $i in
         --k8s-version=*) K8S_VERSION="${i#*=}"; shift ;;
@@ -35,11 +40,11 @@ for i in "$@"; do
         --cni-plugins-url=*) CNI_PLUGINS_URL="${i#*=}"; shift ;;
         --crictl-version=*) CRICTL_VERSION="${i#*=}"; shift ;;
         --crictl-url=*) CRICTL_URL="${i#*=}"; shift ;;
-        --with-cni) WITH_CNI=; shift ;;
-        --with-crictl) WITH_CRICTL=; shift ;;
-        --without-kubectl) WITHOUT_KUBECTL=; shift ;;
-        --without-master-images) WITHOUT_MASTER_IMAGES=; shift ;;
-        *) >&2 echo "Unknown argument: $i"; shift ;;
+        --with-cni) INSTALL_CNI=true; shift ;;
+        --with-crictl) INSTALL_CRICTL=true; shift ;;
+        --without-kubectl) INSTALL_KUBECTL=false; shift ;;
+        --without-master-images) PULL_MASTER_IMAGES=false; shift ;;
+        *) >&2 echo "Unknown argument: $i"; exit 1; shift ;;
     esac
 done
 
@@ -52,44 +57,44 @@ KUBELET_SERVICE_URL="https://raw.githubusercontent.com/kubernetes/kubernetes/${K
 
 echo "Installing kubeadm and kubelet ${K8S_VERSION}..."
 
-echo "sudo mkdir -p /opt/bin"
-echo "curl -L --remote-name-all $K8S_TOOLS_URL/{kubeadm,kubelet}"
-echo "sudo install {kubeadm,kubelet} /opt/bin && rm {kubeadm,kubelet}"
+sudo mkdir -p /opt/bin
+curl -L --remote-name-all $K8S_TOOLS_URL/{kubeadm,kubelet}
+sudo install {kubeadm,kubelet} /opt/bin && rm {kubeadm,kubelet}
 
-echo "curl -sSL $KUBEADM_CONF_URL | sed "s:/usr/bin:/opt/bin:g" > 10-kubeadm.conf"
-echo "sudo mkdir -p /etc/systemd/system/kubelet.service.d"
-echo "sudo mv 10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+curl -sSL $KUBEADM_CONF_URL | sed "s:/usr/bin:/opt/bin:g" > 10-kubeadm.conf
+sudo mkdir -p /etc/systemd/system/kubelet.service.d
+sudo mv 10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 
-echo "curl -sSL $KUBELET_SERVICE_URL | sed "s:/usr/bin:/opt/bin:g" > kubelet.service"
-echo "sudo mv kubelet.service /etc/systemd/system/kubelet.service"
+curl -sSL $KUBELET_SERVICE_URL | sed "s:/usr/bin:/opt/bin:g" > kubelet.service
+sudo mv kubelet.service /etc/systemd/system/kubelet.service
 
-if [ -z ${WITHOUT_KUBECTL+x} ]; then
+$INSTALL_KUBECTL && {
     echo
     echo "Installing kubectl ${K8S_VERSION}..."
-    echo "curl -LO $K8S_TOOLS_URL/kubectl"
-    echo "sudo install kubectl /opt/bin && rm kubectl"
-fi
+    curl -LO $K8S_TOOLS_URL/kubectl
+    sudo install kubectl /opt/bin && rm kubectl
+}
 
-if [ ! -z ${WITH_CNI+x} ]; then
+$INSTALL_CNI && {
     echo
     echo "Installing CNI plugins ${CNI_VERSION}..."
     echo "sudo mkdir -p /opt/cni/bin"
-    echo "curl -L $CNI_PLUGINS_URL/cni-plugins-amd64-${CNI_VERSION}.tgz | \
-        sudo tar -C /opt/cni/bin -xz"
-fi
+    curl -L $CNI_PLUGINS_URL/cni-plugins-amd64-${CNI_VERSION}.tgz | \
+        sudo tar -C /opt/cni/bin -xz
+}
 
-if [ ! -z ${WITH_CRICTL+x} ]; then
+$INSTALL_CRICTL && {
     echo
     echo "Installing crictl ${CRICTL_VERSION}..."
-    echo "curl -L $CRICTL_URL/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz | \
-        sudo tar -C /opt/bin -xz"
-fi
+    curl -L $CRICTL_URL/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz | \
+        sudo tar -C /opt/bin -xz
+}
 
-echo && echo "Enabling kubelet..." && echo "sudo systemctl enable kubelet"
-echo && echo "Enabling docker..." && echo "sudo systemctl enable docker"
+echo && echo "Enabling kubelet..." && sudo systemctl enable kubelet
+echo && echo "Enabling docker..." && sudo systemctl enable docker
 
-if [ -z ${WITHOUT_MASTER_IMAGES+x} ]; then
+$PULL_MASTER_IMAGES && {
     echo
     echo "Pulling master images..."
-    echo "kubeadm config images pull"
-fi
+    kubeadm config images pull
+}
