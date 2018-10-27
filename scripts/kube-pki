@@ -7,5 +7,5 @@ sudo cp /etc/kubernetes/pki/etcd/ca.{crt,key} kubernetes/pki/etcd
 sudo cp /etc/kubernetes/admin.conf kubernetes
 
 sudo chown -R $USER:$USER kubernetes
-tar zcf kubernetes.tgz kubernetes
+tar zcf kube-pki.tgz kubernetes
 rm -rf kubernetes
