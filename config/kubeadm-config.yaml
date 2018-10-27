@@ -1,25 +1,25 @@
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
-kubernetesVersion: v1.12.1
+kubernetesVersion: __K8S_VERSION__
 apiServerCertSANs:
-- "k8s.cennsonic-01.tpmd-01.eu.tpip.net"
-- "172.20.16.140"
-controlPlaneEndpoint: "k8s.cennsonic-01.tpmd-01.eu.tpip.net:6443"
+- "k8s.__CLUSTER__"
+- "__LB_IP__"
+controlPlaneEndpoint: "k8s.__CLUSTER__:6443"
 etcd:
   local:
     extraArgs:
-      listen-client-urls: "https://127.0.0.1:2379,https://172.20.16.143:2379"
-      advertise-client-urls: "https://172.20.16.143:2379"
-      listen-peer-urls: "https://172.20.16.143:2380"
-      initial-advertise-peer-urls: "https://172.20.16.143:2380"
-      initial-cluster: "master-01.cennsonic-01.tpmd-01.eu.tpip.net=https://172.20.16.141:2380,master-03.cennsonic-01.tpmd-01.eu.tpip.net=https://172.20.16.143:2380"
-      initial-cluster-state: existing
+      listen-client-urls: "https://127.0.0.1:2379,https://__IP__:2379"
+      advertise-client-urls: "https://__IP__:2379"
+      listen-peer-urls: "https://__IP__:2380"
+      initial-advertise-peer-urls: "https://__IP__:2380"
+      initial-cluster: "__ETCD_CLUSTER____HOSTNAME__=https://__IP__:2380"
+      initial-cluster-state: "__ETCD_STATE__"
     serverCertSANs:
-    - master-03.cennsonic-01.tpmd-01.eu.tpip.net
-    - 172.20.16.143
+    - __HOSTNAME__
+    - __IP__
     peerCertSANs:
-    - master-03.cennsonic-01.tpmd-01.eu.tpip.net
-    - 172.20.16.143
+    - __HOSTNAME__
+    - __IP__
 networking:
     podSubnet: "10.233.64.0/18"
     serviceSubnet: "10.233.0.0/18"
@@ -30,4 +30,4 @@ apiVersion: kubeadm.k8s.io/v1alpha3
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 clusterDNS:
-- "10.233.0.3"
+- "10.233.0.10"
