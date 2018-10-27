@@ -4,7 +4,7 @@
 #CNI_VERSION=v0.7.1 # https://github.com/containernetworking/plugins/releases
 #CRICTL_VERSION=v1.12.0 # https://github.com/kubernetes-incubator/cri-tools/releases
 
-usage=`cat <<EOF
+USAGE=`cat <<EOF
 Usage: kube-tools install <Version> [Options]
 
 Options
@@ -18,7 +18,7 @@ Options
 EOF`
 
 if [ "$1" != "install" ] || [ -z "$2" ]; then
-    echo "$usage"
+    echo "$USAGE"
     exit 2
 fi
 
@@ -85,7 +85,7 @@ fi
 for SERVICE in kubelet docker; do
     echo
     echo "Enabling $SERVICE..."
-    echo "sudo systemctl enable $SERVICE"
+    sudo systemctl enable $SERVICE
 done
 
 $PULL_MASTER_IMAGES && {
