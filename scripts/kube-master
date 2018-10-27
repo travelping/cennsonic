@@ -1,0 +1,101 @@
+#!/bin/bash
+
+set -ex
+
+USAGE=`cat <<EOF
+Usage: kube-master <Command>
+
+Commands
+    init <IP>  initialize master a node and join cluster if exists
+EOF`
+
+if [ "$1" != "init" ] || [ -z "$2" ]; then
+    echo "$USAGE"
+    exit 2
+fi
+
+K8S_VERSION="$(/opt/bin/kubelet --version | sed 's/.* //')"
+
+CLUSTER="$(hostname -d)"
+HOSTNAME="$(hostname -f)"
+
+IP="$2"
+LB_IP="$(grep k8s.$CLUSTER /etc/hosts | sed 's/ .*//')"
+
+KUBECTL="/opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf"
+KUBE_PKI="kube-pki.tgz"
+
+ETCD_JSON_PATH=`cat <<EOF
+{range .items[*]}{.spec.nodeName}{"=https://"}{.status.podIP}{":2380,"}{end}
+EOF`
+
+if [ ! -f "$KUBE_PKI" ]; then
+    ETCD_CLUSTER=""
+    ETCD_STATE="new"
+else
+    echo
+    echo "Installing existing PKI..."
+    sudo tar xf "$KUBE_PKI" -C /etc
+    sudo chown -R root:root /etc/kubernetes
+    #rm "$KUBE_PKI"
+
+    echo
+    echo "Retrieving existing etcd cluster..."
+    ETCD_CLUSTER="$(sudo $KUBECTL \
+                       -n kube-system get po \
+                       -l component=etcd \
+                       -o jsonpath="$ETCD_JSON_PATH")"
+    ETCD_HOSTNAME="$(sudo $KUBECTL \
+                        -n kube-system get po \
+                        -l component=etcd \
+                        -o jsonpath='{.items[0].spec.nodeName}')"
+    ETCD_IP="$(sudo $KUBECTL \
+                  -n kube-system get po \
+                  -l component=etcd \
+                  -o jsonpath='{.items[0].status.podIP}')"
+    ETCD_STATE="existing"
+fi
+
+sed -i -e s/__K8S_VERSION__/$K8S_VERSION/g \
+       -e s/__CLUSTER__/$CLUSTER/g \
+       -e s/__HOSTNAME__/$HOSTNAME/g \
+       -e s/__IP__/$IP/g \
+       -e s/__LB_IP__/$LB_IP/g \
+       -e s\\__ETCD_CLUSTER__\\$ETCD_CLUSTER\\g \
+       -e s/__ETCD_STATE__/$ETCD_STATE/g kubeadm-config.yaml
+
+CONFIG="--config kubeadm-config.yaml"
+ALPHA_PHASE="kubeadm alpha phase"
+
+if [ "$ETCD_STATE" = "new" ]; then
+    echo
+    echo "Initialising $CLUSTER on $HOSTNAME ($IP), Kubernetes $K8S_VERSION..."
+    sudo kubeadm init $CONFIG
+
+    echo "Installing Calico..."
+    sudo $KUBECTL apply -f calico-rbac-kdd.yaml
+    sudo $KUBECTL apply -f calico.yaml
+else
+    echo
+    echo "Joining $HOSTNAME ($IP) to $CLUSTER, Kubernetes $K8S_VERSION..."
+
+    sudo $ALPHA_PHASE certs all $CONFIG
+    sudo $ALPHA_PHASE kubelet config write-to-disk $CONFIG
+    sudo $ALPHA_PHASE kubelet write-env-file $CONFIG
+    sudo $ALPHA_PHASE kubeconfig kubelet $CONFIG
+    sudo systemctl start kubelet
+
+    sudo $KUBECTL --namespace kube-system \
+                  exec etcd-${ETCD_HOSTNAME} -- \
+             etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
+                     --key-file /etc/kubernetes/pki/etcd/peer.key \
+                     --cert-file /etc/kubernetes/pki/etcd/peer.crt \
+                     --endpoints=https://${ETCD_IP}:2379 \
+                 member add $HOSTNAME https://${IP}:2380
+
+    sudo $ALPHA_PHASE etcd local $CONFIG
+    sudo $ALPHA_PHASE kubeconfig all $CONFIG
+    sudo $ALPHA_PHASE controlplane all $CONFIG
+    sudo $ALPHA_PHASE kubelet config annotate-cri $CONFIG
+    sudo $ALPHA_PHASE mark-master $CONFIG
+fi
