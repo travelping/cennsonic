@@ -18,7 +18,7 @@ Options
 EOF`
 
 if [ "$1" != "install" ] || [ -z "$2" ]; then
-    echo "$USAGE"
+    >&2 echo "$USAGE"
     exit 2
 fi
 
