@@ -41,18 +41,13 @@ function port {
         sed 's/.*\--secure-port=\([0-9]\+\).*/\1/'
 }
 
-COMMAND="$1"
-
-echo ip port token hash | grep -q "$COMMAND" && {
-    echo $("$COMMAND")
-    exit 0
+function join {
+    echo -n "sudo kubeadm join"
+          echo -n " --token $(token) $(ip):$(port)"
+          echo -n " --discovery-token-ca-cert-hash sha256:$(hash)"
 }
 
-if [ "$COMMAND" != "join" ]; then
-    >&2 echo "$USAGE"
-    exit 2
-fi
-
-echo -n "sudo kubeadm join"
-      echo -n " --token $(token) $(ip):$(port)"
-      echo -n " --discovery-token-ca-cert-hash sha256:$(hash)"
+case "$1" in
+    join|ip|port|token|hash) echo $($1) ;;
+    *) >&2 echo "$USAGE"; exit 2 ;;
+esac
