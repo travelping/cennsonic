@@ -4,12 +4,12 @@ set -e
 
 USAGE="Usage: kube-master-pki <Archive>"
 
-ARCHIVE="$1"
-
-if [ -z "$ARCHIVE" ]; then
+if [ -z "$1" ]; then
     >&2 echo "$USAGE"
     exit 2
 fi
+
+ARCHIVE="$1"
 
 mkdir -p kubernetes/pki/etcd
 sudo cp /etc/kubernetes/pki/{ca.{crt,key},sa.{key,pub}} kubernetes/pki

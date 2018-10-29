@@ -25,20 +25,19 @@ function hash {
             openssl dgst -sha256 -hex | sed 's/^.* //'
 }
 
-function ip {
+function api_server_command {
     sudo $KUBECTL get pods \
-             --namespace kube-system \
-             --selector component=kube-apiserver \
-             --output jsonpath='{.items[0].spec.containers[0].command[*]}' | \
-        sed 's/.*\--advertise-address=\([0-9|.]\+\).*/\1/'
+        --namespace kube-system \
+        --selector component=kube-apiserver \
+        --output jsonpath='{.items[0].spec.containers[0].command[*]}'
+}
+
+function ip {
+    api_server_command | sed 's/.*\--advertise-address=\([0-9|.]\+\).*/\1/'
 }
 
 function port {
-    sudo $KUBECTL get pods \
-             --namespace kube-system \
-             --selector component=kube-apiserver \
-             --output jsonpath='{.items[0].spec.containers[0].command[*]}' | \
-        sed 's/.*\--secure-port=\([0-9]\+\).*/\1/'
+    api_server_command | sed 's/.*\--secure-port=\([0-9]\+\).*/\1/'
 }
 
 function join {
