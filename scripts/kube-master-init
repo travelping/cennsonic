@@ -2,7 +2,7 @@
 
 set -e
 
-USAGE="Usage: kube-master-init <IP> [LB IP]"
+USAGE="Usage: kube-master-init <IP> [LB_IFACE:LB_IP]"
 
 function ensure_in_hosts {
     local IP="$1"
@@ -48,7 +48,10 @@ if [ -z "$1" ]; then
 fi
 
 IP="$1"
-LB_IP="${2-$IP}"
+
+LB_IP="${2#*:}"
+LB_IP=${LB_IP:-$IP}
+LB_IFACE="${2%:*}"
 
 K8S_VERSION="$(/opt/bin/kubelet --version | sed 's/.* //')"
 
@@ -95,7 +98,15 @@ if [ "$ETCD_STATE" = "new" ]; then
     sudo $KUBECTL apply -f calico-rbac-kdd.yaml
     sudo $KUBECTL apply -f calico.yaml
 
-    ensure_in_hosts $LB_IP $LB_HOSTNAME
+    if [ "$IP" != "$LB_IP" ]; then
+        echo "Installing Keepalived..."
+        sed -i -e s/__LB_IP__/$LB_IP/ \
+               -e s/__LB_IFACE__/$LB_IFACE/ \
+               -e s/__LB_PASSWORD__/"$(openssl rand -base64 8)"/ keepalived.yaml
+        sudo $KUBECTL apply -f keepalived.yaml
+
+        ensure_in_hosts $LB_IP $LB_HOSTNAME
+    fi
 else
     echo "Joining $HOSTNAME ($IP) to $CLUSTER, Kubernetes $K8S_VERSION..."
 
