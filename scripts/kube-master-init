@@ -2,71 +2,82 @@
 
 set -e
 
-USAGE=`cat <<EOF
-Usage: kube-master <Command>
+USAGE="Usage: kube-master-init <IP> [LB IP]"
 
-Commands
-    init <IP>  initialize a master node
-EOF`
+function ensure_in_hosts {
+    local IP="$1"
+    local HOSTNAME="$2"
+
+    echo "Ensuring $IP $HOSTNAME is in /etc/hosts..."
+    grep $HOSTNAME /etc/hosts && \
+        sudo sed -i 's/.* \($HOSTNAME\)/$IP    \1/' /etc/hosts || \
+        sudo sed -i "$ a $IP    $HOSTNAME" /etc/hosts
+}
+
+function install_pki {
+    local ARCHIVE="$1"
+
+    echo "Installing existing PKI..."
+    sudo tar xf "$ARCHIVE" -C /etc
+    sudo chown -R root:root /etc/kubernetes
+    #rm "$ARCHIVE"
+}
+
+function etcd_cluster {
+    local KUBECTL="$1"
+    JP=`printf %b \
+        '{range .items[*]}' \
+            '{.spec.nodeName}{"=https://"}{.status.podIP}{":2380,"}' \
+        '{end}'`
+    sudo $KUBECTL get pods -o jsonpath="$JP"
+}
+
+function etcd_hostname {
+    local KUBECTL="$1"
+    sudo $KUBECTL get pods -o jsonpath='{.items[0].spec.nodeName}'
+}
+
+function etcd_ip {
+    local KUBECTL="$1"
+    sudo $KUBECTL get pods -o jsonpath='{.items[0].status.podIP}'
+}
 
 if [ "$1" != "init" ] || [ -z "$2" ]; then
     >&2 echo "$USAGE"
     exit 2
 fi
 
+IP="$2"
+LB_IP="${3-$IP}"
+
 K8S_VERSION="$(/opt/bin/kubelet --version | sed 's/.* //')"
 
 CLUSTER="$(hostname -d)"
+
 HOSTNAME="$(hostname -f)"
+LB_HOSTNAME=k8s.$CLUSTER
 
-IP="$2"
-LB_IP="$(grep k8s.$CLUSTER /etc/hosts | sed 's/ .*//')"
+KUBECTL="kubectl --kubeconfig /etc/kubernetes/admin.conf"
+KUBECTL_ETCD="$KUBECTL --namespace kube-system --selector component=etcd"
 
-ETCD_JSON_PATH=`cat <<EOF
-{range .items[*]}{.spec.nodeName}{"=https://"}{.status.podIP}{":2380,"}{end}
-EOF`
+ensure_in_hosts $LB_IP $LB_HOSTNAME
 
-function ensure_lb_lookup { local IP="$1" local HOST="$2"
-    grep $HOST /etc/hosts && \
-        sudo sed -i 's/.* \($HOST\)/$IP    \1/' /etc/hosts || \
-        sudo sed -i "$ a $IP    $HOST" /etc/hosts
-}
-
-KUBECTL="/opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf"
-KUBE_PKI="kube-pki.tgz"
-
-if [ ! -f "$KUBE_PKI" ]; then
+if [ ! -f "kube-pki.tgz" ]; then
     ETCD_CLUSTER=""
     ETCD_STATE="new"
 else
-    echo
-    echo "Installing existing PKI..."
-    sudo tar xf "$KUBE_PKI" -C /etc
-    sudo chown -R root:root /etc/kubernetes
-    #rm "$KUBE_PKI"
+    install_pki kube-pki.tgz
 
-    echo
-    echo "Retrieving existing etcd cluster..."
-    ETCD_CLUSTER="$(sudo $KUBECTL \
-                       -n kube-system get po \
-                       -l component=etcd \
-                       -o jsonpath="$ETCD_JSON_PATH")"
-    ETCD_HOSTNAME="$(sudo $KUBECTL \
-                        -n kube-system get po \
-                        -l component=etcd \
-                        -o jsonpath='{.items[0].spec.nodeName}')"
-    ETCD_IP="$(sudo $KUBECTL \
-                  -n kube-system get po \
-                  -l component=etcd \
-                  -o jsonpath='{.items[0].status.podIP}')"
+    ETCD_CLUSTER=$(etcd_cluster $KUBECTL_ETCD)
     ETCD_STATE="existing"
 fi
 
 sed -i -e s/__K8S_VERSION__/$K8S_VERSION/g \
+       -e s/__LB_HOSTNAME__/$LB_HOSTNAME/g \
+       -e s/__LB_IP__/$LB_IP/g \
        -e s/__CLUSTER__/$CLUSTER/g \
        -e s/__HOSTNAME__/$HOSTNAME/g \
        -e s/__IP__/$IP/g \
-       -e s/__LB_IP__/$LB_IP/g \
        -e s\\__ETCD_CLUSTER__\\$ETCD_CLUSTER\\g \
        -e s/__ETCD_STATE__/$ETCD_STATE/g kubeadm-config.yaml
 
@@ -74,15 +85,17 @@ CONFIG="--config kubeadm-config.yaml"
 ALPHA_PHASE="kubeadm alpha phase"
 
 if [ "$ETCD_STATE" = "new" ]; then
-    echo
+    ensure_in_hosts $IP $LB_HOSTNAME
+
     echo "Initialising $CLUSTER on $HOSTNAME ($IP), Kubernetes $K8S_VERSION..."
     sudo kubeadm init $CONFIG
 
     echo "Installing Calico..."
     sudo $KUBECTL apply -f calico-rbac-kdd.yaml
     sudo $KUBECTL apply -f calico.yaml
+
+    ensure_in_hosts $LB_IP $LB_HOSTNAME
 else
-    echo
     echo "Joining $HOSTNAME ($IP) to $CLUSTER, Kubernetes $K8S_VERSION..."
 
     sudo $ALPHA_PHASE certs all $CONFIG
@@ -90,6 +103,9 @@ else
     sudo $ALPHA_PHASE kubelet write-env-file $CONFIG
     sudo $ALPHA_PHASE kubeconfig kubelet $CONFIG
     sudo systemctl start kubelet
+
+    ETCD_HOSTNAME="$(etcd_hostname $KUBECTL_ETCD)"
+    ETCD_IP="$(etcd_ip $KUBECTL_ETCD)"
 
     echo "Joining etcd $ETCD_HOSTNAME ($ETCD_IP)..."
     sudo $KUBECTL --namespace kube-system \
