@@ -1,0 +1,58 @@
+#!/bin/bash
+
+set -e
+
+USAGE=`cat <<EOF
+Usage: kube-master-info <Command>
+
+Commands
+    join   show complete joining command
+    ip     show joining IP address
+    port   show joining port
+    token  show joining token
+    hash   show joining discovery token CA cert hash
+EOF`
+
+KUBECTL="/opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf"
+
+function token {
+    sudo kubeadm token list | tail -n-1 | sed 's/ .*//'
+}
+
+function hash {
+    openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
+        openssl rsa -pubin -outform der 2>/dev/null | \
+            openssl dgst -sha256 -hex | sed 's/^.* //'
+}
+
+function ip {
+    sudo $KUBECTL get pods \
+             --namespace kube-system \
+             --selector component=kube-apiserver \
+             --output jsonpath='{.items[0].spec.containers[0].command[*]}' | \
+        sed 's/.*\--advertise-address=\([0-9|.]\+\).*/\1/'
+}
+
+function port {
+    sudo $KUBECTL get pods \
+             --namespace kube-system \
+             --selector component=kube-apiserver \
+             --output jsonpath='{.items[0].spec.containers[0].command[*]}' | \
+        sed 's/.*\--secure-port=\([0-9]\+\).*/\1/'
+}
+
+COMMAND="$1"
+
+echo ip port token hash | grep -q "$COMMAND" && {
+    echo $("$COMMAND")
+    exit 0
+}
+
+if [ "$COMMAND" != "join" ]; then
+    >&2 echo "$USAGE"
+    exit 2
+fi
+
+echo -n "sudo kubeadm join"
+      echo -n " --token $(token) $(ip):$(port)"
+      echo -n " --discovery-token-ca-cert-hash sha256:$(hash)"

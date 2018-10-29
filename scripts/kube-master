@@ -7,30 +7,10 @@ Usage: kube-master <Command>
 
 Commands
     init <IP>  initialize a master node
-    info join  show worker join command
 EOF`
 
-KUBECTL="/opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf"
-KUBE_PKI="kube-pki.tgz"
-
-if [ "$1" = "info" ] && [ "$2" = "join" ]; then
-    TOKEN="$(sudo kubeadm token list | tail -n-1 | sed 's/ .*//')"
-    HASH="$(openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
-               openssl rsa -pubin -outform der 2>/dev/null | \
-                   openssl dgst -sha256 -hex | sed 's/^.* //')"
-    IP="$(sudo $KUBECTL \
-              -n kube-system get po \
-              -l component=etcd \
-              -o jsonpath='{.items[0].status.podIP}')"
-    PORT="6443"
-    echo -n "sudo kubeadm join"
-          echo -n " --token $TOKEN $IP:$PORT"
-          echo -n " --discovery-token-ca-cert-hash sha256:$HASH"
-    exit 0
-fi
-
 if [ "$1" != "init" ] || [ -z "$2" ]; then
-    echo "$USAGE"
+    >&2 echo "$USAGE"
     exit 2
 fi
 
@@ -52,11 +32,13 @@ function ensure_lb_lookup { local IP="$1" local HOST="$2"
         sudo sed -i "$ a $IP    $HOST" /etc/hosts
 }
 
+KUBECTL="/opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf"
+KUBE_PKI="kube-pki.tgz"
+
 if [ ! -f "$KUBE_PKI" ]; then
     ETCD_CLUSTER=""
     ETCD_STATE="new"
 else
-
     echo
     echo "Installing existing PKI..."
     sudo tar xf "$KUBE_PKI" -C /etc
