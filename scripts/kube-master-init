@@ -72,7 +72,7 @@ if [ ! -f "kube-pki.tgz" ]; then
 else
     install_pki kube-pki.tgz
 
-    ETCD_CLUSTER=$(etcd_cluster $KUBECTL_ETCD)
+    ETCD_CLUSTER=$(etcd_cluster "$KUBECTL_ETCD")
     ETCD_STATE="existing"
 fi
 
@@ -116,8 +116,8 @@ else
     sudo $ALPHA_PHASE kubeconfig kubelet $CONFIG
     sudo systemctl start kubelet
 
-    ETCD_HOSTNAME="$(etcd_hostname $KUBECTL_ETCD)"
-    ETCD_IP="$(etcd_ip $KUBECTL_ETCD)"
+    ETCD_HOSTNAME=$(etcd_hostname "$KUBECTL_ETCD")
+    ETCD_IP=$(etcd_ip "$KUBECTL_ETCD")
 
     echo "Joining etcd $ETCD_HOSTNAME ($ETCD_IP)..."
     sudo $KUBECTL --namespace kube-system \
