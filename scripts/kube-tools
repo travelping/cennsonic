@@ -73,13 +73,15 @@ if [ -n "$CNI_VERSION" ]; then
     echo
     echo "Installing CNI plugins ${CNI_VERSION}..."
     sudo mkdir -p /opt/cni/bin
-    curl -L $CNI_URL/cni-plugins-amd64-${CNI_VERSION}.tgz | sudo tar -C /opt/cni/bin -xz
+    curl -L $CNI_URL/cni-plugins-amd64-${CNI_VERSION}.tgz | \
+        sudo tar -C /opt/cni/bin -xz
 fi
 
 if [ -n "$CRICTL_VERSION" ]; then
     echo
     echo "Installing crictl ${CRICTL_VERSION}..."
-    curl -L $CRICTL_URL/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz | sudo tar -C /opt/bin -xz
+    curl -L $CRICTL_URL/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz | \
+        sudo tar -C /opt/bin -xz
 fi
 
 for SERVICE in kubelet docker; do
