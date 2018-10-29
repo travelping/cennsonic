@@ -60,6 +60,7 @@ LB_HOSTNAME=k8s.$CLUSTER
 KUBECTL="kubectl --kubeconfig /etc/kubernetes/admin.conf"
 KUBECTL_ETCD="$KUBECTL --namespace kube-system --selector component=etcd"
 
+ensure_in_hosts $IP $HOSTNAME
 ensure_in_hosts $LB_IP $LB_HOSTNAME
 
 if [ ! -f "kube-pki.tgz" ]; then
