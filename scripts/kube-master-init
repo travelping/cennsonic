@@ -9,8 +9,8 @@ function ensure_in_hosts {
     local HOSTNAME="$2"
 
     echo "Ensuring $IP $HOSTNAME is in /etc/hosts..."
-    grep $HOSTNAME /etc/hosts && \
-        sudo sed -i 's/.* \($HOSTNAME\)/$IP    \1/' /etc/hosts || \
+    grep -q $HOSTNAME /etc/hosts && \
+        sudo sed -i "s/.* \($HOSTNAME\)/$IP    \1/" /etc/hosts || \
         sudo sed -i "$ a $IP    $HOSTNAME" /etc/hosts
 }
 
