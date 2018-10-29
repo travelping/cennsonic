@@ -6,8 +6,8 @@ USAGE=`cat <<EOF
 Usage: kube-master <Command>
 
 Commands
-    init <IP>  initialize master a node and join cluster if exists
-    info join  show complete worker join command
+    init <IP>  initialize a master node
+    info join  show worker join command
 EOF`
 
 KUBECTL="/opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf"
@@ -23,8 +23,9 @@ if [ "$1" = "info" ] && [ "$2" = "join" ]; then
               -l component=etcd \
               -o jsonpath='{.items[0].status.podIP}')"
     PORT="6443"
-    echo "sudo kubeadm join --token $TOKEN $IP:$PORT --discovery-token-ca-cert-hash sha256:$HASH"
-
+    echo -n "sudo kubeadm join"
+          echo -n " --token $TOKEN $IP:$PORT"
+          echo -n " --discovery-token-ca-cert-hash sha256:$HASH"
     exit 0
 fi
 
@@ -45,10 +46,17 @@ ETCD_JSON_PATH=`cat <<EOF
 {range .items[*]}{.spec.nodeName}{"=https://"}{.status.podIP}{":2380,"}{end}
 EOF`
 
+function ensure_lb_lookup { local IP="$1" local HOST="$2"
+    grep $HOST /etc/hosts && \
+        sudo sed -i 's/.* \($HOST\)/$IP    \1/' /etc/hosts || \
+        sudo sed -i "$ a $IP    $HOST" /etc/hosts
+}
+
 if [ ! -f "$KUBE_PKI" ]; then
     ETCD_CLUSTER=""
     ETCD_STATE="new"
 else
+
     echo
     echo "Installing existing PKI..."
     sudo tar xf "$KUBE_PKI" -C /etc
@@ -101,6 +109,7 @@ else
     sudo $ALPHA_PHASE kubeconfig kubelet $CONFIG
     sudo systemctl start kubelet
 
+    echo "Joining etcd $ETCD_HOSTNAME ($ETCD_IP)..."
     sudo $KUBECTL --namespace kube-system \
                   exec etcd-${ETCD_HOSTNAME} -- \
              etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
