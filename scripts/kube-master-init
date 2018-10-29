@@ -42,13 +42,13 @@ function etcd_ip {
     sudo $KUBECTL get pods -o jsonpath='{.items[0].status.podIP}'
 }
 
-if [ "$1" != "init" ] || [ -z "$2" ]; then
+if [ -z "$1" ]; then
     >&2 echo "$USAGE"
     exit 2
 fi
 
-IP="$2"
-LB_IP="${3-$IP}"
+IP="$1"
+LB_IP="${2-$IP}"
 
 K8S_VERSION="$(/opt/bin/kubelet --version | sed 's/.* //')"
 
