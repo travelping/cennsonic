@@ -8,7 +8,7 @@ function ensure_in_hosts {
     local IP="$1"
     local HOSTNAME="$2"
 
-    echo "Ensuring $IP $HOSTNAME is in /etc/hosts..."
+    echo "[$(node)] Ensuring $IP $HOSTNAME is in /etc/hosts..."
     grep -q $HOSTNAME /etc/hosts && \
         sudo sed -i "s/.* \($HOSTNAME\)/$IP    \1/" /etc/hosts || \
         sudo sed -i "$ a $IP    $HOSTNAME" /etc/hosts
@@ -18,14 +18,14 @@ function delete_from_hosts {
     local IP="$1"
     local HOSTNAME="$2"
 
-    echo "Deleting $IP $HOSTNAME from /etc/hosts..."
+    echo "[$(node)] Deleting $IP $HOSTNAME from /etc/hosts..."
     sudo sed -i "/$IP    $HOSTNAME/d" /etc/hosts
 }
 
 function make_pki {
     local ARCHIVE="$1"
 
-    echo "Making PKI archive $ARCHIVE..."
+    echo "[$(node)] Making PKI archive $ARCHIVE..."
     mkdir -p kubernetes/pki/etcd
     sudo cp /etc/kubernetes/pki/{ca.{crt,key},sa.{key,pub}} kubernetes/pki
     sudo cp /etc/kubernetes/pki/front-proxy-ca.{crt,key} kubernetes/pki
@@ -40,7 +40,7 @@ function make_pki {
 function install_pki {
     local ARCHIVE="$1"
 
-    echo "Installing existing PKI from $ARCHIVE..."
+    echo "[$(node)] Installing existing PKI from $ARCHIVE..."
     sudo tar xf "$ARCHIVE" -C /etc
     sudo chown -R root:root /etc/kubernetes
     #rm "$ARCHIVE"
@@ -112,22 +112,22 @@ CONFIG="--config kubeadm-config.yaml"
 ALPHA_PHASE="kubeadm alpha phase"
 
 if [ "$ETCD_STATE" = "new" ]; then
-    echo "Initialising $CLUSTER on $HOSTNAME ($IP), Kubernetes $K8S_VERSION..."
+    echo "[$(node)] Initialising $CLUSTER..."
     sudo kubeadm init $CONFIG
 
-    echo "Installing Calico..."
+    echo "[$(node)] Installing Calico..."
     sudo $KUBECTL apply -f calico-rbac-kdd.yaml
     sudo $KUBECTL apply -f calico.yaml
 
 #   if [ "$IP" != "$LB_IP" ]; then
-#       echo "Installing Keepalived..."
+#       echo "[$(node)] Installing Keepalived..."
 #       sed -i -e s/__LB_IP__/$LB_IP/ \
 #              -e s/__LB_IFACE__/$LB_IFACE/ \
 #              -e s/__LB_PASSWORD__/"$(openssl rand -base64 8)"/ keepalived.yaml
 #       sudo $KUBECTL apply -f keepalived.yaml
 #   fi
 else
-    echo "Joining $HOSTNAME ($IP) to $CLUSTER, Kubernetes $K8S_VERSION..."
+    echo "[$(node)] Joining $CLUSTER..."
 
     sudo $ALPHA_PHASE certs all $CONFIG
     sudo $ALPHA_PHASE kubelet config write-to-disk $CONFIG
@@ -138,7 +138,7 @@ else
     ETCD_HOSTNAME=$(etcd_hostname "$KUBECTL_ETCD")
     ETCD_IP=$(etcd_ip "$KUBECTL_ETCD")
 
-    echo "Joining etcd $ETCD_HOSTNAME ($ETCD_IP)..."
+    echo "[$(node)] Joining etcd $ETCD_HOSTNAME ($ETCD_IP)..."
     sudo $KUBECTL --namespace kube-system \
                   exec etcd-${ETCD_HOSTNAME} -- \
              etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
