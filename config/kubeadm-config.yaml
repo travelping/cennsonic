@@ -2,9 +2,8 @@ apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
 kubernetesVersion: __K8S_VERSION__
 apiServerCertSANs:
-- "__LB_HOSTNAME__"
-- "__LB_IP__"
-controlPlaneEndpoint: "__LB_HOSTNAME__:6443"
+- "__API_HOSTNAME__"
+controlPlaneEndpoint: "__API_HOSTNAME__:6443"
 etcd:
   local:
     extraArgs:
