@@ -4,6 +4,10 @@ set -e
 
 USAGE="Usage: kube-master-init <IP> [API IP]"
 
+function node {
+    hostname -s
+}
+
 function ensure_in_hosts {
     local IP="$1"
     local HOSTNAME="$2"
@@ -43,7 +47,7 @@ function install_pki {
     echo "[$(node)] Installing existing PKI from $ARCHIVE..."
     sudo tar xf "$ARCHIVE" -C /etc
     sudo chown -R root:root /etc/kubernetes
-    #rm "$ARCHIVE"
+    rm "$ARCHIVE"
 }
 
 function etcd_cluster {
@@ -63,6 +67,49 @@ function etcd_hostname {
 function etcd_ip {
     local KUBECTL="$1"
     sudo $KUBECTL get pods --output jsonpath='{.items[0].status.podIP}'
+}
+
+function token {
+    sudo kubeadm token list | tail -n-1 | sed 's/ .*//'
+}
+
+function discovery_token_ca_cert_hash {
+    openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
+        openssl rsa -pubin -outform der 2>/dev/null | \
+            openssl dgst -sha256 -hex | sed 's/^.* //'
+}
+
+function api_server_command {
+    local KUBECTL="$1"
+    sudo $KUBECTL get pods \
+        --namespace kube-system \
+        --selector component=kube-apiserver \
+        --output jsonpath='{.items[0].spec.containers[0].command[*]}'
+}
+
+function api_server_ip {
+    local KUBECTL="$1"
+    api_server_command "$KUBECTL" | \
+        sed 's/.*\--advertise-address=\([0-9|.]\+\).*/\1/'
+}
+
+function api_server_port {
+    local KUBECTL="$1"
+    api_server_command "$KUBECTL" | \
+        sed 's/.*\--secure-port=\([0-9]\+\).*/\1/'
+}
+
+function join_command {
+    local KUBECTL="$1"
+
+    local TOKEN=$(token "$KUBECTL")
+    local HASH=$(discovery_token_ca_cert_hash "$KUBECTL")
+    local IP=$(api_server_ip "$KUBECTL")
+    local PORT=$(api_server_port "$KUBECTL")
+
+    echo -n "sudo kubeadm join"
+          echo -n " --token $TOKEN $IP:$PORT"
+          echo -n " --discovery-token-ca-cert-hash sha256:$HASH"
 }
 
 if [ -z "$1" ]; then
