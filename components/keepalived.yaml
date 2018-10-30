@@ -12,16 +12,16 @@ data:
   keepalived.conf: |
     vrrp_instance VI_1 {
         state MASTER
-        interface __LB_IFACE__
+        interface _LB_IFACE_
         virtual_router_id 1
         priority 100
         advert_int 1
         authentication {
             auth_type PASS
-            auth_pass __LB_PASSWORD__
+            auth_pass _LB_PASSWORD_
         }
         virtual_ipaddress {
-            __LB_IP__
+            _LB_IP_
         }
     }
 ---

@@ -1,24 +1,24 @@
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
-kubernetesVersion: __K8S_VERSION__
+kubernetesVersion: _K8S_VERSION_
 apiServerCertSANs:
-- "__API_HOSTNAME__"
-controlPlaneEndpoint: "__API_HOSTNAME__:6443"
+- "_API_HOSTNAME_"
+controlPlaneEndpoint: "_API_HOSTNAME_:6443"
 etcd:
   local:
     extraArgs:
-      listen-client-urls: "https://127.0.0.1:2379,https://__IP__:2379"
-      advertise-client-urls: "https://__IP__:2379"
-      listen-peer-urls: "https://__IP__:2380"
-      initial-advertise-peer-urls: "https://__IP__:2380"
-      initial-cluster: "__ETCD_CLUSTER____HOSTNAME__=https://__IP__:2380"
-      initial-cluster-state: "__ETCD_STATE__"
+      listen-client-urls: "https://127.0.0.1:2379,https://_NODE_IP_:2379"
+      advertise-client-urls: "https://_NODE_IP_:2379"
+      listen-peer-urls: "https://_NODE_IP_:2380"
+      initial-advertise-peer-urls: "https://_NODE_IP_:2380"
+      initial-cluster: "_ETCD_CLUSTER__NODE_HOSTNAME_=https://_NODE_IP_:2380"
+      initial-cluster-state: "_ETCD_STATE_"
     serverCertSANs:
-    - __HOSTNAME__
-    - __IP__
+    - "_NODE_HOSTNAME_"
+    - "_NODE_IP_"
     peerCertSANs:
-    - __HOSTNAME__
-    - __IP__
+    - "_NODE_HOSTNAME_"
+    - "_NODE_IP_"
 networking:
     podSubnet: "10.233.64.0/18"
     serviceSubnet: "10.233.0.0/18"
