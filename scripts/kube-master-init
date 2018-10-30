@@ -14,10 +14,33 @@ function ensure_in_hosts {
         sudo sed -i "$ a $IP    $HOSTNAME" /etc/hosts
 }
 
+function delete_from_hosts {
+    local IP="$1"
+    local HOSTNAME="$2"
+
+    echo "Deleting $IP $HOSTNAME from /etc/hosts..."
+    sudo sed -i "/$IP    $HOSTNAME/d" /etc/hosts
+}
+
+function make_pki {
+    local ARCHIVE="$1"
+
+    echo "Making PKI archive $ARCHIVE..."
+    mkdir -p kubernetes/pki/etcd
+    sudo cp /etc/kubernetes/pki/{ca.{crt,key},sa.{key,pub}} kubernetes/pki
+    sudo cp /etc/kubernetes/pki/front-proxy-ca.{crt,key} kubernetes/pki
+    sudo cp /etc/kubernetes/pki/etcd/ca.{crt,key} kubernetes/pki/etcd
+    sudo cp /etc/kubernetes/admin.conf kubernetes
+
+    sudo chown -R $USER:$USER kubernetes
+    tar zcf $ARCHIVE kubernetes
+    rm -rf kubernetes
+}
+
 function install_pki {
     local ARCHIVE="$1"
 
-    echo "Installing existing PKI..."
+    echo "Installing existing PKI from $ARCHIVE..."
     sudo tar xf "$ARCHIVE" -C /etc
     sudo chown -R root:root /etc/kubernetes
     #rm "$ARCHIVE"
