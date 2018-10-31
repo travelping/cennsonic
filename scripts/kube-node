@@ -88,7 +88,7 @@ function pki_install {
 }
 
 function kubeadm {
-    sudo /opt/bin/kubeadm --config kubeadm-config.yaml $*
+    sudo /opt/bin/kubeadm --config /etc/kubernetes/manifests/kubeadm.yaml $*
 }
 function kubeadm_alpha {
     kubeadm alpha phase $*
@@ -173,7 +173,8 @@ function master_prepare {
            -e s/_NODE_HOSTNAME_/$(node_hostname)/g \
            -e s/_NODE_IP_/$NODE_IP/g \
            -e s\\_ETCD_CLUSTER_\\$ETCD_CLUSTER\\g \
-           -e s/_ETCD_STATE_/$ETCD_STATE/g kubeadm-config.yaml
+           -e s/_ETCD_STATE_/$ETCD_STATE/g \
+           /etc/kubernetes/manifests/kubeadm.yaml
 }
 
 function master_init {
@@ -181,15 +182,16 @@ function master_init {
     kubeadm init
 
     echo "$(prefix) Installing Calico..."
-    kubectl apply -f calico-rbac-kdd.yaml
-    kubectl apply -f calico.yaml
+    kubectl apply -f /etc/kubernetes/manifests/calico-rbac-kdd.yaml
+    kubectl apply -f /etc/kubernetes/manifests/calico.yaml
 
 #   if [ "$NODE_IP" != "$LB_IP" ]; then
 #       echo "$(prefix) Installing Keepalived..."
 #       sed -i -e s/_LB_IP_/$LB_IP/ \
 #              -e s/_LB_IFACE_/$LB_IFACE/ \
-#              -e s/_LB_PASSWORD_/"$(openssl rand -base64 8)"/ keepalived.yaml
-#       kubectl apply -f keepalived.yaml
+#              -e s/_LB_PASSWORD_/"$(openssl rand -base64 8)"/ \
+#              /etc/kubernetes/manifests/keepalived.yaml
+#       kubectl apply -f /etc/kubernetes/manifests/keepalived.yaml
 #   fi
 }
 

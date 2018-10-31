@@ -58,9 +58,12 @@ sudo install {kubeadm,kubelet} /opt/bin && rm {kubeadm,kubelet}
 curl -sSL $KUBEADM_CONF_URL | sed "s:/usr/bin:/opt/bin:g" > 10-kubeadm.conf
 sudo mkdir -p /etc/systemd/system/kubelet.service.d
 sudo mv 10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+sudo chown root:root /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 
 curl -sSL $KUBELET_SERVICE_URL | sed "s:/usr/bin:/opt/bin:g" > kubelet.service
 sudo mv kubelet.service /etc/systemd/system/kubelet.service
+sudo chown root:root /etc/systemd/system/kubelet.service
+sudo chmod 444 /etc/systemd/system/kubelet.service
 
 $INSTALL_KUBECTL && {
     echo
