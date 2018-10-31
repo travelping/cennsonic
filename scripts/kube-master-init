@@ -3,7 +3,7 @@
 set -e
 
 USAGE=`cat <<EOF
-Usage: kube-master-init <Node IP> [API IP]
+Usage: kube-master-init <Node IP> <API IP>
 EOF`
 
 function usage {
@@ -203,19 +203,23 @@ function worker_join_command {
           echo -n " --discovery-token-ca-cert-hash sha256:$HASH"
 }
 
+function master_install {
+    local NODE_IP="$1"
+    local API_IP="${2:-$NODE_IP}" # use "$NODE_IP" if "$2" is not set
+
+    [ -n "$NODE_IP" ] && [ -n "API_IP" ] || usage
+
+    ensure_hosts "$NODE_IP" "$API_IP"
+    master_prepare "$NODE_IP" kube-pki.tgz
+
+    kubectl config current-context >/dev/null 2>&1 && \
+        master_join "$NODE_IP" || \
+        master_init
+}
+
 function node_reset {
     sudo /opt/bin/kubeadm reset -f
     reset_hosts
 }
 
-[ -z "$1" ] && usage
-
-NODE_IP="$1"
-API_IP="${2:-$NODE_IP}" # use "$NODE_IP" if "$2" is not set
-
-ensure_hosts "$NODE_IP" "$API_IP"
-master_prepare "$NODE_IP" kube-pki.tgz
-
-kubectl config current-context >/dev/null 2>&1 && \
-    master_join "$NODE_IP" || \
-    master_init
+master_install "$1" "$2"
