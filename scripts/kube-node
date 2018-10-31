@@ -2,16 +2,15 @@
 
 set -e
 
-#   master pki make <PKI Archive>
-#   master join info
-#   worker join <Join Info>
-#   reset
-
 USAGE=`cat <<EOF
 Usage: kube-node <Command>
 
 Commands:
     master install <Node IP> <API IP>
+    master pki make <PKI Archive>
+    master join info
+    worker join <Node IP> <API IP> <Join Info>
+    reset
 EOF`
 
 function usage {
@@ -48,7 +47,7 @@ function ensure_in_hosts {
 function delete_from_hosts {
     local HOSTNAME="$1"
 
-    echo "[$(node)] Deleting $IP $HOSTNAME from /etc/hosts..."
+    echo "[$(node)] Deleting $HOSTNAME from /etc/hosts..."
     sudo sed -i "/$HOSTNAME/d" /etc/hosts
 }
 function ensure_hosts {
@@ -67,6 +66,7 @@ function pki_make {
     local ARCHIVE="$1"
 
     echo "[$(node)] Making PKI archive $ARCHIVE..."
+
     mkdir -p kubernetes/pki/etcd
     sudo cp /etc/kubernetes/pki/{ca.{crt,key},sa.{key,pub}} kubernetes/pki
     sudo cp /etc/kubernetes/pki/front-proxy-ca.{crt,key} kubernetes/pki
@@ -206,19 +206,11 @@ function master_join {
     kubeadm_alpha mark-master
 }
 
-function worker_join_command {
-    local HASH=$(discovery_token_ca_cert_hash)
-
-    echo -n "sudo kubeadm join"
-          echo -n " --token $(token) $(api_server_ip):$(api_server_port)"
-          echo -n " --discovery-token-ca-cert-hash sha256:$HASH"
-}
-
 function master_install {
     local NODE_IP="$1"
     local API_IP="$2"
 
-    [ -n "$NODE_IP" ] && [ -n "$API_IP" ] || usage
+    echo "[$(node)] Installing master of $(cluster_name)..."
 
     ensure_hosts "$NODE_IP" "$API_IP"
     master_prepare "$NODE_IP" kube-pki.tgz
@@ -228,13 +220,47 @@ function master_install {
         master_init
 }
 
-function node_reset {
+function master_join_info {
+    local HASH=$(discovery_token_ca_cert_hash)
+
+    echo -n "--token $(token) "
+    echo -n "$(api_server_ip):$(api_server_port) "
+    echo -n "--discovery-token-ca-cert-hash sha256:$HASH"
+}
+
+function worker_join {
+    local NODE_IP="$1"
+    local API_IP="$2"
+    local JOIN_INFO="$3"
+
+    echo "[$(node)] Joining worker of $(cluster_name)..."
+    ensure_hosts "$NODE_IP" "$API_IP"
+    sudo /opt/bin/kubeadm join $JOIN_INFO
+}
+
+function reset {
+    echo "[$(node)] Resetting node of $(cluster_name)..."
     sudo /opt/bin/kubeadm reset -f
     reset_hosts
 }
 
-case "$1 $2" in
-    "master install") master_install "$3" "$4" ;;
+case "$1 $2 $3 $4 $5" in
+    "master install $3 $4 ")
+        [ -n "$3" ] && [ -n "$4" ] || usage
+        master_install "$3" "$4"
+    ;;
+    "master pki make $4 ")
+        [ -n "$4" ] || usage
+        pki_make "$4"
+    ;;
+    "master join info  ")
+        master_join_info
+    ;;
+    "worker join $3 $4 $5")
+        echo "PP: $5"
+        [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] || usage
+        worker_join "$3" "$4" "$5"
+    ;;
+    "reset    ") reset ;;
+    *) usage ;;
 esac
-
-usage
