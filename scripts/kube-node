@@ -2,8 +2,16 @@
 
 set -e
 
+#   master pki make <PKI Archive>
+#   master join info
+#   worker join <Join Info>
+#   reset
+
 USAGE=`cat <<EOF
-Usage: kube-master-init <Node IP> <API IP>
+Usage: kube-node <Command>
+
+Commands:
+    master install <Node IP> <API IP>
 EOF`
 
 function usage {
@@ -44,8 +52,11 @@ function delete_from_hosts {
     sudo sed -i "/$HOSTNAME/d" /etc/hosts
 }
 function ensure_hosts {
-    ensure_in_hosts "$1" "$(node_hostname)"
-    ensure_in_hosts "$2" "$(api_hostname)"
+    local NODE_IP="$1"
+    local API_IP="$2"
+
+    ensure_in_hosts "$NODE_IP" "$(node_hostname)"
+    ensure_in_hosts "$API_IP" "$(api_hostname)"
 }
 function reset_hosts {
     delete_from_hosts "$(node_hostname)"
@@ -205,9 +216,9 @@ function worker_join_command {
 
 function master_install {
     local NODE_IP="$1"
-    local API_IP="${2:-$NODE_IP}" # use "$NODE_IP" if "$2" is not set
+    local API_IP="$2"
 
-    [ -n "$NODE_IP" ] && [ -n "API_IP" ] || usage
+    [ -n "$NODE_IP" ] && [ -n "$API_IP" ] || usage
 
     ensure_hosts "$NODE_IP" "$API_IP"
     master_prepare "$NODE_IP" kube-pki.tgz
@@ -222,4 +233,8 @@ function node_reset {
     reset_hosts
 }
 
-master_install "$1" "$2"
+case "$1 $2" in
+    "master install") master_install "$3" "$4" ;;
+esac
+
+usage
