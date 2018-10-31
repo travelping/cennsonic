@@ -137,6 +137,21 @@ function api_server_port {
     api_server_command | sed 's/.*\--secure-port=\([0-9]\+\).*/\1/'
 }
 
+function wait_pod {
+    local NAMESPACE="$1"
+    local POD_NAME="$2"
+
+    while [ "$(kubectl get pod "$POD_NAME" \
+                   --namespace "$NAMESPACE" \
+                   --output jsonpath={.status.containerStatuses[0].ready} \
+                   2>/dev/null \
+              )" != "true" ]
+    do
+        echo "$(prefix) Waiting for $NAMESPACE/$POD_NAME..."
+        sleep 5
+    done
+}
+
 function master_prepare {
     local NODE_IP="$1"
     local PKI_ARCHIVE="$2"
