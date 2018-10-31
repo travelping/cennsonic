@@ -158,6 +158,9 @@ function master_prepare {
 
     echo "$(prefix) Preparing master of $(cluster_name)..."
 
+    sudo mkdir -p /etc/kubernetes/manifests
+    sudo cp /etc/cennsonic/manifests/* /etc/kubernetes/manifests
+
     local ETCD_CLUSTER=""
     local ETCD_STATE="new"
 
@@ -168,13 +171,13 @@ function master_prepare {
         ETCD_STATE="existing"
     fi
 
-    sed -i -e s/_K8S_VERSION_/$(k8s_version)/g \
-           -e s/_API_HOSTNAME_/$(api_hostname)/g \
-           -e s/_NODE_HOSTNAME_/$(node_hostname)/g \
-           -e s/_NODE_IP_/$NODE_IP/g \
-           -e s\\_ETCD_CLUSTER_\\$ETCD_CLUSTER\\g \
-           -e s/_ETCD_STATE_/$ETCD_STATE/g \
-           /etc/kubernetes/manifests/kubeadm.yaml
+    sudo sed -i -e s/_K8S_VERSION_/$(k8s_version)/g \
+                -e s/_API_HOSTNAME_/$(api_hostname)/g \
+                -e s/_NODE_HOSTNAME_/$(node_hostname)/g \
+                -e s/_NODE_IP_/$NODE_IP/g \
+                -e s\\_ETCD_CLUSTER_\\$ETCD_CLUSTER\\g \
+                -e s/_ETCD_STATE_/$ETCD_STATE/g \
+                /etc/kubernetes/manifests/kubeadm.yaml
 }
 
 function master_init {
@@ -187,10 +190,10 @@ function master_init {
 
 #   if [ "$NODE_IP" != "$LB_IP" ]; then
 #       echo "$(prefix) Installing Keepalived..."
-#       sed -i -e s/_LB_IP_/$LB_IP/ \
-#              -e s/_LB_IFACE_/$LB_IFACE/ \
-#              -e s/_LB_PASSWORD_/"$(openssl rand -base64 8)"/ \
-#              /etc/kubernetes/manifests/keepalived.yaml
+#       sudo sed -i -e s/_LB_IP_/$LB_IP/ \
+#                   -e s/_LB_IFACE_/$LB_IFACE/ \
+#                   -e s/_LB_PASSWORD_/"$(openssl rand -base64 8)"/ \
+#                   /etc/kubernetes/manifests/keepalived.yaml
 #       kubectl apply -f /etc/kubernetes/manifests/keepalived.yaml
 #   fi
 }
