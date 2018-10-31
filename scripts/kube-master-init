@@ -38,19 +38,18 @@ function ensure_in_hosts {
         sudo sed -i "$ a $IP    $HOSTNAME" /etc/hosts
 }
 function delete_from_hosts {
-    local IP="$1"
-    local HOSTNAME="$2"
+    local HOSTNAME="$1"
 
     echo "[$(node)] Deleting $IP $HOSTNAME from /etc/hosts..."
-    sudo sed -i "/$IP    $HOSTNAME/d" /etc/hosts
+    sudo sed -i "/$HOSTNAME/d" /etc/hosts
 }
 function ensure_hosts {
     ensure_in_hosts "$1" "$(node_hostname)"
     ensure_in_hosts "$2" "$(api_hostname)"
 }
 function reset_hosts {
-    delete_from_hosts "$1" "$(node_hostname)"
-    delete_from_hosts "$2" "$(api_hostname)"
+    delete_from_hosts "$(node_hostname)"
+    delete_from_hosts "$(api_hostname)"
 }
 
 function pki_make {
@@ -128,10 +127,10 @@ function api_server_port {
 }
 
 function master_prepare {
-    echo "[$(node)] Preparing master of $(cluster_name)..."
-
     local NODE_IP="$1"
     local PKI_ARCHIVE="$2"
+
+    echo "[$(node)] Preparing master of $(cluster_name)..."
 
     local ETCD_CLUSTER=""
     local ETCD_STATE="new"
@@ -202,6 +201,11 @@ function worker_join_command {
     echo -n "sudo kubeadm join"
           echo -n " --token $(token) $(api_server_ip):$(api_server_port)"
           echo -n " --discovery-token-ca-cert-hash sha256:$HASH"
+}
+
+function node_reset {
+    sudo /opt/bin/kubeadm reset -f
+    reset_hosts
 }
 
 [ -z "$1" ] && usage
