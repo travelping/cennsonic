@@ -65,6 +65,11 @@ sudo mv kubelet.service /etc/systemd/system/kubelet.service
 sudo chown root:root /etc/systemd/system/kubelet.service
 sudo chmod 444 /etc/systemd/system/kubelet.service
 
+sudo mkdir -p /etc/cennsonic/manifests
+curl -L --remote-name-all https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/{kubeadm.yaml,calico.yaml,calico-rbac-kdd.yaml,keepalived.yaml}
+sudo mv {kubeadm.yaml,calico.yaml,calico-rbac-kdd.yaml,keepalived.yaml} /etc/cennsonic/manifests
+sudo chown root:root /etc/cennsonic/manifests/*
+
 $INSTALL_KUBECTL && {
     echo
     echo "Installing kubectl ${K8S_VERSION}..."
