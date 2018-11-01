@@ -1,111 +1,202 @@
 #!/bin/bash
 
+set -e
+
 #K8S_VERSION=v1.12.1 # https://github.com/kubernetes/kubernetes/releases
 #CNI_VERSION=v0.7.1 # https://github.com/containernetworking/plugins/releases
 #CRICTL_VERSION=v1.12.0 # https://github.com/kubernetes-incubator/cri-tools/releases
-CALICO_VERSION=v3.1.3
+#CALICO_VERSION=v3.1.3 # https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/calico
 
 USAGE=`cat <<EOF
-Usage: kube-tools install <Version> [Options]
+Usage: kube-tools install <Target> <Args>
 
-Options
-    --with-cni=<Version>     install CNI plugins of the specified version
-    --with-crictl=<Version>  install crictl of the specified version
-    --without-kubectl        skip kubectl installation
-    --without-master-images  skip pulling master images
-    --k8s-tools-url=<URL>    kube{adm,let,ctl} URL to download
-    --cni-url=<URL>          CNI plugins URL to download
-    --crictl-url=<URL>       crictl URL to download
+Targets
+    master0 <Version> <Calico Version>
+    master <Version> <Calico Version>
+    worker <Version> <Calico Version>
+    kubeadm-kubelet <Version>
+    kubectl <Version>
+    crictl <Version>
+    cni-plugins <Version>
+    master-config <File>
 EOF`
 
-if [ "$1" != "install" ] || [ -z "$2" ]; then
+function usage {
     >&2 echo "$USAGE"
     exit 2
-fi
+}
 
-K8S_VERSION="$2"
+function prefix {
+    echo "[$(date -uIseconds | sed s/\+.*//)][$(hostname -s)]"
+}
 
-INSTALL_KUBECTL=true
-PULL_MASTER_IMAGES=true
+function install_kubeadm_kubelet {
+    local VERSION="$1"
 
-shift 2
+    local BIN_URL=`printf %b \
+        "https://storage.googleapis.com/kubernetes-release/release" \
+        "/${VERSION}/bin/linux/amd64"`
 
-for i in "$@"; do
-    case $i in
-        --with-cni=*) CNI_VERSION="${i#*=}"; shift ;;
-        --with-crictl=*) CRICTL_VERSION="${i#*=}"; shift ;;
-        --without-kubectl) INSTALL_KUBECTL=false; shift ;;
-        --without-master-images) PULL_MASTER_IMAGES=false; shift ;;
-        --k8s-tools-url=*) K8S_TOOLS_URL="${i#*=}"; shift ;;
-        --cni-url=*) CNI_URL="${i#*=}"; shift ;;
-        --crictl-url=*) CRICTL_URL="${i#*=}"; shift ;;
-        *) >&2 echo "Unknown argument: $i"; exit 2; shift ;;
-    esac
-done
+    local CFG_URL=`printf %b \
+        "https://raw.githubusercontent.com/kubernetes/kubernetes" \
+        "/${VERSION}/build/debs"`
 
-K8S_TOOLS_URL="${K8S_TOOLS_URL:-https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64}"
-CNI_URL="${CNI_URL:-https://github.com/containernetworking/plugins/releases/download/${CNI_VERSION}}"
-CRICTL_URL="${CRICTL_URL:-https://github.com/kubernetes-incubator/cri-tools/releases/download/${CRICTL_VERSION}}"
+    local SYSTEM_D="/etc/systemd/system"
 
-KUBEADM_CONF_URL="https://raw.githubusercontent.com/kubernetes/kubernetes/${K8S_VERSION}/build/debs/10-kubeadm.conf"
-KUBELET_SERVICE_URL="https://raw.githubusercontent.com/kubernetes/kubernetes/${K8S_VERSION}/build/debs/kubelet.service"
+    echo "$(prefix) Installing kubeadm and kubelet ${VERSION}..."
 
-echo "Installing kubeadm and kubelet ${K8S_VERSION}..."
+    curl -L --remote-name-all "${BIN_URL}/{kubeadm,kubelet}"
+    sudo mkdir -p /opt/bin
+    sudo install {kubeadm,kubelet} /opt/bin && rm {kubeadm,kubelet}
 
-sudo mkdir -p /opt/bin
-curl -L --remote-name-all $K8S_TOOLS_URL/{kubeadm,kubelet}
-sudo install {kubeadm,kubelet} /opt/bin && rm {kubeadm,kubelet}
+    curl -L --remote-name-all "${CFG_URL}/{10-kubeadm.conf,kubelet.service}"
+    sed -i "s:/usr/bin:/opt/bin:g" {10-kubeadm.conf,kubelet.service}
 
-curl -sSL $KUBEADM_CONF_URL | sed "s:/usr/bin:/opt/bin:g" > 10-kubeadm.conf
-sudo mkdir -p /etc/systemd/system/kubelet.service.d
-sudo mv 10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-sudo chown root:root /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+    sudo mkdir -p "${SYSTEM_D}/kubelet.service.d"
+    sudo install -m 644 10-kubeadm.conf "${SYSTEM_D}/kubelet.service.d/10-kubeadm.conf"
+    sudo install -m 444 kubelet.service "${SYSTEM_D}/kubelet.service"
+    rm {10-kubeadm.conf,kubelet.service}
+}
 
-curl -sSL $KUBELET_SERVICE_URL | sed "s:/usr/bin:/opt/bin:g" > kubelet.service
-sudo mv kubelet.service /etc/systemd/system/kubelet.service
-sudo chown root:root /etc/systemd/system/kubelet.service
-sudo chmod 444 /etc/systemd/system/kubelet.service
+function install_kubectl {
+    local VERSION="$1"
 
-sudo mkdir -p /etc/cennsonic/manifests
-curl -L --remote-name-all https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/{kubeadm.yaml,calico.yaml,calico-rbac-kdd.yaml,keepalived.yaml}
-sudo mv {kubeadm.yaml,calico.yaml,calico-rbac-kdd.yaml,keepalived.yaml} /etc/cennsonic/manifests
-sudo chown root:root /etc/cennsonic/manifests/*
+    local URL=`printf %b \
+        "https://storage.googleapis.com/kubernetes-release/release" \
+        "/${VERSION}/bin/linux/amd64"`
 
-$INSTALL_KUBECTL && {
-    echo
-    echo "Installing kubectl ${K8S_VERSION}..."
-    curl -LO $K8S_TOOLS_URL/kubectl
+    echo "$(prefix) Installing kubectl ${VERSION}..."
+    curl -LO "${URL}/kubectl"
+    sudo mkdir -p /opt/bin
     sudo install kubectl /opt/bin && rm kubectl
 }
 
-if [ -n "$CNI_VERSION" ]; then
-    echo
-    echo "Installing CNI plugins ${CNI_VERSION}..."
-    sudo mkdir -p /opt/cni/bin
-    curl -L $CNI_URL/cni-plugins-amd64-${CNI_VERSION}.tgz | \
-        sudo tar -C /opt/cni/bin -xz
-fi
+function install_crictl {
+    local VERSION="$1"
 
-if [ -n "$CRICTL_VERSION" ]; then
-    echo
-    echo "Installing crictl ${CRICTL_VERSION}..."
-    curl -L $CRICTL_URL/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz | \
-        sudo tar -C /opt/bin -xz
-fi
+    local URL=`printf %b \
+        "https://github.com/kubernetes-incubator/cri-tools" \
+        "/releases/download/${VERSION}"`
 
-for SERVICE in kubelet docker; do
-    echo
-    echo "Enabling $SERVICE..."
-    sudo systemctl enable $SERVICE
-done
-
-$PULL_MASTER_IMAGES && {
-    echo
-    echo "Pulling master images..."
-    /opt/bin/kubeadm config images pull --kubernetes-version $K8S_VERSION
+    echo "$(prefix) Installing crictl ${VERSION}..."
+    sudo mkdir -p /opt/bin
+    curl -L "$URL/crictl-${VERSION}-linux-amd64.tar.gz" | tar -xz
+    sudo install crictl /opt/bin && rm crictl
 }
 
-echo
-echo "Pulling calico images..."
-docker pull quay.io/calico/node:${CALICO_VERSION}
-docker pull quay.io/calico/cni:${CALICO_VERSION}
+function install_cni_plugins {
+    local VERSION="$1"
+
+    local URL=`printf %b \
+        "https://github.com/containernetworking/plugins" \
+        "/releases/download/${VERSION}"`
+
+    echo "$(prefix) Installing CNI plugins ${VERSION}..."
+    sudo mkdir -p /opt/cni/bin
+    curl -L "${URL}/cni-plugins-amd64-${VERSION}.tgz" | \
+        sudo tar -C /opt/cni/bin -xz
+}
+
+function enable_service {
+    local SERVICES="$*"
+
+    for SERVICE in ${SERVICES}; do
+        echo "$(prefix) Enabling ${SERVICE}..."
+        sudo systemctl enable "${SERVICE}"
+    done
+}
+
+function image_list {
+    VERSION="$1"
+    /opt/bin/kubeadm config images list --kubernetes-version "${VERSION}"
+}
+
+function pull_master_images {
+    local VERSION="$1"
+    local CALICO_VERSION="$2"
+
+    echo "$(prefix) Pulling master images ${VERSION}..."
+    /opt/bin/kubeadm config images pull --kubernetes-version "${VERSION}"
+
+    echo "$(prefix) Pulling master calico images ${CALICO_VERSION}..."
+    docker pull "quay.io/calico/node:${CALICO_VERSION}"
+    docker pull "quay.io/calico/cni:${CALICO_VERSION}"
+}
+
+function pull_worker_images {
+    local VERSION="$1"
+    local CALICO_VERSION="$2"
+
+    echo "$(prefix) Pulling worker images ${VERSION}..."
+    IMAGES=$(image_list "${VERSION}" | grep "kube-proxy\|pause")
+    for IMAGE in ${IMAGES}; do docker pull "${IMAGE}"; done
+
+    echo "$(prefix) Pulling worker calico images ${CALICO_VERSION}..."
+    docker pull "quay.io/calico/node:${CALICO_VERSION}"
+}
+
+function install_master_config {
+    local FILES="$*"
+
+    local URL=`printf %b \
+        "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests"`
+
+    for FILE in ${FILES}; do
+        echo "$(prefix) Installing master configuration ${FILE}..."
+        curl -LO "${URL}/${FILE}"
+        sudo mkdir -p /etc/cennsonic/manifests
+        sudo install -m 444 "${FILE}" /etc/cennsonic/manifests && rm "${FILE}"
+    done
+}
+
+function install_master {
+    local VERSION="$1"
+    local CALICO_VERSION="$2"
+
+    install_kubeadm_kubelet "${VERSION}"
+    install_kubectl "${VERSION}"
+
+    enable_service docker kubelet
+
+    pull_master_images "${VERSION}" "${CALICO_VERSION}"
+    install_master_config kubeadm.yaml
+}
+
+function install_master0 {
+    local VERSION="$1"
+    local CALICO_VERSION="$2"
+
+    install_master "${VERSION}" "${CALICO_VERSION}"
+    install_master_config calico.yaml calico-rbac-kdd.yaml keepalived.yaml
+}
+
+function install_worker {
+    local VERSION="$1"
+    local CALICO_VERSION="$2"
+
+    install_kubeadm_kubelet "${VERSION}"
+    enable_service docker kubelet
+    pull_worker_images "${VERSION}" "${CALICO_VERSION}"
+}
+
+case "$1 $2" in
+    "install master0"|\
+    "install master"|\
+    "install worker")
+        TARGET="$2" VERSION="$3" CALICO_VERSION="$4"
+
+        [ -n "${VERSION}" ] && [ -n "${CALICO_VERSION}" ] || usage
+        install_"${TARGET}" "${VERSION}" "${CALICO_VERSION}"
+    ;;
+    "install kubeadm-kubelet"|\
+    "install kubectl"|\
+    "install crictl"|\
+    "install cni-plugins"|\
+    "install master-config")
+        TARGET="$2" VERSION="$3"
+
+        [ -n "${VERSION}" ] || usage
+        install_"$(echo ${TARGET} | sed s/-/_/)" "${VERSION}"
+    ;;
+    *) usage ;;
+esac
