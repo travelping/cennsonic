@@ -8,7 +8,7 @@ Usage: kube-node <Command>
 Commands:
     master install <Node IP> <API IP>
     master pki make <PKI Archive>
-    master join info
+    master info join
     worker join <Node IP> <API IP> <Join Info>
     reset
 EOF`
@@ -240,7 +240,7 @@ function master_install {
         master_init
 }
 
-function master_join_info {
+function master_info_join {
     local HASH=$(discovery_token_ca_cert_hash)
 
     echo -n "--token $(token) "
@@ -275,8 +275,8 @@ case "$1 $2 $3 $4 $5" in
         [ -n "${ARCHIVE}" ] || usage
         pki_make "${ARCHIVE}"
     ;;
-    "master join info  ")
-        master_join_info
+    "master info join  ")
+        master_info_join
     ;;
     "worker join $3 $4 $5")
         NODE_IP="$3" API_IP="$4" JOIN_INFO="$5"
