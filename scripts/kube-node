@@ -162,6 +162,21 @@ function wait_for {
     echo "Ready"
 }
 
+function install_keepalived {
+    local API_IP="$1"
+    local LB_IFACE="$2"
+
+    echo "$(prefix) Installing Keepalived..."
+    sudo sed -i -e "s/_LB_IP_/${API_IP}/" \
+                -e "s/_LB_IFACE_/${LB_IFACE}/" \
+                -e "s/_LB_PASSWORD_/$(openssl rand -base64 8)/" \
+                /etc/kubernetes/manifests/keepalived.yaml
+    kubectl apply -f /etc/kubernetes/manifests/keepalived.yaml
+
+    echo "$(prefix) Waiting for keepalived..."
+    wait_for keepalived_ready
+}
+
 function master_prepare {
     local CLUSTER_STATE="$1"
     local NODE_IP="$2"
@@ -186,9 +201,9 @@ function master_prepare {
 function master_init {
     local NODE_IP="$1"
     local API_IP="$2"
-#   local LB_IFACE="$3"
+    local LB_IFACE="$3"
 
-    ensure_hosts "${NODE_IP}" "${API_IP}"
+    ensure_hosts "${NODE_IP}" "${NODE_IP}"
     master_prepare new "${NODE_IP}"
 
     echo "$(prefix) Initialising first master of $(cluster_name)..."
@@ -198,14 +213,10 @@ function master_init {
     kubectl apply -f /etc/kubernetes/manifests/calico-rbac-kdd.yaml
     kubectl apply -f /etc/kubernetes/manifests/calico.yaml
 
-#   if [ "${NODE_IP}" != "${LB_IP}" ]; then
-#       echo "$(prefix) Installing Keepalived..."
-#       sudo sed -i -e "s/_LB_IP_/${LB_IP}/" \
-#                   -e "s/_LB_IFACE_/${LB_IFACE}/" \
-#                   -e "s/_LB_PASSWORD_/$(openssl rand -base64 8)/" \
-#                   /etc/kubernetes/manifests/keepalived.yaml
-#       kubectl apply -f /etc/kubernetes/manifests/keepalived.yaml
-#   fi
+    if [ "${NODE_IP}" != "${API_IP}" ]; then
+        install_keepalived "${API_IP}" "${LB_IFACE}"
+        ensure_hosts "${NODE_IP}" "${API_IP}"
+    fi
 
     echo "$(prefix) Waiting for etcd..."
     wait_for etcd_ready
