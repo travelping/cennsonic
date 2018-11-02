@@ -6,7 +6,7 @@ USAGE=`cat <<EOF
 Usage: kube-node <Command>
 
 Commands:
-    master init <Node IP> <API IP> [LB Interface]
+    master init <Node IP> <API IP> [API Interface]
     master join <Node IP> <API IP> <PKI Archive>
     master pki make <PKI Archive>
     master info join
@@ -164,12 +164,12 @@ function wait_for {
 
 function install_keepalived {
     local API_IP="$1"
-    local LB_IFACE="$2"
+    local API_IFACE="$2"
 
     echo "$(prefix) Installing Keepalived..."
-    sudo sed -i -e "s/_LB_IP_/${API_IP}/" \
-                -e "s/_LB_IFACE_/${LB_IFACE}/" \
-                -e "s/_LB_PASSWORD_/$(openssl rand -base64 8)/" \
+    sudo sed -i -e "s/_IP_/${API_IP}/" \
+                -e "s/_IFACE_/${API_IFACE}/" \
+                -e "s/_PASSWORD_/$(openssl rand -base64 8)/" \
                 /etc/kubernetes/manifests/keepalived.yaml
     kubectl apply -f /etc/kubernetes/manifests/keepalived.yaml
 
@@ -201,7 +201,7 @@ function master_prepare {
 function master_init {
     local NODE_IP="$1"
     local API_IP="$2"
-    local LB_IFACE="$3"
+    local API_IFACE="$3"
 
     ensure_hosts "${NODE_IP}" "${NODE_IP}"
     master_prepare new "${NODE_IP}"
@@ -214,7 +214,7 @@ function master_init {
     kubectl apply -f /etc/kubernetes/manifests/calico.yaml
 
     if [ "${NODE_IP}" != "${API_IP}" ]; then
-        install_keepalived "${API_IP}" "${LB_IFACE}"
+        install_keepalived "${API_IP}" "${API_IFACE}"
         ensure_hosts "${NODE_IP}" "${API_IP}"
     fi
 
@@ -285,9 +285,9 @@ function reset {
 
 case "$1 $2 $3 $4 $5" in
     "master init $3 $4 $5")
-        NODE_IP="$3" API_IP="$4" LB_IFACE="$5"
+        NODE_IP="$3" API_IP="$4" API_IFACE="$5"
         [ -n "${NODE_IP}" ] && [ -n "${API_IP}" ] || usage
-        master_init "${NODE_IP}" "${API_IP}" "${LB_IFACE}"
+        master_init "${NODE_IP}" "${API_IP}" "${API_IFACE}"
     ;;
     "master join $3 $4 $5")
         NODE_IP="$3" API_IP="$4" PKI_ARCHIVE="$5"
