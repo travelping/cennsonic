@@ -15,7 +15,7 @@ Commands:
 EOF`
 
 function usage {
-    >&2 echo "$USAGE"
+    >&2 echo "${USAGE}"
     exit 2
 }
 
@@ -40,23 +40,23 @@ function ensure_in_hosts {
     local IP="$1"
     local HOSTNAME="$2"
 
-    echo "$(prefix) Ensuring $IP $HOSTNAME is in /etc/hosts..."
-    grep -q $HOSTNAME /etc/hosts && \
-        sudo sed -i "s/.* \($HOSTNAME\)/$IP    \1/" /etc/hosts || \
-        sudo sed -i "$ a $IP    $HOSTNAME" /etc/hosts
+    echo "$(prefix) Ensuring ${IP} ${HOSTNAME} is in /etc/hosts..."
+    grep -q "${HOSTNAME}" /etc/hosts && \
+        sudo sed -i "s/.* \(${HOSTNAME}\)/${IP}    \1/" /etc/hosts || \
+        sudo sed -i "$ a ${IP}    ${HOSTNAME}" /etc/hosts
 }
 function delete_from_hosts {
     local HOSTNAME="$1"
 
-    echo "$(prefix) Deleting $HOSTNAME from /etc/hosts..."
-    sudo sed -i "/$HOSTNAME/d" /etc/hosts
+    echo "$(prefix) Deleting ${HOSTNAME} from /etc/hosts..."
+    sudo sed -i "/${HOSTNAME}/d" /etc/hosts
 }
 function ensure_hosts {
     local NODE_IP="$1"
     local API_IP="$2"
 
-    ensure_in_hosts "$NODE_IP" "$(node_hostname)"
-    ensure_in_hosts "$API_IP" "$(api_hostname)"
+    ensure_in_hosts "${NODE_IP}" "$(node_hostname)"
+    ensure_in_hosts "${API_IP}" "$(api_hostname)"
 }
 function reset_hosts {
     delete_from_hosts "$(node_hostname)"
@@ -66,7 +66,7 @@ function reset_hosts {
 function pki_make {
     local ARCHIVE="$1"
 
-    echo "$(prefix) Making PKI archive $ARCHIVE..."
+    echo "$(prefix) Making PKI archive ${ARCHIVE}..."
 
     mkdir -p kubernetes/pki/etcd
     sudo cp /etc/kubernetes/pki/{ca.{crt,key},sa.{key,pub}} kubernetes/pki
@@ -74,18 +74,18 @@ function pki_make {
     sudo cp /etc/kubernetes/pki/etcd/ca.{crt,key} kubernetes/pki/etcd
     sudo cp /etc/kubernetes/admin.conf kubernetes
 
-    sudo chown -R $USER:$USER kubernetes
-    tar zcf $ARCHIVE kubernetes
+    sudo chown -R "${USER}:${USER}" kubernetes
+    tar zcf "${ARCHIVE}" kubernetes
     rm -rf kubernetes
 }
 
 function pki_install {
     local ARCHIVE="$1"
 
-    echo "$(prefix) Installing existing PKI from $ARCHIVE..."
-    sudo tar xf "$ARCHIVE" -C /etc
+    echo "$(prefix) Installing existing PKI from ${ARCHIVE}..."
+    sudo tar xf "${ARCHIVE}" -C /etc
     sudo chown -R root:root /etc/kubernetes
-    rm "$ARCHIVE"
+    rm "${ARCHIVE}"
 }
 
 function kubeadm {
@@ -107,7 +107,7 @@ function etcd_cluster {
         '{range.items[*]}' \
             '{.spec.nodeName}{"=https://"}{.status.podIP}{":2380,"}' \
         '{end}'`
-    kubectl_etcd get pods --output jsonpath="$JP"
+    kubectl_etcd get pods --output jsonpath="${JP}"
 }
 function etcd_hostname {
     kubectl_etcd get pods --output jsonpath='{.items[0].spec.nodeName}'
@@ -142,13 +142,13 @@ function wait_pod {
     local NAMESPACE="$1"
     local POD_NAME="$2"
 
-    while [ "$(kubectl get pod "$POD_NAME" \
-                   --namespace "$NAMESPACE" \
+    while [ "$(kubectl get pod ${POD_NAME} \
+                   --namespace ${NAMESPACE} \
                    --output jsonpath={.status.containerStatuses[0].ready} \
                    2>/dev/null \
               )" != "true" ]
     do
-        echo "$(prefix) Waiting for $NAMESPACE/$POD_NAME..."
+        echo "$(prefix) Waiting for ${NAMESPACE}/${POD_NAME}..."
         sleep 5
     done
 }
@@ -165,12 +165,12 @@ function master_prepare {
     local ETCD_STATE="${CLUSTER_STATE}"
     [ "${CLUSTER_STATE}" = "existing" ] && ETCD_CLUSTER="$(etcd_cluster)"
 
-    sudo sed -i -e s/_K8S_VERSION_/$(k8s_version)/g \
-                -e s/_API_HOSTNAME_/$(api_hostname)/g \
-                -e s/_NODE_HOSTNAME_/$(node_hostname)/g \
-                -e s/_NODE_IP_/$NODE_IP/g \
-                -e s\\_ETCD_CLUSTER_\\$ETCD_CLUSTER\\g \
-                -e s/_ETCD_STATE_/$ETCD_STATE/g \
+    sudo sed -i -e "s/_K8S_VERSION_/$(k8s_version)/g" \
+                -e "s/_API_HOSTNAME_/$(api_hostname)/g" \
+                -e "s/_NODE_HOSTNAME_/$(node_hostname)/g" \
+                -e "s/_NODE_IP_/${NODE_IP}/g" \
+                -e "s\\_ETCD_CLUSTER_\\${ETCD_CLUSTER}\\g" \
+                -e "s/_ETCD_STATE_/${ETCD_STATE}/g" \
                 /etc/kubernetes/manifests/kubeadm.yaml
 }
 
@@ -189,11 +189,11 @@ function master_init {
     kubectl apply -f /etc/kubernetes/manifests/calico-rbac-kdd.yaml
     kubectl apply -f /etc/kubernetes/manifests/calico.yaml
 
-#   if [ "$NODE_IP" != "$LB_IP" ]; then
+#   if [ "${NODE_IP}" != "${LB_IP}" ]; then
 #       echo "$(prefix) Installing Keepalived..."
-#       sudo sed -i -e s/_LB_IP_/$LB_IP/ \
-#                   -e s/_LB_IFACE_/$LB_IFACE/ \
-#                   -e s/_LB_PASSWORD_/"$(openssl rand -base64 8)"/ \
+#       sudo sed -i -e "s/_LB_IP_/${LB_IP}/" \
+#                   -e "s/_LB_IFACE_/${LB_IFACE}/" \
+#                   -e "s/_LB_PASSWORD_/$(openssl rand -base64 8)/" \
 #                   /etc/kubernetes/manifests/keepalived.yaml
 #       kubectl apply -f /etc/kubernetes/manifests/keepalived.yaml
 #   fi
@@ -218,14 +218,14 @@ function master_join {
     local ETCD_HOSTNAME="$(etcd_hostname)"
     local ETCD_IP="$(etcd_ip)"
 
-    echo "$(prefix) Joining etcd $ETCD_HOSTNAME ($ETCD_IP)..."
+    echo "$(prefix) Joining etcd ${ETCD_HOSTNAME} (${ETCD_IP})..."
     kubectl --namespace kube-system \
-            exec etcd-${ETCD_HOSTNAME} -- \
+            exec "etcd-${ETCD_HOSTNAME}" -- \
        etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
                --key-file /etc/kubernetes/pki/etcd/peer.key \
                --cert-file /etc/kubernetes/pki/etcd/peer.crt \
-               --endpoints=https://${ETCD_IP}:2379 \
-           member add $(node_hostname) https://${NODE_IP}:2380
+               --endpoints="https://${ETCD_IP}:2379" \
+           member add $(node_hostname) "https://${NODE_IP}:2380"
 
     kubeadm_alpha etcd local
     kubeadm_alpha kubeconfig all
@@ -235,11 +235,11 @@ function master_join {
 }
 
 function master_info_join {
-    local HASH=$(discovery_token_ca_cert_hash)
+    local HASH="$(discovery_token_ca_cert_hash)"
 
     echo -n "--token $(token) "
     echo -n "$(api_server_ip):$(api_server_port) "
-    echo -n "--discovery-token-ca-cert-hash sha256:$HASH"
+    echo -n "--discovery-token-ca-cert-hash sha256:${HASH}"
 }
 
 function worker_join {
@@ -248,8 +248,8 @@ function worker_join {
     local JOIN_INFO="$3"
 
     echo "$(prefix) Joining worker of $(cluster_name)..."
-    ensure_hosts "$NODE_IP" "$API_IP"
-    sudo /opt/bin/kubeadm join $JOIN_INFO
+    ensure_hosts "${NODE_IP}" "${API_IP}"
+    sudo /opt/bin/kubeadm join ${JOIN_INFO}
 }
 function reset {
     echo "$(prefix) Resetting node of $(cluster_name)..."
