@@ -266,19 +266,23 @@ function reset {
 
 case "$1 $2 $3 $4 $5" in
     "master install $3 $4 ")
-        [ -n "$3" ] && [ -n "$4" ] || usage
-        master_install "$3" "$4"
+        NODE_IP="$3" API_IP="$4"
+        [ -n "${NODE_IP}" ] && [ -n "${API_IP}" ] || usage
+        master_install "${NODE_IP}" "${API_IP}"
     ;;
     "master pki make $4 ")
-        [ -n "$4" ] || usage
-        pki_make "$4"
+        ARCHIVE="$4"
+        [ -n "${ARCHIVE}" ] || usage
+        pki_make "${ARCHIVE}"
     ;;
     "master join info  ")
         master_join_info
     ;;
     "worker join $3 $4 $5")
-        [ -n "$3" ] && [ -n "$4" ] && [ -n "$5" ] || usage
-        worker_join "$3" "$4" "$5"
+        NODE_IP="$3" API_IP="$4" JOIN_INFO="$5"
+        [ -n "${NODE_IP}" ] && [ -n "${API_IP}" ] && \
+        [ -n "${JOIN_INFO}" ] || usage
+        worker_join "${NODE_IP}" "${API_IP}" "${JOIN_INFO}"
     ;;
     "reset    ") reset ;;
     *) usage ;;
