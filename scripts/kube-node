@@ -133,7 +133,7 @@ function discovery_token_ca_cert_hash {
 
 function api_server_command {
     pods "" kube-system component=kube-apiserver \
-        "{.items[0].spec.containers[0].command[*]}"
+         "{.items[0].spec.containers[0].command[*]}"
 }
 function api_server_ip {
     api_server_command | sed 's/.*\--advertise-address=\([0-9|.]\+\).*/\1/'
@@ -142,6 +142,15 @@ function api_server_port {
     api_server_command | sed 's/.*\--secure-port=\([0-9]\+\).*/\1/'
 }
 
+function etcd_ready {
+    [ "$(pods etcd-$(node_hostname) kube-system '' \
+              {.status.containerStatuses[0].ready} 2>/dev/null)" != "true" ]
+}
+function keepalived_ready {
+    [ "$(pods '' keepalived-system app=keepalived \
+              {.items[0].status.containerStatuses[0].ready} \
+              2>/dev/null)" != "true" ]
+}
 
 function wait_for {
     local CONDITION="$1"
@@ -197,6 +206,9 @@ function master_init {
 #                   /etc/kubernetes/manifests/keepalived.yaml
 #       kubectl apply -f /etc/kubernetes/manifests/keepalived.yaml
 #   fi
+
+    echo "$(prefix) Waiting for etcd..."
+    wait_for etcd_ready
 }
 
 function master_join {
@@ -232,6 +244,9 @@ function master_join {
     kubeadm_alpha controlplane all
     kubeadm_alpha kubelet config annotate-cri
     kubeadm_alpha mark-master
+
+    echo "$(prefix) Waiting for etcd..."
+    wait_for etcd_ready
 }
 
 function master_info_join {
