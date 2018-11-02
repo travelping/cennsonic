@@ -144,7 +144,7 @@ function install_master_config {
     for FILE in ${FILES}; do
         echo "$(prefix) Installing master configuration ${FILE}..."
         curl -LO "${URL}/${FILE}"
-        sudo mkdir -p /etc/cennsonic/manifests
+        sudo mkdir -m 700 -p /etc/cennsonic/manifests
         sudo install -m 444 "${FILE}" /etc/cennsonic/manifests && rm "${FILE}"
     done
 }
