@@ -98,22 +98,28 @@ function kubeadm_alpha {
 function kubectl {
     sudo kubectl --kubeconfig /etc/kubernetes/admin.conf $*
 }
-function kubectl_etcd {
-    kubectl --namespace kube-system --selector component=etcd $*
+
+function pods {
+    local POD_NAME="$1"
+    local NAMESPACE="${2:+--namespace $2}"
+    local SELECTOR="${3:+--selector $3}"
+    local JSONPATH="${4:+--output jsonpath=$4}"
+
+    kubectl get pods "${POD_NAME}" "${NAMESPACE}" "${SELECTOR}" "${JSONPATH}"
 }
 
 function etcd_cluster {
-    JP=`printf %b \
+    JSONPATH=`printf %b \
         '{range.items[*]}' \
             '{.spec.nodeName}{"=https://"}{.status.podIP}{":2380,"}' \
         '{end}'`
-    kubectl_etcd get pods --output jsonpath="${JP}"
+    pods "" kube-system component=etcd "${JSONPATH}"
 }
 function etcd_hostname {
-    kubectl_etcd get pods --output jsonpath='{.items[0].spec.nodeName}'
+    pods "" kube-system component=etcd "{.items[0].spec.nodeName}"
 }
 function etcd_ip {
-    kubectl_etcd get pods --output jsonpath='{.items[0].status.podIP}'
+    pods "" kube-system component=etcd "{.items[0].status.podIP}"
 }
 
 function token {
@@ -126,10 +132,8 @@ function discovery_token_ca_cert_hash {
 }
 
 function api_server_command {
-    kubectl get pods \
-        --namespace kube-system \
-        --selector component=kube-apiserver \
-        --output jsonpath='{.items[0].spec.containers[0].command[*]}'
+    pods "" kube-system component=kube-apiserver \
+        "{.items[0].spec.containers[0].command[*]}"
 }
 function api_server_ip {
     api_server_command | sed 's/.*\--advertise-address=\([0-9|.]\+\).*/\1/'
@@ -138,19 +142,15 @@ function api_server_port {
     api_server_command | sed 's/.*\--secure-port=\([0-9]\+\).*/\1/'
 }
 
-function wait_pod {
-    local NAMESPACE="$1"
-    local POD_NAME="$2"
 
-    while [ "$(kubectl get pod ${POD_NAME} \
-                   --namespace ${NAMESPACE} \
-                   --output jsonpath={.status.containerStatuses[0].ready} \
-                   2>/dev/null \
-              )" != "true" ]
-    do
-        echo "$(prefix) Waiting for ${NAMESPACE}/${POD_NAME}..."
-        sleep 5
+function wait_for {
+    local CONDITION="$1"
+
+    while "${CONDITION}"; do
+        echo -en "\b=>"
+        sleep 2
     done
+    echo "Ready"
 }
 
 function master_prepare {
