@@ -169,7 +169,7 @@ function master_prepare {
     echo "$(prefix) Preparing master for the ${CLUSTER_STATE} $(cluster_name)..."
 
     sudo mkdir -m 700 -p /etc/kubernetes/manifests
-    sudo cp /etc/cennsonic/manifests/* /etc/kubernetes/manifests
+    sudo cp /etc/kubernetes/templates/* /etc/kubernetes/manifests
 
     local ETCD_STATE="${CLUSTER_STATE}"
     [ "${CLUSTER_STATE}" = "existing" ] && ETCD_CLUSTER="$(etcd_cluster)"
