@@ -6,7 +6,8 @@ USAGE=`cat <<EOF
 Usage: kube-node <Command>
 
 Commands:
-    master install <Node IP> <API IP>
+    master init <Node IP> <API IP> [LB Interface]
+    master join <Node IP> <API IP> <PKI Archive>
     master pki make <PKI Archive>
     master info join
     worker join <Node IP> <API IP> <Join Info>
@@ -153,23 +154,16 @@ function wait_pod {
 }
 
 function master_prepare {
-    local NODE_IP="$1"
-    local PKI_ARCHIVE="$2"
+    local CLUSTER_STATE="$1"
+    local NODE_IP="$2"
 
-    echo "$(prefix) Preparing master of $(cluster_name)..."
+    echo "$(prefix) Preparing master for the ${CLUSTER_STATE} $(cluster_name)..."
 
     sudo mkdir -p /etc/kubernetes/manifests
     sudo cp /etc/cennsonic/manifests/* /etc/kubernetes/manifests
 
-    local ETCD_CLUSTER=""
-    local ETCD_STATE="new"
-
-    if [ -f "$PKI_ARCHIVE" ]; then
-        pki_install "$PKI_ARCHIVE"
-
-        ETCD_CLUSTER="$(etcd_cluster)"
-        ETCD_STATE="existing"
-    fi
+    local ETCD_STATE="${CLUSTER_STATE}"
+    [ "${CLUSTER_STATE}" = "existing" ] && ETCD_CLUSTER="$(etcd_cluster)"
 
     sudo sed -i -e s/_K8S_VERSION_/$(k8s_version)/g \
                 -e s/_API_HOSTNAME_/$(api_hostname)/g \
@@ -181,7 +175,14 @@ function master_prepare {
 }
 
 function master_init {
-    echo "$(prefix) Initialising $(cluster_name)..."
+    local NODE_IP="$1"
+    local API_IP="$2"
+#   local LB_IFACE="$3"
+
+    ensure_hosts "${NODE_IP}" "${API_IP}"
+    master_prepare new "${NODE_IP}"
+
+    echo "$(prefix) Initialising first master of $(cluster_name)..."
     kubeadm init
 
     echo "$(prefix) Installing Calico..."
@@ -200,15 +201,22 @@ function master_init {
 
 function master_join {
     local NODE_IP="$1"
-    local ETCD_HOSTNAME="$(etcd_hostname)"
-    local ETCD_IP="$(etcd_ip)"
+    local API_IP="$2"
+    local PKI_ARCHIVE="$3"
 
-    echo "$(prefix) Joining $(cluster_name)..."
+    ensure_hosts "${NODE_IP}" "${API_IP}"
+    pki_install "${PKI_ARCHIVE}"
+    master_prepare existing "${NODE_IP}"
+
+    echo "$(prefix) Joining a new master to $(cluster_name)..."
     kubeadm_alpha certs all
     kubeadm_alpha kubelet config write-to-disk
     kubeadm_alpha kubelet write-env-file
     kubeadm_alpha kubeconfig kubelet
     sudo systemctl start kubelet
+
+    local ETCD_HOSTNAME="$(etcd_hostname)"
+    local ETCD_IP="$(etcd_ip)"
 
     echo "$(prefix) Joining etcd $ETCD_HOSTNAME ($ETCD_IP)..."
     kubectl --namespace kube-system \
@@ -224,20 +232,6 @@ function master_join {
     kubeadm_alpha controlplane all
     kubeadm_alpha kubelet config annotate-cri
     kubeadm_alpha mark-master
-}
-
-function master_install {
-    local NODE_IP="$1"
-    local API_IP="$2"
-
-    echo "$(prefix) Installing master of $(cluster_name)..."
-
-    ensure_hosts "$NODE_IP" "$API_IP"
-    master_prepare "$NODE_IP" kube-pki.tgz
-
-    kubectl config current-context >/dev/null 2>&1 && \
-        master_join "$NODE_IP" || \
-        master_init
 }
 
 function master_info_join {
@@ -257,7 +251,6 @@ function worker_join {
     ensure_hosts "$NODE_IP" "$API_IP"
     sudo /opt/bin/kubeadm join $JOIN_INFO
 }
-
 function reset {
     echo "$(prefix) Resetting node of $(cluster_name)..."
     sudo /opt/bin/kubeadm reset -f
@@ -265,15 +258,21 @@ function reset {
 }
 
 case "$1 $2 $3 $4 $5" in
-    "master install $3 $4 ")
-        NODE_IP="$3" API_IP="$4"
+    "master init $3 $4 $5")
+        NODE_IP="$3" API_IP="$4" LB_IFACE="$5"
         [ -n "${NODE_IP}" ] && [ -n "${API_IP}" ] || usage
-        master_install "${NODE_IP}" "${API_IP}"
+        master_init "${NODE_IP}" "${API_IP}" "${LB_IFACE}"
+    ;;
+    "master join $3 $4 $5")
+        NODE_IP="$3" API_IP="$4" PKI_ARCHIVE="$5"
+        [ -n "${NODE_IP}" ] && [ -n "${API_IP}" ] && \
+        [ -n "${PKI_ARCHIVE}" ] || usage
+        master_join "${NODE_IP}" "${API_IP}" "${PKI_ARCHIVE}"
     ;;
     "master pki make $4 ")
-        ARCHIVE="$4"
-        [ -n "${ARCHIVE}" ] || usage
-        pki_make "${ARCHIVE}"
+        PKI_ARCHIVE="$4"
+        [ -n "${PKI_ARCHIVE}" ] || usage
+        pki_make "${PKI_ARCHIVE}"
     ;;
     "master info join  ")
         master_info_join
