@@ -15,6 +15,9 @@ spec:
         app: multus-cni
     spec:
       terminationGracePeriodSeconds: 0
+      tolerations:
+      - key: node.kubernetes.io/not-ready
+        effect: NoSchedule
       containers:
       - name: cni-installer
         image: travelping/cni-installer
