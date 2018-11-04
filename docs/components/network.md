@@ -8,8 +8,9 @@ The default network operations between the pods are done using the [Calico]
 managed network interfaces. Some cases require different ways of network
 management one of which is satisfied with [Macvlan] networks.
 
-[Multus] is used to delegate pod network management to both Calico and Macvlan
-for having both types of network interfaces in the pods.
+[Multus] is used to delegate pod network management to both Calico and
+optionally Macvlan or other [CNI-plugings]. To add further CNIs to a pod, a
+respective annotation is used.
 
 ### Installation
 
@@ -33,14 +34,28 @@ etcd endpoints):
 $ kubectl -n kube-system get po -l k8s-app=kube-apiserver -o jsonpath='{.items[0].spec.containers[?(@.name=="kube-apiserver")].command[3]}' | cut -d= -f2
 ```
 
-Modify Macvlan interfaces according to your needs. Make sure you specified
-a master device name of the interface that available on the nodes.
-
 Create the configuration:
 
 ```
 $ kubectl create -f components/network/multus-cni-configmap.yaml
 ```
+
+Create the CRD for `NetworkAttachmentDefinition` used for defining additional
+CNIs as well as the ClusterRole required for Multus:
+
+```
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-crd.yaml
+$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-clusterrole.yaml
+```
+
+Download sample configuration for an additional CNI (Macvlan):
+
+```
+$ curl https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/macvlan-net-attach-def.yaml >> components/network/macvlan-net-attach-def.yaml
+```
+
+Modify Macvlan interfaces according to your needs. Make sure you specified
+a master device name of the interface that available on the nodes.
 
 ### Now Installation
 
@@ -50,14 +65,38 @@ After the configuration is in place, install Multus CNI itself:
 $ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni-daemonset.yaml
 ```
 
-To validate installation create a pod and verify it contains network
-interface(s) named "net[0-N]" and is/are assigned IP address(es) from the
-specified subnet(s) and range(s).
+*The following manual step should be simplified somewhow:*
+
+You will then create a `clusterrolebinding` for each hostname in the
+Kubernetes cluster. Replace `HOSTNAME` below with the host name of a node, and
+then repeat for all hostnames in the cluster.
+
+```
+kubectl create clusterrolebinding multus-node-HOSTNAME \
+    --clusterrole=multus-crd-overpowered \
+    --user=system:node:HOSTNAME
+```
+
+### Usage
+
+In order to create additional network interfaces based on the configured CNIs
+in a pod, use an annotation like:
+
+```
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[
+            { "name": "macvlan-network",
+              "interfaceRequest": "ext0" }
+          ]'
+```
+
+To validate installation create a pod with the given annotation and verify it contains network
+interfaces with the specified name or "net[0-N]" if no name is given.
 
 To make any changes, apply the changed configuration file:
 
 ```
-$ kubectl apply -f components/network/multus-cni-configmap.yaml
+$ kubectl apply -f components/network/macvlan-net-attach-def.yaml
 ```
 
 and restart the pods, for example this way:
@@ -105,5 +144,6 @@ $ kubectl apply -f components/network/kube-vxlan-controller-networks.yaml
 [Multus]: https://github.com/intel/multus-cni
 [Macvlan]: https://docs.docker.com/network/macvlan
 [Kube VXLAN Controller]: http://github.com/openvnf/kube-vxlan-controller
+[CNI-plugins]: https://github.com/containernetworking/plugins
 
 [VXLAN Network Configuration]: ../../components/network/kube-vxlan-controller.yaml#L20-29

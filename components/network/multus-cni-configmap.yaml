@@ -29,19 +29,5 @@ data:
          "kubernetes": {
            "kubeconfig": "/etc/kubernetes/node-kubeconfig.yaml"
          }
-       },{
-         "name": "net0",
-         "type": "macvlan",
-         "master": "eth0",
-         "ipam": {
-           "type": "host-local",
-           "subnet": "172.72.0.0/24"
-           ### Example of IP addresses range, change according to your needs.
-           ### Note that this example range limits the whole cluster for 50 pods
-           ### As 50 (250 minus 200) IP addresses can be assigned only.
-           ### Remove these lines (all comments including range) if do not use.
-           #,"rangeStart": "172.72.0.200",
-           #"rangeEnd": "172.72.0.250"
-         }
        }]
       }
