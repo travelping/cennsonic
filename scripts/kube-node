@@ -51,14 +51,15 @@ function delete_from_hosts {
     echo "$(prefix) Deleting ${HOSTNAME} from /etc/hosts..."
     sudo sed -i "/${HOSTNAME}/d" /etc/hosts
 }
-function ensure_hosts {
-    local NODE_IP="$1"
-    local API_IP="$2"
-
-    ensure_in_hosts "${NODE_IP}" "$(node_hostname)"
-    ensure_in_hosts "${API_IP}" "$(api_hostname)"
+function resolve_node_to {
+    local IP="$1"
+    ensure_in_hosts "${IP}" "$(node_hostname)"
 }
-function reset_hosts {
+function resolve_api_to {
+    local IP="$1"
+    ensure_in_hosts "${IP}" "$(api_hostname)"
+}
+function reset_resolving {
     delete_from_hosts "$(node_hostname)"
     delete_from_hosts "$(api_hostname)"
 }
@@ -180,7 +181,7 @@ function wait_for {
         echo -en "\b=>"
         sleep 2
     done
-    echo "Ready"
+    echo -e "\b."
 }
 
 function install_keepalived {
@@ -221,7 +222,8 @@ function master_init {
     local API_IP="$2"
     local API_IFACE="$3"
 
-    ensure_hosts "${NODE_IP}" "${NODE_IP}"
+    resolve_node_to "${NODE_IP}
+    resolve_api_to "${NODE_IP}
     master_prepare new "${NODE_IP}"
 
     echo "$(prefix) Initialising first master of $(cluster_name)..."
@@ -235,7 +237,7 @@ function master_init {
 
     if [ "${NODE_IP}" != "${API_IP}" ]; then
         install_keepalived "${API_IP}" "${API_IFACE}"
-        ensure_hosts "${NODE_IP}" "${API_IP}"
+        resolve_api_to "${API_IP}"
     fi
 
     echo "$(prefix) Waiting for Etcd..."
@@ -247,11 +249,13 @@ function master_join {
     local API_IP="$2"
     local PKI_ARCHIVE="$3"
 
-    ensure_hosts "${NODE_IP}" "${API_IP}"
     pki_install "${PKI_ARCHIVE}"
+
+    resolve_node_to "${NODE_IP}"
+    resolve_api_to "${API_IP}"
     master_prepare existing "${NODE_IP}"
 
-    echo "$(prefix) Joining a new master to $(cluster_name)..."
+    echo "$(prefix) Joining master to $(cluster_name)..."
     kubeadm_alpha certs all
     kubeadm_alpha kubelet config write-to-disk
     kubeadm_alpha kubelet write-env-file
@@ -293,14 +297,15 @@ function worker_join {
     local API_IP="$2"
     local JOIN_INFO="$3"
 
-    echo "$(prefix) Joining worker of $(cluster_name)..."
-    ensure_hosts "${NODE_IP}" "${API_IP}"
+    echo "$(prefix) Joining worker to $(cluster_name)..."
+    resolve_node_to "${NODE_IP}"
+    resolve_api_to "${API_IP}"
     sudo /opt/bin/kubeadm join ${JOIN_INFO}
 }
 function reset {
     echo "$(prefix) Resetting node of $(cluster_name)..."
     sudo /opt/bin/kubeadm reset -f
-    reset_hosts
+    reset_resolving
 }
 
 case "$1 $2 $3 $4 $5" in
