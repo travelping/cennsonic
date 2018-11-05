@@ -11,8 +11,7 @@ USAGE=`cat <<EOF
 Usage: kube-tools install <Target> <Args>
 
 Targets
-    master0 <Version> <Calico Version>
-    master <Version> <Calico Version>
+    master[0] <Version> <Calico Version>
     worker <Version> <Calico Version>
     kubeadm-kubelet <Version>
     kubectl <Version>
@@ -144,7 +143,7 @@ function install_master_config {
     for FILE in ${FILES}; do
         echo "$(prefix) Installing master configuration ${FILE}..."
         curl -LO "${URL}/${FILE}"
-        sudo mkdir -m 700 -p /etc/kubernetes/templates
+        sudo mkdir -m 755 -p /etc/kubernetes/templates
         sudo install -m 444 "${FILE}" /etc/kubernetes/templates && rm "${FILE}"
     done
 }
