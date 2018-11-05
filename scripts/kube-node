@@ -99,10 +99,14 @@ function template_to_manifest {
     local MANIFEST="$(manifests)/${FILE}"
     shift
 
-    sudo mkdir -m 755 -p "$(manifests)"
+    sudo mkdir -m 700 -p "$(manifests)"
 
-    sed $* "${TEMPLATE}" | sudo tee "${MANIFEST}" > /dev/null
-    sudo chmod 444 "${MANIFEST}"
+    if [ -n "$*" ]; then
+        sed $* "${TEMPLATE}" | sudo tee "${MANIFEST}" > /dev/null
+    else
+        sudo cp "${TEMPLATE}" "${MANIFEST}"
+    fi
+    sudo chmod 600 "${MANIFEST}"
 }
 
 function kubeadm {
@@ -224,18 +228,18 @@ function master_init {
     kubeadm init
 
     echo "$(prefix) Installing Calico..."
-    template_to_manifest calico-rbac-kdd.yaml ""
-    template_to_manifest calico ""
+    template_to_manifest calico-rbac-kdd.yaml
+    template_to_manifest calico.yaml
     kubectl apply --filename "$(manifests)/calico-rbac-kdd.yaml"
     kubectl apply --filename "$(manifests)/calico.yaml"
-
-    echo "$(prefix) Waiting for Etcd..."
-    wait_for etcd_ready
 
     if [ "${NODE_IP}" != "${API_IP}" ]; then
         install_keepalived "${API_IP}" "${API_IFACE}"
         ensure_hosts "${NODE_IP}" "${API_IP}"
     fi
+
+    echo "$(prefix) Waiting for Etcd..."
+    wait_for etcd_ready
 }
 
 function master_join {
