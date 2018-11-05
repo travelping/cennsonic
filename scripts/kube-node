@@ -78,7 +78,6 @@ function pki_make {
     tar zcf "${ARCHIVE}" kubernetes
     rm -rf kubernetes
 }
-
 function pki_install {
     local ARCHIVE="$1"
 
@@ -88,8 +87,26 @@ function pki_install {
     rm "${ARCHIVE}"
 }
 
+function manifests {
+    echo "/etc/kubernetes/manifests"
+}
+function templates {
+    echo "/etc/kubernetes/templates"
+}
+function template_to_manifest {
+    local FILE="$1"
+    local TEMPLATE="$(templates)/${FILE}"
+    local MANIFEST="$(manifests)/${FILE}"
+    shift
+
+    sudo mkdir -m 755 -p "$(manifests)"
+
+    sed $* "${TEMPLATE}" | sudo tee "${MANIFEST}" > /dev/null
+    sudo chmod 444 "${MANIFEST}"
+}
+
 function kubeadm {
-    sudo /opt/bin/kubeadm --config /etc/kubernetes/manifests/kubeadm.yaml $*
+    sudo /opt/bin/kubeadm --config "$(manifests)/kubeadm.yaml" $*
 }
 function kubeadm_alpha {
     kubeadm alpha phase $*
@@ -167,13 +184,13 @@ function install_keepalived {
     local API_IFACE="$2"
 
     echo "$(prefix) Installing Keepalived..."
-    sudo sed -i -e "s/_IP_/${API_IP}/" \
-                -e "s/_IFACE_/${API_IFACE}/" \
-                -e "s/_PASSWORD_/$(openssl rand -base64 8)/" \
-                /etc/kubernetes/manifests/keepalived.yaml
-    kubectl apply -f /etc/kubernetes/manifests/keepalived.yaml
+    template_to_manifest keepalived.yaml \
+        -e "s/_IP_/${API_IP}/" \
+        -e "s/_IFACE_/${API_IFACE}/" \
+        -e "s/_PASSWORD_/$(openssl rand -base64 8)/"
+    kubectl apply --filename "$(manifests)/keepalived.yaml"
 
-    echo "$(prefix) Waiting for keepalived..."
+    echo "$(prefix) Waiting for Keepalived..."
     wait_for keepalived_ready
 }
 
@@ -183,19 +200,16 @@ function master_prepare {
 
     echo "$(prefix) Preparing master for the ${CLUSTER_STATE} $(cluster_name)..."
 
-    sudo mkdir -m 700 -p /etc/kubernetes/manifests
-    sudo cp /etc/kubernetes/templates/* /etc/kubernetes/manifests
-
     local ETCD_STATE="${CLUSTER_STATE}"
     [ "${CLUSTER_STATE}" = "existing" ] && ETCD_CLUSTER="$(etcd_cluster)"
 
-    sudo sed -i -e "s/_K8S_VERSION_/$(k8s_version)/g" \
-                -e "s/_API_HOSTNAME_/$(api_hostname)/g" \
-                -e "s/_NODE_HOSTNAME_/$(node_hostname)/g" \
-                -e "s/_NODE_IP_/${NODE_IP}/g" \
-                -e "s\\_ETCD_CLUSTER_\\${ETCD_CLUSTER}\\g" \
-                -e "s/_ETCD_STATE_/${ETCD_STATE}/g" \
-                /etc/kubernetes/manifests/kubeadm.yaml
+    template_to_manifest kubeadm.yaml \
+        -e "s/_K8S_VERSION_/$(k8s_version)/g" \
+        -e "s/_API_HOSTNAME_/$(api_hostname)/g" \
+        -e "s/_NODE_HOSTNAME_/$(node_hostname)/g" \
+        -e "s/_NODE_IP_/${NODE_IP}/g" \
+        -e "s\\_ETCD_CLUSTER_\\${ETCD_CLUSTER}\\g" \
+        -e "s/_ETCD_STATE_/${ETCD_STATE}/g"
 }
 
 function master_init {
@@ -210,16 +224,18 @@ function master_init {
     kubeadm init
 
     echo "$(prefix) Installing Calico..."
-    kubectl apply -f /etc/kubernetes/manifests/calico-rbac-kdd.yaml
-    kubectl apply -f /etc/kubernetes/manifests/calico.yaml
+    template_to_manifest calico-rbac-kdd.yaml ""
+    template_to_manifest calico ""
+    kubectl apply --filename "$(manifests)/calico-rbac-kdd.yaml"
+    kubectl apply --filename "$(manifests)/calico.yaml"
+
+    echo "$(prefix) Waiting for Etcd..."
+    wait_for etcd_ready
 
     if [ "${NODE_IP}" != "${API_IP}" ]; then
         install_keepalived "${API_IP}" "${API_IFACE}"
         ensure_hosts "${NODE_IP}" "${API_IP}"
     fi
-
-    echo "$(prefix) Waiting for etcd..."
-    wait_for etcd_ready
 }
 
 function master_join {
