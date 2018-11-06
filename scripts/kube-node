@@ -222,8 +222,8 @@ function master_init {
     local API_IP="$2"
     local API_IFACE="$3"
 
-    resolve_node_to "${NODE_IP}
-    resolve_api_to "${NODE_IP}
+    resolve_node_to "${NODE_IP}"
+    resolve_api_to "${NODE_IP}"
     master_prepare new "${NODE_IP}"
 
     echo "$(prefix) Initialising first master of $(cluster_name)..."
