@@ -7,7 +7,7 @@ set -e
 #CRICTL_VERSION=v1.12.0 # https://github.com/kubernetes-incubator/cri-tools/releases
 #CALICO_VERSION=v3.1.3 # https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/calico
 
-USAGE=`cat <<EOF
+USAGE=$(cat <<EOF
 Usage: kube-tools install <Target> <Args>
 
 Targets
@@ -18,7 +18,8 @@ Targets
     crictl <Version>
     cni-plugins <Version>
     master-config <File>
-EOF`
+EOF
+)
 
 function usage {
     >&2 echo "$USAGE"
@@ -32,13 +33,13 @@ function prefix {
 function install_kubeadm_kubelet {
     local VERSION="$1"
 
-    local BIN_URL=`printf %b \
+    local BIN_URL; BIN_URL=$(printf %b \
         "https://storage.googleapis.com/kubernetes-release/release" \
-        "/${VERSION}/bin/linux/amd64"`
+        "/${VERSION}/bin/linux/amd64")
 
-    local CFG_URL=`printf %b \
+    local CFG_URL; CFG_URL=$(printf %b \
         "https://raw.githubusercontent.com/kubernetes/kubernetes" \
-        "/${VERSION}/build/debs"`
+        "/${VERSION}/build/debs")
 
     local SYSTEM_D="/etc/systemd/system"
 
@@ -60,9 +61,9 @@ function install_kubeadm_kubelet {
 function install_kubectl {
     local VERSION="$1"
 
-    local URL=`printf %b \
+    local URL; URL=$(printf %b \
         "https://storage.googleapis.com/kubernetes-release/release" \
-        "/${VERSION}/bin/linux/amd64"`
+        "/${VERSION}/bin/linux/amd64")
 
     echo "$(prefix) Installing kubectl ${VERSION}..."
     curl -LO "${URL}/kubectl"
@@ -73,9 +74,9 @@ function install_kubectl {
 function install_crictl {
     local VERSION="$1"
 
-    local URL=`printf %b \
+    local URL; URL=$(printf %b \
         "https://github.com/kubernetes-incubator/cri-tools" \
-        "/releases/download/${VERSION}"`
+        "/releases/download/${VERSION}")
 
     echo "$(prefix) Installing crictl ${VERSION}..."
     sudo mkdir -p /opt/bin
@@ -86,9 +87,9 @@ function install_crictl {
 function install_cni_plugins {
     local VERSION="$1"
 
-    local URL=`printf %b \
+    local URL; URL=$(printf %b \
         "https://github.com/containernetworking/plugins" \
-        "/releases/download/${VERSION}"`
+        "/releases/download/${VERSION}")
 
     echo "$(prefix) Installing CNI plugins ${VERSION}..."
     sudo mkdir -p /opt/cni/bin
@@ -127,7 +128,7 @@ function pull_worker_images {
     local CALICO_VERSION="$2"
 
     echo "$(prefix) Pulling worker images ${VERSION}..."
-    IMAGES=$(image_list "${VERSION}" | grep "kube-proxy\|pause")
+    IMAGES=$(image_list "${VERSION}" | grep "kube-proxy\\|pause")
     for IMAGE in ${IMAGES}; do docker pull "${IMAGE}"; done
 
     echo "$(prefix) Pulling worker calico images ${CALICO_VERSION}..."
@@ -137,14 +138,14 @@ function pull_worker_images {
 function install_master_config {
     local FILES="$*"
 
-    local URL=`printf %b \
-        "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests"`
+    local URL; URL=$(printf %b \
+        "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests")
 
     for FILE in ${FILES}; do
         echo "$(prefix) Installing master configuration ${FILE}..."
         curl -LO "${URL}/${FILE}"
         sudo mkdir -m 755 -p /etc/kubernetes/templates
-        sudo install -m 444 "${FILE}" /etc/kubernetes/templates && rm "${FILE}"
+        sudo install -m 600 "${FILE}" /etc/kubernetes/templates && rm "${FILE}"
     done
 }
 
@@ -184,7 +185,7 @@ case "$1 $2" in
     "install worker")
         TARGET="$2" VERSION="$3" CALICO_VERSION="$4"
 
-        [ -n "${VERSION}" ] && [ -n "${CALICO_VERSION}" ] || usage
+        if [ -z "${VERSION}" ] || [ -z "${CALICO_VERSION}" ]; then usage; fi
         install_"${TARGET}" "${VERSION}" "${CALICO_VERSION}"
     ;;
     "install kubeadm-kubelet"|\
@@ -194,8 +195,8 @@ case "$1 $2" in
     "install master-config")
         TARGET="$2" VERSION="$3"
 
-        [ -n "${VERSION}" ] || usage
-        install_"$(echo ${TARGET} | sed s/-/_/)" "${VERSION}"
+        if [ -z "${VERSION}" ]; then usage; fi
+        install_"${TARGET//-/_}" "${VERSION}"
     ;;
     *) usage ;;
 esac

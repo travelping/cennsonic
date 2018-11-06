@@ -2,7 +2,7 @@
 
 set -e
 
-USAGE=`cat <<EOF
+USAGE=$(cat <<EOF
 Usage: kube-node <Command>
 
 Commands:
@@ -12,7 +12,8 @@ Commands:
     master info join
     worker join <Node IP> <API IP> <Join Info>
     reset
-EOF`
+EOF
+)
 
 function usage {
     >&2 echo "${USAGE}"
@@ -20,7 +21,7 @@ function usage {
 }
 
 function k8s_version {
-    /opt/bin/kubelet --version | sed 's/.* //'
+    /opt/bin/kubelet --version | sed "s/.* //"
 }
 
 function prefix {
@@ -41,9 +42,11 @@ function ensure_in_hosts {
     local HOSTNAME="$2"
 
     echo "$(prefix) Ensuring ${IP} ${HOSTNAME} is in /etc/hosts..."
-    grep -q "${HOSTNAME}" /etc/hosts && \
-        sudo sed -i "s/.* \(${HOSTNAME}\)/${IP}    \1/" /etc/hosts || \
+    if grep -q "${HOSTNAME}" /etc/hosts; then
+        sudo sed -i "s/.* \\(${HOSTNAME}\\)/${IP}    \\1/" /etc/hosts
+    else
         sudo sed -i "$ a ${IP}    ${HOSTNAME}" /etc/hosts
+    fi
 }
 function delete_from_hosts {
     local HOSTNAME="$1"
@@ -96,29 +99,24 @@ function templates {
 }
 function template_to_manifest {
     local FILE="$1"
-    local TEMPLATE="$(templates)/${FILE}"
-    local MANIFEST="$(manifests)/${FILE}"
+    local TEMPLATE; TEMPLATE="$(templates)/${FILE}"
+    local MANIFEST; MANIFEST="$(manifests)/${FILE}"
     shift
 
     sudo mkdir -m 700 -p "$(manifests)"
-
-    if [ -n "$*" ]; then
-        sed $* "${TEMPLATE}" | sudo tee "${MANIFEST}" > /dev/null
-    else
-        sudo cp "${TEMPLATE}" "${MANIFEST}"
-    fi
+    sudo sed "$@" "${TEMPLATE}" | sudo tee "${MANIFEST}" > /dev/null
     sudo chmod 600 "${MANIFEST}"
 }
 
 function kubeadm {
-    sudo /opt/bin/kubeadm --config "$(manifests)/kubeadm.yaml" $*
+    sudo /opt/bin/kubeadm --config "$(manifests)/kubeadm.yaml" "$@"
 }
 function kubeadm_alpha {
-    kubeadm alpha phase $*
+    kubeadm alpha phase "$@"
 }
 
 function kubectl {
-    sudo kubectl --kubeconfig /etc/kubernetes/admin.conf $*
+    sudo /opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf $*
 }
 
 function pods {
@@ -131,10 +129,10 @@ function pods {
 }
 
 function etcd_cluster {
-    JSONPATH=`printf %b \
+    JSONPATH=$(printf %b \
         '{range.items[*]}' \
             '{.spec.nodeName}{"=https://"}{.status.podIP}{":2380,"}' \
-        '{end}'`
+        '{end}')
     pods "" kube-system component=etcd "${JSONPATH}"
 }
 function etcd_hostname {
@@ -144,13 +142,13 @@ function etcd_ip {
     pods "" kube-system component=etcd "{.items[0].status.podIP}"
 }
 
-function token {
-    sudo /opt/bin/kubeadm token list | tail -n-1 | sed 's/ .*//'
+function join_token {
+    sudo /opt/bin/kubeadm token list | tail -n-1 | sed "s/ .*//"
 }
 function discovery_token_ca_cert_hash {
     openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
         openssl rsa -pubin -outform der 2>/dev/null | \
-            openssl dgst -sha256 -hex | sed 's/^.* //'
+            openssl dgst -sha256 -hex | sed "s/^.* //"
 }
 
 function api_server_command {
@@ -158,19 +156,19 @@ function api_server_command {
          "{.items[0].spec.containers[0].command[*]}"
 }
 function api_server_ip {
-    api_server_command | sed 's/.*\--advertise-address=\([0-9|.]\+\).*/\1/'
+    api_server_command | sed "s/.*--advertise-address=\\([0-9|.]\\+\\).*/\\1/"
 }
 function api_server_port {
-    api_server_command | sed 's/.*\--secure-port=\([0-9]\+\).*/\1/'
+    api_server_command | sed "s/.*--secure-port=\\([0-9]\\+\\).*/\\1/"
 }
 
 function etcd_ready {
-    [ "$(pods etcd-$(node_hostname) kube-system '' \
-              {.status.containerStatuses[0].ready} 2>/dev/null)" != "true" ]
+    [ "$(pods "etcd-$(node_hostname)" kube-system "" \
+              "{.status.containerStatuses[0].ready}" 2>/dev/null)" != "true" ]
 }
 function keepalived_ready {
-    [ "$(pods '' keepalived-system app=keepalived \
-              {.items[0].status.containerStatuses[0].ready} \
+    [ "$(pods "" keepalived-system app=keepalived \
+              "{.items[0].status.containerStatuses[0].ready}" \
               2>/dev/null)" != "true" ]
 }
 
@@ -178,10 +176,10 @@ function wait_for {
     local CONDITION="$1"
 
     while "${CONDITION}"; do
-        echo -en "\b=>"
+        echo -en "\\b=>"
         sleep 2
     done
-    echo -e "\b."
+    echo -e "\\b."
 }
 
 function install_keepalived {
@@ -230,8 +228,8 @@ function master_init {
     kubeadm init
 
     echo "$(prefix) Installing Calico..."
-    template_to_manifest calico-rbac-kdd.yaml
-    template_to_manifest calico.yaml
+    template_to_manifest calico-rbac-kdd.yaml ""
+    template_to_manifest calico.yaml ""
     kubectl apply --filename "$(manifests)/calico-rbac-kdd.yaml"
     kubectl apply --filename "$(manifests)/calico.yaml"
 
@@ -262,8 +260,8 @@ function master_join {
     kubeadm_alpha kubeconfig kubelet
     sudo systemctl start kubelet
 
-    local ETCD_HOSTNAME="$(etcd_hostname)"
-    local ETCD_IP="$(etcd_ip)"
+    local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname)"
+    local ETCD_IP; ETCD_IP="$(etcd_ip)"
 
     echo "$(prefix) Joining etcd ${ETCD_HOSTNAME} (${ETCD_IP})..."
     kubectl --namespace kube-system \
@@ -272,7 +270,7 @@ function master_join {
                --key-file /etc/kubernetes/pki/etcd/peer.key \
                --cert-file /etc/kubernetes/pki/etcd/peer.crt \
                --endpoints="https://${ETCD_IP}:2379" \
-           member add $(node_hostname) "https://${NODE_IP}:2380"
+           member add "$(node_hostname)" "https://${NODE_IP}:2380"
 
     kubeadm_alpha etcd local
     kubeadm_alpha kubeconfig all
@@ -285,9 +283,9 @@ function master_join {
 }
 
 function master_info_join {
-    local HASH="$(discovery_token_ca_cert_hash)"
+    local HASH; HASH="$(discovery_token_ca_cert_hash)"
 
-    echo -n "--token $(token) "
+    echo -n "--token $(join_token) "
     echo -n "$(api_server_ip):$(api_server_port) "
     echo -n "--discovery-token-ca-cert-hash sha256:${HASH}"
 }
@@ -302,27 +300,27 @@ function worker_join {
     resolve_api_to "${API_IP}"
     sudo /opt/bin/kubeadm join ${JOIN_INFO}
 }
-function reset {
+function reset_node {
     echo "$(prefix) Resetting node of $(cluster_name)..."
-    sudo /opt/bin/kubeadm reset -f
+    sudo /opt/bin/kubeadm reset --force
     reset_resolving
 }
 
 case "$1 $2 $3 $4 $5" in
     "master init $3 $4 $5")
         NODE_IP="$3" API_IP="$4" API_IFACE="$5"
-        [ -n "${NODE_IP}" ] && [ -n "${API_IP}" ] || usage
+        if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ]; then usage; fi
         master_init "${NODE_IP}" "${API_IP}" "${API_IFACE}"
     ;;
     "master join $3 $4 $5")
         NODE_IP="$3" API_IP="$4" PKI_ARCHIVE="$5"
-        [ -n "${NODE_IP}" ] && [ -n "${API_IP}" ] && \
-        [ -n "${PKI_ARCHIVE}" ] || usage
+        if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
+           [ -z "${PKI_ARCHIVE}" ]; then usage; fi
         master_join "${NODE_IP}" "${API_IP}" "${PKI_ARCHIVE}"
     ;;
     "master pki make $4 ")
         PKI_ARCHIVE="$4"
-        [ -n "${PKI_ARCHIVE}" ] || usage
+        if [ -z "${PKI_ARCHIVE}" ]; then usage; fi
         pki_make "${PKI_ARCHIVE}"
     ;;
     "master info join  ")
@@ -330,10 +328,10 @@ case "$1 $2 $3 $4 $5" in
     ;;
     "worker join $3 $4 $5")
         NODE_IP="$3" API_IP="$4" JOIN_INFO="$5"
-        [ -n "${NODE_IP}" ] && [ -n "${API_IP}" ] && \
-        [ -n "${JOIN_INFO}" ] || usage
+        if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
+           [ -z "${JOIN_INFO}" ]; then usage; fi
         worker_join "${NODE_IP}" "${API_IP}" "${JOIN_INFO}"
     ;;
-    "reset    ") reset ;;
+    "reset    ") reset_node ;;
     *) usage ;;
 esac

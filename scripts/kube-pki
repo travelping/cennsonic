@@ -7,14 +7,17 @@ function usage {
     exit 2
 }
 
-[ -n "$1" ] && [ -n "$2" ] && [ -n "$3" ] || usage
-
 ARCHIVE="$1"
-FROM="core@$2"
-TO="core@$3"
+FROM="$2"
+TO="$3"
 
-ssh "$FROM" bash -s < ./scripts/kube-node master pki make "$ARCHIVE"
-scp "$FROM:$ARCHIVE" "./$ARCHIVE"
-scp "./$ARCHIVE" "$TO:$ARCHIVE"
-ssh "$FROM" rm "$ARCHIVE"
-rm "$ARCHIVE"
+if [ -z "${ARCHIVE}" ] || [ -z "${FROM}" ] || [ -z "${TO}" ]; then usage; fi
+
+FROM="core@${FROM}"
+TO="core@${TO}"
+
+ssh "${FROM}" bash -s < ./scripts/kube-node master pki make "${ARCHIVE}"
+scp "${FROM}:$ARCHIVE" "./${ARCHIVE}"
+scp "./${ARCHIVE}" "${TO}:${ARCHIVE}"
+ssh "${FROM}" rm \\"${ARCHIVE}\\"
+rm "${ARCHIVE}"
