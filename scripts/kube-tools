@@ -179,6 +179,8 @@ function install_worker {
     pull_worker_images "${VERSION}" "${CALICO_VERSION}"
 }
 
+START_TIME="$(date +%s)"
+
 case "$1 $2" in
     "install master0"|\
     "install master"|\
@@ -200,3 +202,6 @@ case "$1 $2" in
     ;;
     *) usage ;;
 esac
+
+END_TIME="$(date +%s)"
+echo "$(prefix) Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."

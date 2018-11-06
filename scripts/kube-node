@@ -306,22 +306,36 @@ function reset_node {
     reset_resolving
 }
 
+function show_completion_time {
+    local START_TIME="$1"
+    local DURATION; DURATION="$(($(date +%s) - START_TIME))"
+    echo "$(prefix) Complete in $(date -d@${DURATION} -u +%Mm%Ss)."
+}
+
+START_TIME="$(date +%s)"
+
 case "$1 $2 $3 $4 $5" in
     "master init $3 $4 $5")
         NODE_IP="$3" API_IP="$4" API_IFACE="$5"
         if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ]; then usage; fi
+
         master_init "${NODE_IP}" "${API_IP}" "${API_IFACE}"
+        show_completion_time "${START_TIME}"
     ;;
     "master join $3 $4 $5")
         NODE_IP="$3" API_IP="$4" PKI_ARCHIVE="$5"
         if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
            [ -z "${PKI_ARCHIVE}" ]; then usage; fi
+
         master_join "${NODE_IP}" "${API_IP}" "${PKI_ARCHIVE}"
+        show_completion_time "${START_TIME}"
     ;;
     "master pki make $4 ")
         PKI_ARCHIVE="$4"
         if [ -z "${PKI_ARCHIVE}" ]; then usage; fi
+
         pki_make "${PKI_ARCHIVE}"
+        show_completion_time "${START_TIME}"
     ;;
     "master info join  ")
         master_info_join
@@ -330,8 +344,13 @@ case "$1 $2 $3 $4 $5" in
         NODE_IP="$3" API_IP="$4" JOIN_INFO="$5"
         if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
            [ -z "${JOIN_INFO}" ]; then usage; fi
+
         worker_join "${NODE_IP}" "${API_IP}" "${JOIN_INFO}"
+        show_completion_time "${START_TIME}"
     ;;
-    "reset    ") reset_node ;;
+    "reset    ")
+        reset_node
+        show_completion_time "${START_TIME}"
+    ;;
     *) usage ;;
 esac
