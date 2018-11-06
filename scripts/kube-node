@@ -164,18 +164,18 @@ function api_server_port {
 
 function etcd_ready {
     [ "$(pods "etcd-$(node_hostname)" kube-system "" \
-              "{.status.containerStatuses[0].ready}" 2>/dev/null)" != "true" ]
+              "{.status.containerStatuses[0].ready}" 2>/dev/null)" = "true" ]
 }
 function keepalived_ready {
     [ "$(pods "" keepalived-system app=keepalived \
               "{.items[0].status.containerStatuses[0].ready}" \
-              2>/dev/null)" != "true" ]
+              2>/dev/null)" = "true" ]
 }
 
 function wait_for {
     local CONDITION="$1"
 
-    while "${CONDITION}"; do
+    while ! "${CONDITION}"; do
         echo -en "\\b=>"
         sleep 2
     done
