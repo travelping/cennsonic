@@ -233,8 +233,10 @@ function master_init {
     kubectl apply --filename "$(manifests)/calico-rbac-kdd.yaml"
     kubectl apply --filename "$(manifests)/calico.yaml"
 
-    if [ "${NODE_IP}" != "${API_IP}" ]; then
+    if [ -n "${API_IFACE}" ]; then
         install_keepalived "${API_IP}" "${API_IFACE}"
+    fi
+    if [ "${NODE_IP}" != "${API_IP}" ]; then
         resolve_api_to "${API_IP}"
     fi
 
