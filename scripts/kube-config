@@ -1,0 +1,133 @@
+#!/bin/bash
+
+USAGE=$(cat <<EOF
+Usage: kube-config create <Username> [Options]
+
+Options
+    -c|--company=<Company>
+    -d|--days=<Days>
+EOF
+)
+
+function usage {
+    >&2 echo "${USAGE}"
+    exit 2
+}
+function prefix {
+    echo "$(date -uIseconds | sed s/\+.*//) [$(hostname -s)]"
+}
+function cluster_name {
+    hostname -d
+}
+function server_endpoint {
+    echo "https://k8s.$(cluster_name):6443"
+}
+function kubectl {
+    /opt/bin/kubectl "$@"
+}
+
+function create_cert_key {
+    local USERNAME="$1"
+    openssl genrsa -out "${USERNAME}-key.pem" 2048
+}
+function delete_cert_key {
+    local USERNAME="$1"
+    rm "${USERNAME}-key.pem" 
+}
+function create_cert {
+    local USERNAME="$1"
+    local COMPANY="$2"
+
+    openssl req -new -key "${USERNAME}-key.pem" \
+                -out "${USERNAME}.pem" \
+                -subj "/CN=${USERNAME}/O=${COMPANY}"
+}
+function delete_cert {
+    local USERNAME="$1"
+    rm "${USERNAME}.pem"
+}
+function sign_cert {
+    local USERNAME="$1"
+    local DAYS="$2"
+
+    sudo openssl x509 -req -in "${USERNAME}.pem" \
+                      -CA /etc/kubernetes/pki/ca.crt \
+                      -CAkey /etc/kubernetes/pki/ca.key \
+                      -CAcreateserial \
+                      -out "${USERNAME}.pem" \
+                      -days "${DAYS}"
+}
+
+function create_kubeconfig {
+    local USERNAME="$1"
+    local NAMESPACE="$2"
+    local KUBECONFIG="${USERNAME}.conf"
+
+    kubectl config set-cluster "$(cluster_name)" \
+        --kubeconfig="${KUBECONFIG}" \
+        --server="$(server_endpoint)" \
+        --certificate-authority=/etc/kubernetes/pki/ca.crt \
+        --embed-certs=true
+    
+    kubectl config set-credentials "${USERNAME}-$(cluster_name)" \
+        --kubeconfig="${KUBECONFIG}" \
+        --client-certificate="${USERNAME}.pem" \
+        --client-key="${USERNAME}-key.pem" \
+        --embed-certs=true
+    
+    kubectl config set-context "${USERNAME}-$(cluster_name)" \
+        --kubeconfig="${KUBECONFIG}" \
+        --cluster="$(cluster_name)" \
+        --user="${USERNAME}-$(cluster_name)" \
+        --namespace="${NAMESPACE}"
+    
+    kubectl config use-context "${USERNAME}-$(cluster_name)" \
+        --kubeconfig="${KUBECONFIG}"
+}
+
+function create_user {
+    local USERNAME="$1"
+    shift
+
+    echo "$(prefix) Creating user ${USERNAME}..."
+
+    for ARG in "$@"; do
+        case "${ARG}" in
+            -c=*|--company=*) COMPANY="${ARG#*=}"; shift ;;
+            -d=*|--days=*) DAYS="${ARG#*=}"; shift ;;
+            *=*) >&2 echo "Unknown argument: ${ARG%=*}"; exit 2 ;;
+            *) >&2 echo "Unknown argument: ${ARG}"; exit 2 ;;
+        esac
+    done
+    
+    COMPANY="${COMPANY:-Kubernetes}"
+    DAYS="${DAYS:-365}"
+    NAMESPACE="${NAMESPACE:-default}"
+    
+    create_cert_key "${USERNAME}"
+    create_cert "${USERNAME}" "${COMPANY}"
+    sign_cert "${USERNAME}" "${DAYS}"
+    create_kubeconfig "${USERNAME}" "${NAMESPACE}"
+    delete_cert "${USERNAME}"
+    delete_cert_key "${USERNAME}"
+}
+
+function show_completion_time {
+    local START_TIME="$1"
+    local DURATION; DURATION="$(($(date +%s) - START_TIME))"
+    echo "$(prefix) Complete in $(date -d@${DURATION} -u +%Mm%Ss)."
+}
+
+START_TIME="$(date +%s)"
+
+case "$1 $2" in
+    "create $2")
+        USERNAME="$2"
+        if [ -z "${USERNAME}" ]; then usage; fi
+        shift 2
+
+        create_user "${USERNAME}" "$@"
+        show_completion_time "${START_TIME}"
+    ;;
+    *) usage ;;
+esac
