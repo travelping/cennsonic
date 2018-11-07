@@ -27,7 +27,7 @@ function usage {
 }
 
 function prefix {
-    echo "[$(date -uIseconds | sed s/\+.*//)][$(hostname -s)]"
+    echo "$(date -uIseconds | sed s/\+.*//) [$(hostname -s)]"
 }
 
 function install_kubeadm_kubelet {

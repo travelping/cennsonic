@@ -25,7 +25,7 @@ function k8s_version {
 }
 
 function prefix {
-    echo "[$(date -uIseconds | sed s/\+.*//)][$(hostname -s)]"
+    echo "$(date -uIseconds | sed s/\+.*//) [$(hostname -s)]"
 }
 function node_hostname {
     hostname -f
