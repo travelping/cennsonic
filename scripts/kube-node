@@ -24,17 +24,21 @@ function k8s_version {
     /opt/bin/kubelet --version | sed "s/.* //"
 }
 
-function prefix {
-    echo "$(date -uIseconds | sed s/\+.*//) [$(hostname -s)]"
-}
-function node_hostname {
-    hostname -f
+function node_name {
+    hostname -s
 }
 function cluster_name {
     hostname -d
 }
+function node_hostname {
+    hostname -f
+}
 function api_hostname {
     echo "k8s.$(cluster_name)"
+}
+
+function prefix {
+    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]"
 }
 
 function ensure_in_hosts {
