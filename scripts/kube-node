@@ -74,7 +74,7 @@ function resolve_reset {
     delete_from_hosts "$(api_hostname)"
 }
 
-function pki_make {
+function master_pki_make {
     local ARCHIVE="$1"
 
     echo "$(prefix) Making PKI archive ${ARCHIVE}..."
@@ -89,7 +89,7 @@ function pki_make {
     tar zcf "${ARCHIVE}" kubernetes
     rm -rf kubernetes
 }
-function pki_install {
+function master_pki_install {
     local ARCHIVE="$1"
 
     echo "$(prefix) Installing existing PKI from ${ARCHIVE}..."
@@ -269,7 +269,7 @@ function master_join {
     local API_IP="$2"
     local PKI_ARCHIVE="$3"
 
-    pki_install "${PKI_ARCHIVE}"
+    master_pki_install "${PKI_ARCHIVE}"
 
     resolve_node_to "${NODE_IP}"
     resolve_api_to "${API_IP}"
@@ -394,7 +394,7 @@ case "$1 $2 $3 $4 $5" in
         PKI_ARCHIVE="$4"
         if [ -z "${PKI_ARCHIVE}" ]; then usage; fi
 
-        pki_make "${PKI_ARCHIVE}"
+        master_pki_make "${PKI_ARCHIVE}"
         show_completion_time "${START_TIME}"
     ;;
     "master info join  ")
