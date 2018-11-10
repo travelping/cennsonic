@@ -13,17 +13,23 @@ function usage {
     >&2 echo "${USAGE}"
     exit 2
 }
-function prefix {
-    echo "$(date -uIseconds | sed s/\+.*//) [$(hostname -s)]"
+function log {
+    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
+}
+
+function kubectl {
+    /opt/bin/kubectl "$@"
+}
+
+function node_name {
+    hostname -s
 }
 function cluster_name {
     hostname -d
 }
+
 function server_endpoint {
     echo "https://k8s.$(cluster_name):6443"
-}
-function kubectl {
-    /opt/bin/kubectl "$@"
 }
 
 function create_cert_key {
@@ -89,7 +95,7 @@ function create_user {
     local USERNAME="$1"
     shift
 
-    echo "$(prefix) Creating user ${USERNAME}..."
+    log "Creating user ${USERNAME}..."
 
     for ARG in "$@"; do
         case "${ARG}" in
@@ -115,7 +121,7 @@ function create_user {
 function show_completion_time {
     local START_TIME="$1"
     local DURATION; DURATION="$(($(date +%s) - START_TIME))"
-    echo "$(prefix) Complete in $(date -d@${DURATION} -u +%Mm%Ss)."
+    log "Complete in $(date -d@${DURATION} -u +%Mm%Ss)."
 }
 
 START_TIME="$(date +%s)"

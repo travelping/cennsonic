@@ -21,9 +21,21 @@ function usage {
     >&2 echo "${USAGE}"
     exit 2
 }
+function log {
+    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
+}
 
 function k8s_version {
     /opt/bin/kubelet --version | sed "s/.* //"
+}
+function kubeadm {
+    sudo /opt/bin/kubeadm --config "$(manifests)/kubeadm.yaml" "$@"
+}
+function kubeadm_alpha {
+    kubeadm alpha phase "$@"
+}
+function kubectl {
+    sudo /opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf $*
 }
 
 function node_name {
@@ -39,15 +51,11 @@ function api_hostname {
     echo "k8s.$(cluster_name)"
 }
 
-function prefix {
-    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]"
-}
-
 function ensure_in_hosts {
     local IP="$1"
     local HOSTNAME="$2"
 
-    echo "$(prefix) Ensuring ${IP} ${HOSTNAME} is in /etc/hosts..."
+    log "Ensuring ${IP} ${HOSTNAME} is in /etc/hosts..."
     if grep -q "${HOSTNAME}" /etc/hosts; then
         sudo sed -i "s/.* \\(${HOSTNAME}\\)/${IP}    \\1/" /etc/hosts
     else
@@ -57,7 +65,7 @@ function ensure_in_hosts {
 function delete_from_hosts {
     local HOSTNAME="$1"
 
-    echo "$(prefix) Deleting ${HOSTNAME} from /etc/hosts..."
+    log "Deleting ${HOSTNAME} from /etc/hosts..."
     sudo sed -i "/${HOSTNAME}/d" /etc/hosts
 }
 
@@ -77,7 +85,7 @@ function resolve_reset {
 function master_pki_make {
     local ARCHIVE="$1"
 
-    echo "$(prefix) Making PKI archive ${ARCHIVE}..."
+    log "Making PKI archive ${ARCHIVE}..."
 
     mkdir -p kubernetes/pki/etcd
     sudo cp /etc/kubernetes/pki/{ca.{crt,key},sa.{key,pub}} kubernetes/pki
@@ -92,7 +100,7 @@ function master_pki_make {
 function master_pki_install {
     local ARCHIVE="$1"
 
-    echo "$(prefix) Installing existing PKI from ${ARCHIVE}..."
+    log "Installing existing PKI from ${ARCHIVE}..."
     sudo tar xf "${ARCHIVE}" -C /etc
     sudo chown -R root:root /etc/kubernetes
     rm "${ARCHIVE}"
@@ -113,17 +121,6 @@ function template_to_manifest {
     sudo mkdir -m 700 -p "$(manifests)"
     sudo sed "$@" "${TEMPLATE}" | sudo tee "${MANIFEST}" > /dev/null
     sudo chmod 600 "${MANIFEST}"
-}
-
-function kubeadm {
-    sudo /opt/bin/kubeadm --config "$(manifests)/kubeadm.yaml" "$@"
-}
-function kubeadm_alpha {
-    kubeadm alpha phase "$@"
-}
-
-function kubectl {
-    sudo /opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf $*
 }
 
 function pods {
@@ -201,14 +198,14 @@ function install_keepalived {
     local API_IP="$1"
     local API_IFACE="$2"
 
-    echo "$(prefix) Installing Keepalived..."
+    log "Installing Keepalived..."
     template_to_manifest keepalived.yaml \
         -e "s/_IP_/${API_IP}/" \
         -e "s/_IFACE_/${API_IFACE}/" \
         -e "s/_PASSWORD_/$(openssl rand -base64 8)/"
     kubectl apply --filename "$(manifests)/keepalived.yaml"
 
-    echo "$(prefix) Waiting for Keepalived..."
+    log "Waiting for Keepalived..."
     wait_for keepalived_ready
 }
 
@@ -221,7 +218,7 @@ function master_prepare {
     local CLUSTER_STATE="$1"
     local NODE_IP="$2"
 
-    echo "$(prefix) Preparing master for the ${CLUSTER_STATE} $(cluster_name)..."
+    log "Preparing master for the ${CLUSTER_STATE} $(cluster_name)..."
 
     local ETCD_STATE="${CLUSTER_STATE}"
     [ "${CLUSTER_STATE}" = "existing" ] && ETCD_CLUSTER="$(etcd_cluster)"
@@ -244,10 +241,10 @@ function master_init {
     resolve_api_to "${NODE_IP}"
     master_prepare new "${NODE_IP}"
 
-    echo "$(prefix) Initialising first master of $(cluster_name)..."
+    log "Initialising first master of $(cluster_name)..."
     kubeadm init
 
-    echo "$(prefix) Installing Calico..."
+    log "Installing Calico..."
     template_to_manifest calico-rbac-kdd.yaml ""
     template_to_manifest calico.yaml ""
     kubectl apply --filename "$(manifests)/calico-rbac-kdd.yaml"
@@ -260,7 +257,7 @@ function master_init {
         resolve_api_to "${API_IP}"
     fi
 
-    echo "$(prefix) Waiting for Etcd..."
+    log "Waiting for Etcd..."
     wait_for etcd_ready
 }
 
@@ -275,7 +272,7 @@ function master_join {
     resolve_api_to "${API_IP}"
     master_prepare existing "${NODE_IP}"
 
-    echo "$(prefix) Joining master to $(cluster_name)..."
+    log "Joining master to $(cluster_name)..."
     kubeadm_alpha certs all
     kubeadm_alpha kubelet config write-to-disk
     kubeadm_alpha kubelet write-env-file
@@ -285,7 +282,7 @@ function master_join {
     local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname)"
     local ETCD_IP; ETCD_IP="$(etcd_ip)"
 
-    echo "$(prefix) Joining Etcd ${ETCD_HOSTNAME} (${ETCD_IP})..."
+    log "Joining Etcd ${ETCD_HOSTNAME} (${ETCD_IP})..."
     kubectl --namespace kube-system \
             exec "etcd-${ETCD_HOSTNAME}" -- \
        etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
@@ -300,20 +297,20 @@ function master_join {
     kubeadm_alpha kubelet config annotate-cri
     kubeadm_alpha mark-master
 
-    echo "$(prefix) Waiting for Etcd..."
+    log "Waiting for Etcd..."
     wait_for etcd_ready
 }
 
 function master_delete {
     local NODE_NAME="$1"
 
-    echo "$(prefix) Deleting master ${NODE_NAME} from $(cluster_name)..."
+    log "Deleting master ${NODE_NAME} from $(cluster_name)..."
     kubectl delete node "${NODE_NAME}.$(cluster_name)"
 
     local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname_this)"
     local ETCD_IP; ETCD_IP="$(etcd_ip_this)"
 
-    echo "$(prefix) Retrieving ${NODE_NAME} Etcd ID..."
+    log "Retrieving ${NODE_NAME} Etcd ID..."
     local ETCD_ID; ETCD_ID=$(kubectl --namespace kube-system \
             exec "etcd-${ETCD_HOSTNAME}" -- \
         etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
@@ -322,7 +319,7 @@ function master_delete {
                 --endpoints="https://${ETCD_IP}:2379" \
             member list | grep "${NODE_NAME}.$(cluster_name)" | sed s/:.*//)
 
-    echo "$(prefix) Removing Etcd member ${NODE_NAME} (id: ${ETCD_ID})..."
+    log "Removing Etcd member ${NODE_NAME} (id: ${ETCD_ID})..."
     kubectl --namespace kube-system \
             exec "etcd-${ETCD_HOSTNAME}" -- \
         etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
@@ -340,7 +337,7 @@ function master_info_join {
     echo -n "--discovery-token-ca-cert-hash sha256:${HASH}"
 }
 function master_reset {
-    echo "$(prefix) Resetting master of $(cluster_name)..."
+    log "Resetting master of $(cluster_name)..."
     node_reset
 }
 
@@ -349,20 +346,20 @@ function worker_join {
     local API_IP="$2"
     local JOIN_INFO="$3"
 
-    echo "$(prefix) Joining worker to $(cluster_name)..."
+    log "Joining worker to $(cluster_name)..."
     resolve_node_to "${NODE_IP}"
     resolve_api_to "${API_IP}"
     sudo /opt/bin/kubeadm join ${JOIN_INFO}
 }
 function worker_reset {
-    echo "$(prefix) Resetting worker of $(cluster_name)..."
+    log "Resetting worker of $(cluster_name)..."
     node_reset
 }
 
 function show_completion_time {
     local START_TIME="$1"
     local DURATION; DURATION="$(($(date +%s) - START_TIME))"
-    echo "$(prefix) Complete in $(date -d@${DURATION} -u +%Mm%Ss)."
+    log "Complete in $(date -d@${DURATION} -u +%Mm%Ss)."
 }
 
 START_TIME="$(date +%s)"

@@ -25,9 +25,12 @@ function usage {
     >&2 echo "$USAGE"
     exit 2
 }
+function log {
+    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
+}
 
-function prefix {
-    echo "$(date -uIseconds | sed s/\+.*//) [$(hostname -s)]"
+function node_name {
+    hostname -s
 }
 
 function install_kubeadm_kubelet {
@@ -43,7 +46,7 @@ function install_kubeadm_kubelet {
 
     local SYSTEM_D="/etc/systemd/system"
 
-    echo "$(prefix) Installing kubeadm and kubelet ${VERSION}..."
+    log "Installing kubeadm and kubelet ${VERSION}..."
 
     curl -L --remote-name-all "${BIN_URL}/{kubeadm,kubelet}"
     sudo mkdir -p /opt/bin
@@ -65,7 +68,7 @@ function install_kubectl {
         "https://storage.googleapis.com/kubernetes-release/release" \
         "/${VERSION}/bin/linux/amd64")
 
-    echo "$(prefix) Installing kubectl ${VERSION}..."
+    log "Installing kubectl ${VERSION}..."
     curl -LO "${URL}/kubectl"
     sudo mkdir -p /opt/bin
     sudo install kubectl /opt/bin && rm kubectl
@@ -78,7 +81,7 @@ function install_crictl {
         "https://github.com/kubernetes-incubator/cri-tools" \
         "/releases/download/${VERSION}")
 
-    echo "$(prefix) Installing crictl ${VERSION}..."
+    log "Installing crictl ${VERSION}..."
     sudo mkdir -p /opt/bin
     curl -L "$URL/crictl-${VERSION}-linux-amd64.tar.gz" | tar -xz
     sudo install crictl /opt/bin && rm crictl
@@ -91,7 +94,7 @@ function install_cni_plugins {
         "https://github.com/containernetworking/plugins" \
         "/releases/download/${VERSION}")
 
-    echo "$(prefix) Installing CNI plugins ${VERSION}..."
+    log "Installing CNI plugins ${VERSION}..."
     sudo mkdir -p /opt/cni/bin
     curl -L "${URL}/cni-plugins-amd64-${VERSION}.tgz" | \
         sudo tar -C /opt/cni/bin -xz
@@ -101,7 +104,7 @@ function enable_service {
     local SERVICES="$*"
 
     for SERVICE in ${SERVICES}; do
-        echo "$(prefix) Enabling ${SERVICE}..."
+        log "Enabling ${SERVICE}..."
         sudo systemctl enable "${SERVICE}"
     done
 }
@@ -115,10 +118,10 @@ function pull_master_images {
     local VERSION="$1"
     local CALICO_VERSION="$2"
 
-    echo "$(prefix) Pulling master images ${VERSION}..."
+    log "Pulling master images ${VERSION}..."
     /opt/bin/kubeadm config images pull --kubernetes-version "${VERSION}"
 
-    echo "$(prefix) Pulling master calico images ${CALICO_VERSION}..."
+    log "Pulling master calico images ${CALICO_VERSION}..."
     docker pull "quay.io/calico/node:${CALICO_VERSION}"
     docker pull "quay.io/calico/cni:${CALICO_VERSION}"
 }
@@ -127,11 +130,11 @@ function pull_worker_images {
     local VERSION="$1"
     local CALICO_VERSION="$2"
 
-    echo "$(prefix) Pulling worker images ${VERSION}..."
+    log "Pulling worker images ${VERSION}..."
     IMAGES=$(image_list "${VERSION}" | grep "kube-proxy\\|pause")
     for IMAGE in ${IMAGES}; do docker pull "${IMAGE}"; done
 
-    echo "$(prefix) Pulling worker calico images ${CALICO_VERSION}..."
+    log "Pulling worker calico images ${CALICO_VERSION}..."
     docker pull "quay.io/calico/node:${CALICO_VERSION}"
 }
 
@@ -142,7 +145,7 @@ function install_master_config {
         "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests")
 
     for FILE in ${FILES}; do
-        echo "$(prefix) Installing master configuration ${FILE}..."
+        log "Installing master configuration ${FILE}..."
         curl -LO "${URL}/${FILE}"
         sudo mkdir -m 755 -p /etc/kubernetes/templates
         sudo install -m 600 "${FILE}" /etc/kubernetes/templates && rm "${FILE}"
@@ -204,4 +207,4 @@ case "$1 $2" in
 esac
 
 END_TIME="$(date +%s)"
-echo "$(prefix) Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
+log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
