@@ -11,8 +11,9 @@ Commands:
     master delete <Node Name>
     master pki make <PKI Archive>
     master info join
+    master reset
     worker join <Node IP> <API IP> <Join Info>
-    reset
+    worker reset
 EOF
 )
 
@@ -59,6 +60,7 @@ function delete_from_hosts {
     echo "$(prefix) Deleting ${HOSTNAME} from /etc/hosts..."
     sudo sed -i "/${HOSTNAME}/d" /etc/hosts
 }
+
 function resolve_node_to {
     local IP="$1"
     ensure_in_hosts "${IP}" "$(node_hostname)"
@@ -67,7 +69,7 @@ function resolve_api_to {
     local IP="$1"
     ensure_in_hosts "${IP}" "$(api_hostname)"
 }
-function reset_resolving {
+function resolve_reset {
     delete_from_hosts "$(node_hostname)"
     delete_from_hosts "$(api_hostname)"
 }
@@ -210,6 +212,11 @@ function install_keepalived {
     wait_for keepalived_ready
 }
 
+function node_reset {
+    sudo /opt/bin/kubeadm reset --force
+    resolve_reset
+}
+
 function master_prepare {
     local CLUSTER_STATE="$1"
     local NODE_IP="$2"
@@ -332,6 +339,10 @@ function master_info_join {
     echo -n "$(api_server_ip):$(api_server_port) "
     echo -n "--discovery-token-ca-cert-hash sha256:${HASH}"
 }
+function master_reset {
+    echo "$(prefix) Resetting master of $(cluster_name)..."
+    node_reset
+}
 
 function worker_join {
     local NODE_IP="$1"
@@ -343,10 +354,9 @@ function worker_join {
     resolve_api_to "${API_IP}"
     sudo /opt/bin/kubeadm join ${JOIN_INFO}
 }
-function reset_node {
-    echo "$(prefix) Resetting node of $(cluster_name)..."
-    sudo /opt/bin/kubeadm reset --force
-    reset_resolving
+function worker_reset {
+    echo "$(prefix) Resetting worker of $(cluster_name)..."
+    node_reset
 }
 
 function show_completion_time {
@@ -390,6 +400,10 @@ case "$1 $2 $3 $4 $5" in
     "master info join  ")
         master_info_join
     ;;
+    "master reset   ")
+        master_reset
+        show_completion_time "${START_TIME}"
+    ;;
     "worker join $3 $4 $5")
         NODE_IP="$3" API_IP="$4" JOIN_INFO="$5"
         if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
@@ -398,8 +412,8 @@ case "$1 $2 $3 $4 $5" in
         worker_join "${NODE_IP}" "${API_IP}" "${JOIN_INFO}"
         show_completion_time "${START_TIME}"
     ;;
-    "reset    ")
-        reset_node
+    "worker reset   ")
+        worker_reset
         show_completion_time "${START_TIME}"
     ;;
     *) usage ;;
