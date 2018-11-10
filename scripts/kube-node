@@ -8,6 +8,7 @@ Usage: kube-node <Command>
 Commands:
     master init <Node IP> <API IP> [API Interface]
     master join <Node IP> <API IP> <PKI Archive>
+    master delete <Node Name>
     master pki make <PKI Archive>
     master info join
     worker join <Node IP> <API IP> <Join Info>
@@ -142,8 +143,16 @@ function etcd_cluster {
 function etcd_hostname {
     pods "" kube-system component=etcd "{.items[0].spec.nodeName}"
 }
+function etcd_hostname_this {
+    pods "" kube-system component=etcd \
+        "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].spec.nodeName}"
+}
 function etcd_ip {
     pods "" kube-system component=etcd "{.items[0].status.podIP}"
+}
+function etcd_ip_this {
+    pods "" kube-system component=etcd \
+        "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].status.podIP}"
 }
 
 function join_token {
@@ -269,7 +278,7 @@ function master_join {
     local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname)"
     local ETCD_IP; ETCD_IP="$(etcd_ip)"
 
-    echo "$(prefix) Joining etcd ${ETCD_HOSTNAME} (${ETCD_IP})..."
+    echo "$(prefix) Joining Etcd ${ETCD_HOSTNAME} (${ETCD_IP})..."
     kubectl --namespace kube-system \
             exec "etcd-${ETCD_HOSTNAME}" -- \
        etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
@@ -284,8 +293,36 @@ function master_join {
     kubeadm_alpha kubelet config annotate-cri
     kubeadm_alpha mark-master
 
-    echo "$(prefix) Waiting for etcd..."
+    echo "$(prefix) Waiting for Etcd..."
     wait_for etcd_ready
+}
+
+function master_delete {
+    local NODE_NAME="$1"
+
+    echo "$(prefix) Deleting master ${NODE_NAME} from $(cluster_name)..."
+    kubectl delete node "${NODE_NAME}.$(cluster_name)"
+
+    local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname_this)"
+    local ETCD_IP; ETCD_IP="$(etcd_ip_this)"
+
+    echo "$(prefix) Retrieving ${NODE_NAME} Etcd ID..."
+    local ETCD_ID; ETCD_ID=$(kubectl --namespace kube-system \
+            exec "etcd-${ETCD_HOSTNAME}" -- \
+        etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
+                --key-file /etc/kubernetes/pki/etcd/peer.key \
+                --cert-file /etc/kubernetes/pki/etcd/peer.crt \
+                --endpoints="https://${ETCD_IP}:2379" \
+            member list | grep "${NODE_NAME}.$(cluster_name)" | sed s/:.*//)
+
+    echo "$(prefix) Removing Etcd member ${NODE_NAME} (id: ${ETCD_ID})..."
+    kubectl --namespace kube-system \
+            exec "etcd-${ETCD_HOSTNAME}" -- \
+        etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
+                --key-file /etc/kubernetes/pki/etcd/peer.key \
+                --cert-file /etc/kubernetes/pki/etcd/peer.crt \
+                --endpoints="https://${ETCD_IP}:2379" \
+            member remove "${ETCD_ID}"
 }
 
 function master_info_join {
@@ -334,6 +371,13 @@ case "$1 $2 $3 $4 $5" in
            [ -z "${PKI_ARCHIVE}" ]; then usage; fi
 
         master_join "${NODE_IP}" "${API_IP}" "${PKI_ARCHIVE}"
+        show_completion_time "${START_TIME}"
+    ;;
+    "master delete $3  ")
+        NODE_NAME="$3"
+        if [ -z "${NODE_NAME}" ]; then usage; fi
+
+        master_delete "${NODE_NAME}"
         show_completion_time "${START_TIME}"
     ;;
     "master pki make $4 ")
