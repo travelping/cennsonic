@@ -162,7 +162,7 @@ function install_master {
     enable_service docker kubelet
 
     pull_master_images "${VERSION}" "${CALICO_VERSION}"
-    install_master_config kubeadm.yaml
+    install_master_config kubeadm.yaml rbac-user-admin-crb.yaml
 }
 
 function install_master0 {
