@@ -18,7 +18,10 @@ function log {
 }
 
 function kubectl {
-    /opt/bin/kubectl "$@"
+    sudo /opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf $*
+}
+function templates {
+    echo "/etc/kubernetes/templates"
 }
 
 function node_name {
@@ -69,26 +72,34 @@ function create_kubeconfig {
     local NAMESPACE="$2"
     local KUBECONFIG="${USERNAME}.conf"
 
-    kubectl config set-cluster "$(cluster_name)" \
+    /opt/bin/kubectl config set-cluster "$(cluster_name)" \
         --kubeconfig="${KUBECONFIG}" \
         --server="$(server_endpoint)" \
         --certificate-authority=/etc/kubernetes/pki/ca.crt \
         --embed-certs=true
     
-    kubectl config set-credentials "${USERNAME}-$(cluster_name)" \
+    /opt/bin/kubectl config set-credentials "${USERNAME}-$(cluster_name)" \
         --kubeconfig="${KUBECONFIG}" \
         --client-certificate="${USERNAME}.pem" \
         --client-key="${USERNAME}-key.pem" \
         --embed-certs=true
     
-    kubectl config set-context "${USERNAME}-$(cluster_name)" \
+    /opt/bin/kubectl config set-context "${USERNAME}-$(cluster_name)" \
         --kubeconfig="${KUBECONFIG}" \
         --cluster="$(cluster_name)" \
         --user="${USERNAME}-$(cluster_name)" \
         --namespace="${NAMESPACE}"
     
-    kubectl config use-context "${USERNAME}-$(cluster_name)" \
+    /opt/bin/kubectl config use-context "${USERNAME}-$(cluster_name)" \
         --kubeconfig="${KUBECONFIG}"
+}
+
+function create_role_binding {
+    local USERNAME="$1"
+
+    sudo sed -e "s/_USERNAME_/${USERNAME}/g" \
+             "$(templates)/rbac-user-admin-crb.yaml" | \
+         kubectl apply -f -
 }
 
 function create_user {
@@ -116,6 +127,7 @@ function create_user {
     create_kubeconfig "${USERNAME}" "${NAMESPACE}"
     delete_cert "${USERNAME}"
     delete_cert_key "${USERNAME}"
+    create_role_binding "${USERNAME}"
 }
 
 function show_completion_time {
