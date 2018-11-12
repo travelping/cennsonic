@@ -16,8 +16,8 @@ Commands:
     worker join <Node IP> <API IP> <Join Info>
     worker reset
 
-    role set <Node Name> <Role>
-    role unset <Node Name> <Role>
+    role set <Role> [Node Name]
+    role unset <Role> [Node Name]
 EOF
 )
 
@@ -361,26 +361,25 @@ function worker_reset {
 }
 
 function role_set {
-    local NODE_NAME="$1"
-    local ROLE="$2"
+    local ROLE="node-role.kubernetes.io/$1"
+    local NODE="${2:-$(node_name)}.$(cluster_name)"
     local ACTION="${3:-=}"
 
-    local NODE="${NODE_NAME}.$(cluster_name)"
-    local NODE_ROLE="node-role.kubernetes.io/${ROLE}"
+    local WORKER_ROLE="node-role.kubernetes.io/worker"
 
-    kubectl label node "${NODE}" "${NODE_ROLE}${ACTION}"
+    kubectl label node "${NODE}" "${ROLE}${ACTION}"
 
-    if [ "${ROLE}" == "worker" ]; then return; fi
+    if [ "${ROLE}" = "${WORKER_ROLE}" ]; then return; fi
 
     case "${ACTION}" in
-        =) kubectl taint node "${NODE}" "${NODE_ROLE}=:NoSchedule" ;;
-        -) kubectl taint node "${NODE}" "${NODE_ROLE}:NoSchedule-" ;;
+        =) kubectl taint node "${NODE}" "${ROLE}=:NoSchedule" ;;
+        -) kubectl taint node "${NODE}" "${ROLE}:NoSchedule-" ;;
     esac
 }
 function role_unset {
-    local NODE_NAME="$1"
-    local ROLE="$2"
-    role_set "${NODE_NAME}" "${ROLE}" -
+    local ROLE="$1"
+    local NODE_NAME="$2"
+    role_set "${ROLE}" "${NODE_NAME}" -
 }
 
 function show_completion_time {
@@ -441,16 +440,16 @@ case "$1 $2 $3 $4 $5" in
         show_completion_time "${START_TIME}"
     ;;
     "role set $3 $4 ")
-        NODE_NAME="$3" ROLE="$4"
-        if [ -z "${NODE_NAME}" ] || [ -z "${ROLE}" ]; then usage; fi
+        ROLE="$3" NODE_NAME="$4"
+        if [ -z "${ROLE}" ]; then usage; fi
 
-        role_set "${NODE_NAME}" "${ROLE}"
+        role_set "${ROLE}" "${NODE_NAME}"
     ;;
     "role unset $3 $4 ")
-        NODE_NAME="$3" ROLE="$4"
-        if [ -z "${NODE_NAME}" ] || [ -z "${ROLE}" ]; then usage; fi
+        ROLE="$3" NODE_NAME="$4"
+        if [ -z "${ROLE}" ]; then usage; fi
 
-        role_unset "${NODE_NAME}" "${ROLE}"
+        role_unset "${ROLE}" "${NODE_NAME}"
     ;;
     *) usage ;;
 esac
