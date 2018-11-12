@@ -1,7 +1,7 @@
 #!/bin/bash
 
 USAGE=$(cat <<EOF
-Usage: kube-config create <Username> [Options]
+Usage: kube-user create <Username> [Options]
 
 Options
     -c|--company=<Company>
