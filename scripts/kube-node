@@ -12,8 +12,12 @@ Commands:
     master pki make <PKI Archive>
     master info join
     master reset
+
     worker join <Node IP> <API IP> <Join Info>
     worker reset
+
+    role set <Node Name> <Role>
+    role unset <Node Name> <Role>
 EOF
 )
 
@@ -356,6 +360,29 @@ function worker_reset {
     node_reset
 }
 
+function role_set {
+    local NODE_NAME="$1"
+    local ROLE="$2"
+    local ACTION="${3:-=}"
+
+    local NODE="${NODE_NAME}.$(cluster_name)"
+    local NODE_ROLE="node-role.kubernetes.io/${ROLE}"
+
+    kubectl label node "${NODE}" "${NODE_ROLE}${ACTION}"
+
+    if [ "${ROLE}" == "worker" ]; then return; fi
+
+    case "${ACTION}" in
+        =) kubectl taint node "${NODE}" "${NODE_ROLE}=:NoSchedule" ;;
+        -) kubectl taint node "${NODE}" "${NODE_ROLE}:NoSchedule-" ;;
+    esac
+}
+function role_unset {
+    local NODE_NAME="$1"
+    local ROLE="$2"
+    role_set "${NODE_NAME}" "${ROLE}" -
+}
+
 function show_completion_time {
     local START_TIME="$1"
     local DURATION; DURATION="$(($(date +%s) - START_TIME))"
@@ -412,6 +439,18 @@ case "$1 $2 $3 $4 $5" in
     "worker reset   ")
         worker_reset
         show_completion_time "${START_TIME}"
+    ;;
+    "role set $3 $4 ")
+        NODE_NAME="$3" ROLE="$4"
+        if [ -z "${NODE_NAME}" ] || [ -z "${ROLE}" ]; then usage; fi
+
+        role_set "${NODE_NAME}" "${ROLE}"
+    ;;
+    "role unset $3 $4 ")
+        NODE_NAME="$3" ROLE="$4"
+        if [ -z "${NODE_NAME}" ] || [ -z "${ROLE}" ]; then usage; fi
+
+        role_unset "${NODE_NAME}" "${ROLE}"
     ;;
     *) usage ;;
 esac
