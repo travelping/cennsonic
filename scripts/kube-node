@@ -274,8 +274,11 @@ function worker_join {
     local JOIN_INFO="$3"
 
     log "Joining worker to $(cluster_name)..."
+
     resolve_node_to "${NODE_IP}"
     resolve_api_to "${API_IP}"
+
+    sudo mkdir -m 700 -p /etc/kubernetes/manifests
     sudo /opt/bin/kubeadm join ${JOIN_INFO}
 }
 function worker_reset {
@@ -290,7 +293,7 @@ function node_reset {
 
 function role_set {
     local ROLE="node-role.kubernetes.io/$1"
-    local NODE="${2:-$(node_name)}.$(cluster_name)"
+    local NODE; NODE="${2:-$(node_name)}.$(cluster_name)"
     local ACTION="${3:-=}"
 
     local WORKER_ROLE="node-role.kubernetes.io/worker"
