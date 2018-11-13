@@ -6,6 +6,7 @@ set -e
 #CNI_VERSION=v0.7.1 # https://github.com/containernetworking/plugins/releases
 #CRICTL_VERSION=v1.12.0 # https://github.com/kubernetes-incubator/cri-tools/releases
 #CALICO_VERSION=v3.1.3 # https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/calico
+                       # https://github.com/projectcalico/calicoctl/releases/download/v3.1.3/calicoctl
 
 USAGE=$(cat <<EOF
 Usage: kube-tools install <Target> <Args>
@@ -13,10 +14,13 @@ Usage: kube-tools install <Target> <Args>
 Targets
     master[0] <Version> <Calico Version>
     worker <Version> <Calico Version>
-    kubeadm-kubelet <Version>
+    kubeadm <Version>
+    kubelet <Version>
     kubectl <Version>
     crictl <Version>
     cni-plugins <Version>
+    images-master <Version> <Calico Version>
+    images-worker <Version> <Calico Version>
     master-config <File>
 EOF
 )
@@ -28,76 +32,108 @@ function usage {
 function log {
     echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
 }
+function start_time {
+    date +%s
+}
+function show_completion_time {
+    local START_TIME="$1"
+    local END_TIME; END_TIME="$(date +%s)"
+    log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
+}
 
 function node_name {
     hostname -s
 }
 
-function install_kubeadm_kubelet {
+function kube_tools_binaries {
     local VERSION="$1"
-
-    local BIN_URL; BIN_URL=$(printf %b \
-        "https://storage.googleapis.com/kubernetes-release/release" \
-        "/${VERSION}/bin/linux/amd64")
-
-    local CFG_URL; CFG_URL=$(printf %b \
-        "https://raw.githubusercontent.com/kubernetes/kubernetes" \
-        "/${VERSION}/build/debs")
-
-    local SYSTEM_D="/etc/systemd/system"
-
-    log "Installing kubeadm and kubelet ${VERSION}..."
-
-    curl -L --remote-name-all "${BIN_URL}/{kubeadm,kubelet}"
-    sudo mkdir -p /opt/bin
-    sudo install {kubeadm,kubelet} /opt/bin && rm {kubeadm,kubelet}
-
-    curl -L --remote-name-all "${CFG_URL}/{10-kubeadm.conf,kubelet.service}"
-    sed -i "s:/usr/bin:/opt/bin:g" {10-kubeadm.conf,kubelet.service}
-
-    sudo mkdir -p "${SYSTEM_D}/kubelet.service.d"
-    sudo install -m 644 10-kubeadm.conf "${SYSTEM_D}/kubelet.service.d/10-kubeadm.conf"
-    sudo install -m 444 kubelet.service "${SYSTEM_D}/kubelet.service"
-    rm {10-kubeadm.conf,kubelet.service}
+    printf %b "https://storage.googleapis.com/kubernetes-release/release/" \
+              "${VERSION}/bin/linux/amd64"
+}
+function kube_tools_configs {
+    local VERSION="$1"
+    printf %b "https://raw.githubusercontent.com/kubernetes/kubernetes/" \
+              "${VERSION}/build/debs"
+}
+function crictl_archive {
+    local VERSION="$1"
+    printf %b "https://github.com/kubernetes-incubator/cri-tools/" \
+              "releases/download/${VERSION}/" \
+              "crictl-${VERSION}-linux-amd64.tar.gz"
+}
+function cni_plugins_archive {
+    local VERSION="$1"
+    printf %b "https://github.com/containernetworking/plugins/" \
+              "releases/download/${VERSION}/" \
+              "cni-plugins-amd64-${VERSION}.tgz"
 }
 
+function install_binary {
+    local URL="$1"
+    local DEST="${2:-/opt/bin}"
+    local BINARY; BINARY=$(basename "${URL}")
+
+    curl -LO "${URL}"
+    sudo mkdir -p "${DEST}"
+    sudo install "${BINARY}" "${DEST}" && rm "${BINARY}"
+}
+function install_binary_archive {
+    local URL="$1"
+    local DEST="${2:-/opt/bin}"
+    local TMPDIR; TMPDIR=$(basename "${URL}")
+
+    mkdir -p "${TMPDIR}"
+    curl -L "${URL}" | tar -C "${TMPDIR}" -xz
+    sudo mkdir -p "${DEST}"
+    sudo install $(find "${TMPDIR}" -type f) "${DEST}"
+    rm $(find "${TMPDIR}" -type f)
+    rmdir "${TMPDIR}"
+}
+function install_config {
+    local URL="$1"
+    local DEST="$2"
+    local MODE="$3"
+    local CONFIG; CONFIG=$(basename "${URL}")
+
+    sudo mkdir -p "${DEST}"
+    curl -sL "${URL}" | sed "s:/usr/bin:/opt/bin:g" | \
+                       sudo dd of="${DEST}/${CONFIG}"
+    sudo chmod "${MODE}" "${DEST}/${CONFIG}"
+}
+
+function install_kubeadm {
+    local VERSION="$1"
+
+    log "Installing kubeadm ${VERSION}..."
+    install_binary "$(kube_tools_binaries ${VERSION})/kubeadm"
+    install_config "$(kube_tools_configs ${VERSION})/10-kubeadm.conf" \
+                    /etc/systemd/system/kubelet.service.d 644
+}
+function install_kubelet {
+    local VERSION="$1"
+
+    log "Installing kubelet ${VERSION}..."
+    install_binary "$(kube_tools_binaries ${VERSION})/kubelet"
+    install_config "$(kube_tools_configs ${VERSION})/kubelet.service" \
+                    /etc/systemd/system 444
+}
 function install_kubectl {
     local VERSION="$1"
 
-    local URL; URL=$(printf %b \
-        "https://storage.googleapis.com/kubernetes-release/release" \
-        "/${VERSION}/bin/linux/amd64")
-
     log "Installing kubectl ${VERSION}..."
-    curl -LO "${URL}/kubectl"
-    sudo mkdir -p /opt/bin
-    sudo install kubectl /opt/bin && rm kubectl
+    install_binary "$(kube_tools_binaries ${VERSION})/kubectl"
 }
-
 function install_crictl {
     local VERSION="$1"
 
-    local URL; URL=$(printf %b \
-        "https://github.com/kubernetes-incubator/cri-tools" \
-        "/releases/download/${VERSION}")
-
     log "Installing crictl ${VERSION}..."
-    sudo mkdir -p /opt/bin
-    curl -L "$URL/crictl-${VERSION}-linux-amd64.tar.gz" | tar -xz
-    sudo install crictl /opt/bin && rm crictl
+    install_binary_archive "$(crictl_archive ${VERSION})"
 }
-
 function install_cni_plugins {
     local VERSION="$1"
 
-    local URL; URL=$(printf %b \
-        "https://github.com/containernetworking/plugins" \
-        "/releases/download/${VERSION}")
-
     log "Installing CNI plugins ${VERSION}..."
-    sudo mkdir -p /opt/cni/bin
-    curl -L "${URL}/cni-plugins-amd64-${VERSION}.tgz" | \
-        sudo tar -C /opt/cni/bin -xz
+    install_binary_archive "$(cni_plugins_archive ${VERSION})" /opt/cni/bin
 }
 
 function enable_service {
@@ -109,32 +145,30 @@ function enable_service {
     done
 }
 
-function image_list {
-    VERSION="$1"
-    /opt/bin/kubeadm config images list --kubernetes-version "${VERSION}"
-}
-
-function pull_master_images {
+function install_images_master {
     local VERSION="$1"
     local CALICO_VERSION="$2"
 
     log "Pulling master images ${VERSION}..."
     /opt/bin/kubeadm config images pull --kubernetes-version "${VERSION}"
 
-    log "Pulling master calico images ${CALICO_VERSION}..."
+    log "Pulling master Calico images ${CALICO_VERSION}..."
     docker pull "quay.io/calico/node:${CALICO_VERSION}"
     docker pull "quay.io/calico/cni:${CALICO_VERSION}"
 }
 
-function pull_worker_images {
+function install_images_worker {
     local VERSION="$1"
     local CALICO_VERSION="$2"
 
+    local IMAGES=$(/opt/bin/kubeadm config images list \
+                                    --kubernetes-version "${VERSION}" | \
+                       grep "kube-proxy\\|pause")
+
     log "Pulling worker images ${VERSION}..."
-    IMAGES=$(image_list "${VERSION}" | grep "kube-proxy\\|pause")
     for IMAGE in ${IMAGES}; do docker pull "${IMAGE}"; done
 
-    log "Pulling worker calico images ${CALICO_VERSION}..."
+    log "Pulling worker Calico images ${CALICO_VERSION}..."
     docker pull "quay.io/calico/node:${CALICO_VERSION}"
 }
 
@@ -146,7 +180,7 @@ function install_master_config {
 
     for FILE in ${FILES}; do
         log "Installing master configuration ${FILE}..."
-        curl -LO "${URL}/${FILE}"
+        curl -sLO "${URL}/${FILE}"
         sudo mkdir -m 755 -p /etc/kubernetes/templates
         sudo install -m 600 "${FILE}" /etc/kubernetes/templates && rm "${FILE}"
     done
@@ -156,12 +190,13 @@ function install_master {
     local VERSION="$1"
     local CALICO_VERSION="$2"
 
-    install_kubeadm_kubelet "${VERSION}"
+    install_kubeadm "${VERSION}"
+    install_kubelet "${VERSION}"
     install_kubectl "${VERSION}"
 
     enable_service docker kubelet
 
-    pull_master_images "${VERSION}" "${CALICO_VERSION}"
+    install_images_worker "${VERSION}" "${CALICO_VERSION}"
     install_master_config kubeadm.yaml rbac-user-admin-crb.yaml
 }
 
@@ -177,23 +212,29 @@ function install_worker {
     local VERSION="$1"
     local CALICO_VERSION="$2"
 
-    install_kubeadm_kubelet "${VERSION}"
+    install_kubeadm "${VERSION}"
+    install_kubelet "${VERSION}"
+
     enable_service docker kubelet
-    pull_worker_images "${VERSION}" "${CALICO_VERSION}"
+
+    install_images_worker "${VERSION}" "${CALICO_VERSION}"
 }
 
-START_TIME="$(date +%s)"
+START_TIME="$(start_time)"
 
 case "$1 $2" in
     "install master0"|\
     "install master"|\
-    "install worker")
+    "install worker"|\
+    "install images-master"|\
+    "install images-worker")
         TARGET="$2" VERSION="$3" CALICO_VERSION="$4"
 
         if [ -z "${VERSION}" ] || [ -z "${CALICO_VERSION}" ]; then usage; fi
-        install_"${TARGET}" "${VERSION}" "${CALICO_VERSION}"
+        install_"${TARGET//-/_}" "${VERSION}" "${CALICO_VERSION}"
     ;;
-    "install kubeadm-kubelet"|\
+    "install kubeadm"|\
+    "install kubelet"|\
     "install kubectl"|\
     "install crictl"|\
     "install cni-plugins"|\
@@ -206,5 +247,4 @@ case "$1 $2" in
     *) usage ;;
 esac
 
-END_TIME="$(date +%s)"
-log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
+show_completion_time "${START_TIME}"
