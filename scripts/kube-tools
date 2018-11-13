@@ -12,7 +12,7 @@ USAGE=$(cat <<EOF
 Usage: kube-tools install <Target> <Args>
 
 Targets
-    master[0] <Version> <Calico Version>
+    master <Version> <Calico Version>
     worker <Version> <Calico Version>
     kubeadm <Version>
     kubelet <Version>
@@ -207,17 +207,12 @@ function install_master {
     install_kubelet "${VERSION}"
     install_kubectl "${VERSION}"
     install_images_master "${VERSION}" "${CALICO_VERSION}"
-    install_template $(kubeadm_template) $(crb_user_admin_template)
+    install_template $(kubeadm_template) \
+                     $(calico_templates) \
+                     $(keepaived_template) \
+                     $(crb_user_admin_template)
 
     enable_service docker kubelet
-}
-
-function install_master0 {
-    local VERSION="$1"
-    local CALICO_VERSION="$2"
-
-    install_master "${VERSION}" "${CALICO_VERSION}"
-    install_template $(calico_templates) $(keepaived_template)
 }
 
 function install_worker {
