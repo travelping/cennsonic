@@ -1,0 +1,13 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: macvlan-network
+spec:
+  config: '{
+       "type": "macvlan",
+       "master": "eth0",
+       "ipam": {
+         "type": "host-local",
+         "subnet": "172.72.0.0/24"
+       }
+    }'
