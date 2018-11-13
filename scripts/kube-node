@@ -99,7 +99,7 @@ function kubeadm_alpha {
     kubeadm alpha phase "$@"
 }
 function kubeadm_config {
-    echo "/etc/kubernetes/kubeadm.yaml"
+    echo "/etc/kubernetes/kubeadm.conf"
 }
 function kubectl {
     sudo /opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf $*
@@ -139,6 +139,7 @@ function master_prepare {
              -e "s/_ETCD_STATE_/${ETCD_STATE}/g" \
              "$(templates)/kubeadm.yaml" | \
          sudo dd of="$(kubeadm_config)"
+    sudo chmod 600 "$(kubeadm_config)"
 }
 function master_init {
     local NODE_IP="$1"
@@ -234,7 +235,7 @@ function master_delete {
 }
 function master_reset {
     log "Resetting master of $(cluster_name)..."
-    sudo rm "$(kubeadm_config)"
+    sudo rm -f "$(kubeadm_config)"
     node_reset
 }
 function master_info_join {
