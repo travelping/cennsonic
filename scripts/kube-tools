@@ -25,25 +25,41 @@ Targets
 EOF
 )
 
-function usage {
-    >&2 echo "$USAGE"
-    exit 2
-}
-function log {
-    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
-}
-function start_time {
-    date +%s
-}
-function show_completion_time {
-    local START_TIME="$1"
-    local END_TIME; END_TIME="$(date +%s)"
-    log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
+function main {
+    START_TIME="$(start_time)"
+
+    case "$1 $2" in
+        "install master"|\
+        "install worker"|\
+        "install images-master"|\
+        "install images-worker")
+            TARGET="$2" VERSION="$3" CALICO_VERSION="$4"
+
+            if [ -z "${VERSION}" ] || [ -z "${CALICO_VERSION}" ]; then usage; fi
+            install_"${TARGET//-/_}" "${VERSION}" "${CALICO_VERSION}"
+        ;;
+        "install kubeadm"|\
+        "install kubelet"|\
+        "install kubectl"|\
+        "install crictl"|\
+        "install cni-plugins")
+            TARGET="$2" VERSION="$3"
+
+            if [ -z "${VERSION}" ]; then usage; fi
+            install_"${TARGET//-/_}" "${VERSION}"
+        ;;
+        "install template")
+            TARGET="$2" NAME="$3"
+
+            if [ -z "${NAME}" ]; then usage; fi
+            install_"${TARGET//-/_}" $("${NAME//-/_}"_template)
+        ;;
+        *) usage ;;
+    esac
+
+    show_completion_time "${START_TIME}"
 }
 
-function node_name {
-    hostname -s
-}
 function templates {
     echo "/etc/kubernetes/templates"
 }
@@ -84,37 +100,30 @@ function crb_user_admin_template {
     echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/rbac-user-admin-crb.yaml"
 }
 
-function install_binary {
-    local URL="$1"
-    local DEST="${2:-/opt/bin}"
-    local BINARY; BINARY=$(basename "${URL}")
+function install_master {
+    local VERSION="$1"
+    local CALICO_VERSION="$2"
 
-    curl -LO "${URL}"
-    sudo mkdir -p "${DEST}"
-    sudo install "${BINARY}" "${DEST}" && rm "${BINARY}"
+    install_kubeadm "${VERSION}"
+    install_kubelet "${VERSION}"
+    install_kubectl "${VERSION}"
+    install_images_master "${VERSION}" "${CALICO_VERSION}"
+    install_template $(kubeadm_template) \
+                     $(calico_template) \
+                     $(keepaived_template) \
+                     $(crb_user_admin_template)
+
+    enable_service docker kubelet
 }
-function install_binary_archive {
-    local URL="$1"
-    local DEST="${2:-/opt/bin}"
-    local TMPDIR; TMPDIR=$(basename "${URL}")
+function install_worker {
+    local VERSION="$1"
+    local CALICO_VERSION="$2"
 
-    mkdir -p "${TMPDIR}"
-    curl -L "${URL}" | tar -C "${TMPDIR}" -xz
-    sudo mkdir -p "${DEST}"
-    sudo install $(find "${TMPDIR}" -type f) "${DEST}"
-    rm $(find "${TMPDIR}" -type f)
-    rmdir "${TMPDIR}"
-}
-function install_config {
-    local URL="$1"
-    local DEST="$2"
-    local MODE="$3"
-    local CONFIG; CONFIG=$(basename "${URL}")
+    install_kubeadm "${VERSION}"
+    install_kubelet "${VERSION}"
+    install_images_worker "${VERSION}" "${CALICO_VERSION}"
 
-    sudo mkdir -p "${DEST}"
-    curl -sL "${URL}" | sed "s:/usr/bin:/opt/bin:g" | \
-                       sudo dd of="${DEST}/${CONFIG}"
-    sudo chmod "${MODE}" "${DEST}/${CONFIG}"
+    enable_service docker kubelet
 }
 
 function install_kubeadm {
@@ -178,6 +187,38 @@ function install_images_worker {
     docker pull "quay.io/calico/node:${CALICO_VERSION}"
 }
 
+function install_binary {
+    local URL="$1"
+    local DEST="${2:-/opt/bin}"
+    local BINARY; BINARY=$(basename "${URL}")
+
+    curl -LO "${URL}"
+    sudo mkdir -p "${DEST}"
+    sudo install "${BINARY}" "${DEST}" && rm "${BINARY}"
+}
+function install_binary_archive {
+    local URL="$1"
+    local DEST="${2:-/opt/bin}"
+    local TMPDIR; TMPDIR=$(basename "${URL}")
+
+    mkdir -p "${TMPDIR}"
+    curl -L "${URL}" | tar -C "${TMPDIR}" -xz
+    sudo mkdir -p "${DEST}"
+    sudo install $(find "${TMPDIR}" -type f) "${DEST}"
+    rm $(find "${TMPDIR}" -type f)
+    rmdir "${TMPDIR}"
+}
+function install_config {
+    local URL="$1"
+    local DEST="$2"
+    local MODE="$3"
+    local CONFIG; CONFIG=$(basename "${URL}")
+
+    sudo mkdir -p "${DEST}"
+    curl -sL "${URL}" | sed "s:/usr/bin:/opt/bin:g" | \
+                       sudo dd of="${DEST}/${CONFIG}"
+    sudo chmod "${MODE}" "${DEST}/${CONFIG}"
+}
 function install_template {
     local URLS="$@"
 
@@ -199,63 +240,24 @@ function enable_service {
     done
 }
 
-function install_master {
-    local VERSION="$1"
-    local CALICO_VERSION="$2"
-
-    install_kubeadm "${VERSION}"
-    install_kubelet "${VERSION}"
-    install_kubectl "${VERSION}"
-    install_images_master "${VERSION}" "${CALICO_VERSION}"
-    install_template $(kubeadm_template) \
-                     $(calico_templates) \
-                     $(keepaived_template) \
-                     $(crb_user_admin_template)
-
-    enable_service docker kubelet
+function node_name {
+    hostname -s
 }
 
-function install_worker {
-    local VERSION="$1"
-    local CALICO_VERSION="$2"
-
-    install_kubeadm "${VERSION}"
-    install_kubelet "${VERSION}"
-    install_images_worker "${VERSION}" "${CALICO_VERSION}"
-
-    enable_service docker kubelet
+function start_time {
+    date +%s
+}
+function show_completion_time {
+    local START_TIME="$1"
+    local END_TIME; END_TIME="$(date +%s)"
+    log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
+}
+function usage {
+    >&2 echo "$USAGE"
+    exit 2
+}
+function log {
+    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
 }
 
-START_TIME="$(start_time)"
-
-case "$1 $2" in
-    "install master0"|\
-    "install master"|\
-    "install worker"|\
-    "install images-master"|\
-    "install images-worker")
-        TARGET="$2" VERSION="$3" CALICO_VERSION="$4"
-
-        if [ -z "${VERSION}" ] || [ -z "${CALICO_VERSION}" ]; then usage; fi
-        install_"${TARGET//-/_}" "${VERSION}" "${CALICO_VERSION}"
-    ;;
-    "install kubeadm"|\
-    "install kubelet"|\
-    "install kubectl"|\
-    "install crictl"|\
-    "install cni-plugins")
-        TARGET="$2" VERSION="$3"
-
-        if [ -z "${VERSION}" ]; then usage; fi
-        install_"${TARGET//-/_}" "${VERSION}"
-    ;;
-    "install template")
-        TARGET="$2" NAME="$3"
-
-        if [ -z "${NAME}" ]; then usage; fi
-        install_"${TARGET//-/_}" $("${NAME//-/_}"_template)
-    ;;
-    *) usage ;;
-esac
-
-show_completion_time "${START_TIME}"
+main "$@"
