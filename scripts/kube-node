@@ -9,9 +9,9 @@ Commands:
     master init <Node IP> <API IP> [API Interface]
     master join <Node IP> <API IP> <PKI Archive>
     master delete <Node Name>
-    master pki make <PKI Archive>
-    master info join
     master reset
+    master info join
+    master pki make <PKI Archive>
 
     worker join <Node IP> <API IP> <Join Info>
     worker reset
@@ -21,12 +21,72 @@ Commands:
 EOF
 )
 
-function usage {
-    >&2 echo "${USAGE}"
-    exit 2
-}
-function log {
-    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
+function main {
+    START_TIME="$(start_time)"
+
+    case "$1 $2 $3 $4 $5" in
+        "master init $3 $4 $5")
+            NODE_IP="$3" API_IP="$4" API_IFACE="$5"
+            if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ]; then usage; fi
+
+            master_init "${NODE_IP}" "${API_IP}" "${API_IFACE}"
+            show_completion_time "${START_TIME}"
+        ;;
+        "master join $3 $4 $5")
+            NODE_IP="$3" API_IP="$4" PKI_ARCHIVE="$5"
+            if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
+               [ -z "${PKI_ARCHIVE}" ]; then usage; fi
+
+            master_join "${NODE_IP}" "${API_IP}" "${PKI_ARCHIVE}"
+            show_completion_time "${START_TIME}"
+        ;;
+        "master delete $3  ")
+            NODE_NAME="$3"
+            if [ -z "${NODE_NAME}" ]; then usage; fi
+
+            master_delete "${NODE_NAME}"
+            show_completion_time "${START_TIME}"
+        ;;
+        "master pki make $4 ")
+            PKI_ARCHIVE="$4"
+            if [ -z "${PKI_ARCHIVE}" ]; then usage; fi
+
+            master_pki_make "${PKI_ARCHIVE}"
+            show_completion_time "${START_TIME}"
+        ;;
+        "master info join  ")
+            master_info_join
+        ;;
+        "master reset   ")
+            master_reset
+            show_completion_time "${START_TIME}"
+        ;;
+        "worker join $3 $4 $5")
+            NODE_IP="$3" API_IP="$4" JOIN_INFO="$5"
+            if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
+               [ -z "${JOIN_INFO}" ]; then usage; fi
+
+            worker_join "${NODE_IP}" "${API_IP}" "${JOIN_INFO}"
+            show_completion_time "${START_TIME}"
+        ;;
+        "worker reset   ")
+            worker_reset
+            show_completion_time "${START_TIME}"
+        ;;
+        "role set $3 $4 ")
+            ROLE="$3" NODE_NAME="$4"
+            if [ -z "${ROLE}" ]; then usage; fi
+
+            role_set "${ROLE}" "${NODE_NAME}"
+        ;;
+        "role unset $3 $4 ")
+            ROLE="$3" NODE_NAME="$4"
+            if [ -z "${ROLE}" ]; then usage; fi
+
+            role_unset "${ROLE}" "${NODE_NAME}"
+        ;;
+        *) usage ;;
+    esac
 }
 
 function k8s_version {
@@ -62,152 +122,6 @@ function api_hostname {
     echo "k8s.$(cluster_name)"
 }
 
-function ensure_in_hosts {
-    local IP="$1"
-    local HOSTNAME="$2"
-
-    log "Ensuring ${IP} ${HOSTNAME} is in /etc/hosts..."
-    if grep -q "${HOSTNAME}" /etc/hosts; then
-        sudo sed -i "s/.* \\(${HOSTNAME}\\)/${IP}    \\1/" /etc/hosts
-    else
-        sudo sed -i "$ a ${IP}    ${HOSTNAME}" /etc/hosts
-    fi
-}
-function delete_from_hosts {
-    local HOSTNAME="$1"
-
-    log "Deleting ${HOSTNAME} from /etc/hosts..."
-    sudo sed -i "/${HOSTNAME}/d" /etc/hosts
-}
-
-function resolve_node_to {
-    local IP="$1"
-    ensure_in_hosts "${IP}" "$(node_hostname)"
-}
-function resolve_api_to {
-    local IP="$1"
-    ensure_in_hosts "${IP}" "$(api_hostname)"
-}
-function resolve_reset {
-    delete_from_hosts "$(node_hostname)"
-    delete_from_hosts "$(api_hostname)"
-}
-
-function master_pki_make {
-    local ARCHIVE="$1"
-
-    log "Making PKI archive ${ARCHIVE}..."
-
-    mkdir -p kubernetes/pki/etcd
-    sudo cp /etc/kubernetes/pki/{ca.{crt,key},sa.{key,pub}} kubernetes/pki
-    sudo cp /etc/kubernetes/pki/front-proxy-ca.{crt,key} kubernetes/pki
-    sudo cp /etc/kubernetes/pki/etcd/ca.{crt,key} kubernetes/pki/etcd
-    sudo cp /etc/kubernetes/admin.conf kubernetes
-
-    sudo chown -R "${USER}:${USER}" kubernetes
-    tar zcf "${ARCHIVE}" kubernetes
-    rm -rf kubernetes
-}
-function master_pki_install {
-    local ARCHIVE="$1"
-
-    log "Installing existing PKI from ${ARCHIVE}..."
-    sudo tar xf "${ARCHIVE}" -C /etc
-    sudo chown -R root:root /etc/kubernetes
-    rm "${ARCHIVE}"
-}
-
-function pods {
-    local POD_NAME="$1"
-    local NAMESPACE="${2:+--namespace $2}"
-    local SELECTOR="${3:+--selector $3}"
-    local JSONPATH="${4:+--output jsonpath=$4}"
-
-    kubectl get pods "${POD_NAME}" "${NAMESPACE}" "${SELECTOR}" "${JSONPATH}"
-}
-
-function etcd_cluster {
-    JSONPATH=$(printf %b \
-        '{range.items[*]}' \
-            '{.spec.nodeName}{"=https://"}{.status.podIP}{":2380,"}' \
-        '{end}')
-    pods "" kube-system component=etcd "${JSONPATH}"
-}
-function etcd_hostname {
-    pods "" kube-system component=etcd "{.items[0].spec.nodeName}"
-}
-function etcd_hostname_this {
-    pods "" kube-system component=etcd \
-        "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].spec.nodeName}"
-}
-function etcd_ip {
-    pods "" kube-system component=etcd "{.items[0].status.podIP}"
-}
-function etcd_ip_this {
-    pods "" kube-system component=etcd \
-        "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].status.podIP}"
-}
-
-function join_token {
-    sudo /opt/bin/kubeadm token list | tail -n-1 | sed "s/ .*//"
-}
-function discovery_token_ca_cert_hash {
-    openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
-        openssl rsa -pubin -outform der 2>/dev/null | \
-            openssl dgst -sha256 -hex | sed "s/^.* //"
-}
-
-function api_server_command {
-    pods "" kube-system component=kube-apiserver \
-         "{.items[0].spec.containers[0].command[*]}"
-}
-function api_server_ip {
-    api_server_command | sed "s/.*--advertise-address=\\([0-9|.]\\+\\).*/\\1/"
-}
-function api_server_port {
-    api_server_command | sed "s/.*--secure-port=\\([0-9]\\+\\).*/\\1/"
-}
-
-function etcd_ready {
-    [ "$(pods "etcd-$(node_hostname)" kube-system "" \
-              "{.status.containerStatuses[0].ready}" 2>/dev/null)" = "true" ]
-}
-function keepalived_ready {
-    [ "$(pods "" keepalived-system app=keepalived \
-              "{.items[0].status.containerStatuses[0].ready}" \
-              2>/dev/null)" = "true" ]
-}
-
-function wait_for {
-    local CONDITION="$1"
-
-    while ! "${CONDITION}"; do
-        echo -en "\\b=>"
-        sleep 2
-    done
-    echo -e "\\b."
-}
-
-function install_keepalived {
-    local API_IP="$1"
-    local API_IFACE="$2"
-
-    log "Installing Keepalived..."
-    sudo sed -e "s/_IP_/${API_IP}/" \
-             -e "s/_IFACE_/${API_IFACE}/" \
-             -e "s/_PASSWORD_/$(openssl rand -base64 8)/" \
-             "$(templates)/keepalived.yaml" | \
-         kubectl apply --filename -
-
-    log "Waiting for Keepalived..."
-    wait_for keepalived_ready
-}
-
-function node_reset {
-    sudo /opt/bin/kubeadm reset --force
-    resolve_reset
-}
-
 function master_prepare {
     local CLUSTER_STATE="$1"
     local NODE_IP="$2"
@@ -226,7 +140,6 @@ function master_prepare {
              "$(templates)/kubeadm.yaml" | \
          sudo dd of="$(kubeadm_config)"
 }
-
 function master_init {
     local NODE_IP="$1"
     local API_IP="$2"
@@ -253,7 +166,6 @@ function master_init {
     log "Waiting for Etcd..."
     wait_for etcd_ready
 }
-
 function master_join {
     local NODE_IP="$1"
     local API_IP="$2"
@@ -293,7 +205,6 @@ function master_join {
     log "Waiting for Etcd..."
     wait_for etcd_ready
 }
-
 function master_delete {
     local NODE_NAME="$1"
 
@@ -321,7 +232,11 @@ function master_delete {
                 --endpoints="https://${ETCD_IP}:2379" \
             member remove "${ETCD_ID}"
 }
-
+function master_reset {
+    log "Resetting master of $(cluster_name)..."
+    sudo rm "$(kubeadm_config)"
+    node_reset
+}
 function master_info_join {
     local HASH; HASH="$(discovery_token_ca_cert_hash)"
 
@@ -329,10 +244,28 @@ function master_info_join {
     echo -n "$(api_server_ip):$(api_server_port) "
     echo -n "--discovery-token-ca-cert-hash sha256:${HASH}"
 }
-function master_reset {
-    log "Resetting master of $(cluster_name)..."
-    sudo rm "$(kubeadm_config)"
-    node_reset
+function master_pki_make {
+    local ARCHIVE="$1"
+
+    log "Making PKI archive ${ARCHIVE}..."
+
+    mkdir -p kubernetes/pki/etcd
+    sudo cp /etc/kubernetes/pki/{ca.{crt,key},sa.{key,pub}} kubernetes/pki
+    sudo cp /etc/kubernetes/pki/front-proxy-ca.{crt,key} kubernetes/pki
+    sudo cp /etc/kubernetes/pki/etcd/ca.{crt,key} kubernetes/pki/etcd
+    sudo cp /etc/kubernetes/admin.conf kubernetes
+
+    sudo chown -R "${USER}:${USER}" kubernetes
+    tar zcf "${ARCHIVE}" kubernetes
+    rm -rf kubernetes
+}
+function master_pki_install {
+    local ARCHIVE="$1"
+
+    log "Installing existing PKI from ${ARCHIVE}..."
+    sudo tar xf "${ARCHIVE}" -C /etc
+    sudo chown -R root:root /etc/kubernetes
+    rm "${ARCHIVE}"
 }
 
 function worker_join {
@@ -348,6 +281,11 @@ function worker_join {
 function worker_reset {
     log "Resetting worker of $(cluster_name)..."
     node_reset
+}
+
+function node_reset {
+    sudo /opt/bin/kubeadm reset --force
+    resolve_reset
 }
 
 function role_set {
@@ -372,74 +310,135 @@ function role_unset {
     role_set "${ROLE}" "${NODE_NAME}" -
 }
 
-function show_completion_time {
-    local START_TIME="$1"
-    local DURATION; DURATION="$(($(date +%s) - START_TIME))"
-    log "Complete in $(date -d@${DURATION} -u +%Mm%Ss)."
+function install_keepalived {
+    local API_IP="$1"
+    local API_IFACE="$2"
+
+    log "Installing Keepalived..."
+    sudo sed -e "s/_IP_/${API_IP}/" \
+             -e "s/_IFACE_/${API_IFACE}/" \
+             -e "s/_PASSWORD_/$(openssl rand -base64 8)/" \
+             "$(templates)/keepalived.yaml" | \
+         kubectl apply --filename -
+
+    log "Waiting for Keepalived..."
+    wait_for keepalived_ready
+}
+function keepalived_ready {
+    [ "$(pods "" keepalived-system app=keepalived \
+              "{.items[0].status.containerStatuses[0].ready}" \
+              2>/dev/null)" = "true" ]
 }
 
-START_TIME="$(date +%s)"
+function etcd_cluster {
+    JSONPATH=$(printf %b \
+        '{range.items[*]}' \
+            '{.spec.nodeName}{"=https://"}{.status.podIP}{":2380,"}' \
+        '{end}')
+    pods "" kube-system component=etcd "${JSONPATH}"
+}
+function etcd_hostname {
+    pods "" kube-system component=etcd "{.items[0].spec.nodeName}"
+}
+function etcd_hostname_this {
+    pods "" kube-system component=etcd \
+        "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].spec.nodeName}"
+}
+function etcd_ip {
+    pods "" kube-system component=etcd "{.items[0].status.podIP}"
+}
+function etcd_ip_this {
+    pods "" kube-system component=etcd \
+        "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].status.podIP}"
+}
+function etcd_ready {
+    [ "$(pods "etcd-$(node_hostname)" kube-system "" \
+              "{.status.containerStatuses[0].ready}" 2>/dev/null)" = "true" ]
+}
 
-case "$1 $2 $3 $4 $5" in
-    "master init $3 $4 $5")
-        NODE_IP="$3" API_IP="$4" API_IFACE="$5"
-        if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ]; then usage; fi
+function api_server_command {
+    pods "" kube-system component=kube-apiserver \
+         "{.items[0].spec.containers[0].command[*]}"
+}
+function api_server_ip {
+    api_server_command | sed "s/.*--advertise-address=\\([0-9|.]\\+\\).*/\\1/"
+}
+function api_server_port {
+    api_server_command | sed "s/.*--secure-port=\\([0-9]\\+\\).*/\\1/"
+}
 
-        master_init "${NODE_IP}" "${API_IP}" "${API_IFACE}"
-        show_completion_time "${START_TIME}"
-    ;;
-    "master join $3 $4 $5")
-        NODE_IP="$3" API_IP="$4" PKI_ARCHIVE="$5"
-        if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
-           [ -z "${PKI_ARCHIVE}" ]; then usage; fi
+function pods {
+    local POD_NAME="$1"
+    local NAMESPACE="${2:+--namespace $2}"
+    local SELECTOR="${3:+--selector $3}"
+    local JSONPATH="${4:+--output jsonpath=$4}"
 
-        master_join "${NODE_IP}" "${API_IP}" "${PKI_ARCHIVE}"
-        show_completion_time "${START_TIME}"
-    ;;
-    "master delete $3  ")
-        NODE_NAME="$3"
-        if [ -z "${NODE_NAME}" ]; then usage; fi
+    kubectl get pods "${POD_NAME}" "${NAMESPACE}" "${SELECTOR}" "${JSONPATH}"
+}
 
-        master_delete "${NODE_NAME}"
-        show_completion_time "${START_TIME}"
-    ;;
-    "master pki make $4 ")
-        PKI_ARCHIVE="$4"
-        if [ -z "${PKI_ARCHIVE}" ]; then usage; fi
+function resolve_node_to {
+    local IP="$1"
+    ensure_in_hosts "${IP}" "$(node_hostname)"
+}
+function resolve_api_to {
+    local IP="$1"
+    ensure_in_hosts "${IP}" "$(api_hostname)"
+}
+function resolve_reset {
+    delete_from_hosts "$(node_hostname)"
+    delete_from_hosts "$(api_hostname)"
+}
+function ensure_in_hosts {
+    local IP="$1"
+    local HOSTNAME="$2"
 
-        master_pki_make "${PKI_ARCHIVE}"
-        show_completion_time "${START_TIME}"
-    ;;
-    "master info join  ")
-        master_info_join
-    ;;
-    "master reset   ")
-        master_reset
-        show_completion_time "${START_TIME}"
-    ;;
-    "worker join $3 $4 $5")
-        NODE_IP="$3" API_IP="$4" JOIN_INFO="$5"
-        if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
-           [ -z "${JOIN_INFO}" ]; then usage; fi
+    log "Ensuring ${IP} ${HOSTNAME} is in /etc/hosts..."
+    if grep -q "${HOSTNAME}" /etc/hosts; then
+        sudo sed -i "s/.* \\(${HOSTNAME}\\)/${IP}    \\1/" /etc/hosts
+    else
+        sudo sed -i "$ a ${IP}    ${HOSTNAME}" /etc/hosts
+    fi
+}
+function delete_from_hosts {
+    local HOSTNAME="$1"
 
-        worker_join "${NODE_IP}" "${API_IP}" "${JOIN_INFO}"
-        show_completion_time "${START_TIME}"
-    ;;
-    "worker reset   ")
-        worker_reset
-        show_completion_time "${START_TIME}"
-    ;;
-    "role set $3 $4 ")
-        ROLE="$3" NODE_NAME="$4"
-        if [ -z "${ROLE}" ]; then usage; fi
+    log "Deleting ${HOSTNAME} from /etc/hosts..."
+    sudo sed -i "/${HOSTNAME}/d" /etc/hosts
+}
 
-        role_set "${ROLE}" "${NODE_NAME}"
-    ;;
-    "role unset $3 $4 ")
-        ROLE="$3" NODE_NAME="$4"
-        if [ -z "${ROLE}" ]; then usage; fi
+function join_token {
+    sudo /opt/bin/kubeadm token list | tail -n-1 | sed "s/ .*//"
+}
+function discovery_token_ca_cert_hash {
+    openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
+        openssl rsa -pubin -outform der 2>/dev/null | \
+            openssl dgst -sha256 -hex | sed "s/^.* //"
+}
 
-        role_unset "${ROLE}" "${NODE_NAME}"
-    ;;
-    *) usage ;;
-esac
+function wait_for {
+    local CONDITION="$1"
+
+    while ! "${CONDITION}"; do
+        echo -en "\\b=>"
+        sleep 2
+    done
+    echo -e "\\b."
+}
+
+function start_time {
+    date +%s
+}
+function show_completion_time {
+    local START_TIME="$1"
+    local END_TIME; END_TIME="$(date +%s)"
+    log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
+}
+function log {
+    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
+}
+function usage {
+    >&2 echo "${USAGE}"
+    exit 2
+}
+
+main "$@"
