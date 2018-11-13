@@ -21,7 +21,7 @@ Targets
     cni-plugins <Version>
     images-master <Version> <Calico Version>
     images-worker <Version> <Calico Version>
-    master-config <File>
+    template <Name>
 EOF
 )
 
@@ -43,6 +43,9 @@ function show_completion_time {
 
 function node_name {
     hostname -s
+}
+function templates {
+    echo "/etc/kubernetes/templates"
 }
 
 function kube_tools_binaries {
@@ -66,6 +69,19 @@ function cni_plugins_archive {
     printf %b "https://github.com/containernetworking/plugins/" \
               "releases/download/${VERSION}/" \
               "cni-plugins-amd64-${VERSION}.tgz"
+}
+function kubeadm_template {
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/kubeadm.yaml"
+}
+function calico_template {
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/calico.yaml"
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/calico-rbac-kdd.yaml"
+}
+function keepaived_template {
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/keepalived.yaml"
+}
+function crb_user_admin_template {
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/rbac-user-admin-crb.yaml"
 }
 
 function install_binary {
@@ -136,15 +152,6 @@ function install_cni_plugins {
     install_binary_archive "$(cni_plugins_archive ${VERSION})" /opt/cni/bin
 }
 
-function enable_service {
-    local SERVICES="$*"
-
-    for SERVICE in ${SERVICES}; do
-        log "Enabling ${SERVICE}..."
-        sudo systemctl enable "${SERVICE}"
-    done
-}
-
 function install_images_master {
     local VERSION="$1"
     local CALICO_VERSION="$2"
@@ -156,7 +163,6 @@ function install_images_master {
     docker pull "quay.io/calico/node:${CALICO_VERSION}"
     docker pull "quay.io/calico/cni:${CALICO_VERSION}"
 }
-
 function install_images_worker {
     local VERSION="$1"
     local CALICO_VERSION="$2"
@@ -172,17 +178,24 @@ function install_images_worker {
     docker pull "quay.io/calico/node:${CALICO_VERSION}"
 }
 
-function install_master_config {
-    local FILES="$*"
+function install_template {
+    local URLS="$@"
 
-    local URL; URL=$(printf %b \
-        "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests")
+    sudo mkdir -m 755 -p "$(templates)"
+    for URL in ${URLS}; do
+        local FILE=$(basename "${URL}")
+        log "Installing template ${FILE}..."
+        curl -sL "${URL}" | sudo dd of="$(templates)/${FILE}"
+        sudo chmod 600 "$(templates)/${FILE}"
+    done
+}
 
-    for FILE in ${FILES}; do
-        log "Installing master configuration ${FILE}..."
-        curl -sLO "${URL}/${FILE}"
-        sudo mkdir -m 755 -p /etc/kubernetes/templates
-        sudo install -m 600 "${FILE}" /etc/kubernetes/templates && rm "${FILE}"
+function enable_service {
+    local SERVICES="$*"
+
+    for SERVICE in ${SERVICES}; do
+        log "Enabling ${SERVICE}..."
+        sudo systemctl enable "${SERVICE}"
     done
 }
 
@@ -193,11 +206,10 @@ function install_master {
     install_kubeadm "${VERSION}"
     install_kubelet "${VERSION}"
     install_kubectl "${VERSION}"
+    install_images_master "${VERSION}" "${CALICO_VERSION}"
+    install_template $(kubeadm_template) $(crb_user_admin_template)
 
     enable_service docker kubelet
-
-    install_images_worker "${VERSION}" "${CALICO_VERSION}"
-    install_master_config kubeadm.yaml rbac-user-admin-crb.yaml
 }
 
 function install_master0 {
@@ -205,7 +217,7 @@ function install_master0 {
     local CALICO_VERSION="$2"
 
     install_master "${VERSION}" "${CALICO_VERSION}"
-    install_master_config calico.yaml calico-rbac-kdd.yaml keepalived.yaml
+    install_template $(calico_templates) $(keepaived_template)
 }
 
 function install_worker {
@@ -214,10 +226,9 @@ function install_worker {
 
     install_kubeadm "${VERSION}"
     install_kubelet "${VERSION}"
+    install_images_worker "${VERSION}" "${CALICO_VERSION}"
 
     enable_service docker kubelet
-
-    install_images_worker "${VERSION}" "${CALICO_VERSION}"
 }
 
 START_TIME="$(start_time)"
@@ -237,12 +248,17 @@ case "$1 $2" in
     "install kubelet"|\
     "install kubectl"|\
     "install crictl"|\
-    "install cni-plugins"|\
-    "install master-config")
+    "install cni-plugins")
         TARGET="$2" VERSION="$3"
 
         if [ -z "${VERSION}" ]; then usage; fi
         install_"${TARGET//-/_}" "${VERSION}"
+    ;;
+    "install template")
+        TARGET="$2" NAME="$3"
+
+        if [ -z "${NAME}" ]; then usage; fi
+        install_"${TARGET//-/_}" $("${NAME//-/_}"_template)
     ;;
     *) usage ;;
 esac
