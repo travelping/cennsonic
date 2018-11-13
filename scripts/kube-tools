@@ -52,7 +52,7 @@ function main {
             TARGET="$2" NAME="$3"
 
             if [ -z "${NAME}" ]; then usage; fi
-            install_"${TARGET//-/_}" $("${NAME//-/_}"_template)
+            install_"${TARGET//-/_}" "$("${NAME//-/_}"_template)"
         ;;
         *) usage ;;
     esac
@@ -108,10 +108,10 @@ function install_master {
     install_kubelet "${VERSION}"
     install_kubectl "${VERSION}"
     install_images_master "${VERSION}" "${CALICO_VERSION}"
-    install_template $(kubeadm_template) \
-                     $(calico_template) \
-                     $(keepaived_template) \
-                     $(crb_user_admin_template)
+    install_template "$(kubeadm_template)" \
+                     "$(calico_template)" \
+                     "$(keepaived_template)" \
+                     "$(crb_user_admin_template)"
 
     enable_service docker kubelet
 }
@@ -130,35 +130,35 @@ function install_kubeadm {
     local VERSION="$1"
 
     log "Installing kubeadm ${VERSION}..."
-    install_binary "$(kube_tools_binaries ${VERSION})/kubeadm"
-    install_config "$(kube_tools_configs ${VERSION})/10-kubeadm.conf" \
+    install_binary "$(kube_tools_binaries "${VERSION}")/kubeadm"
+    install_config "$(kube_tools_configs "${VERSION}")/10-kubeadm.conf" \
                     /etc/systemd/system/kubelet.service.d 644
 }
 function install_kubelet {
     local VERSION="$1"
 
     log "Installing kubelet ${VERSION}..."
-    install_binary "$(kube_tools_binaries ${VERSION})/kubelet"
-    install_config "$(kube_tools_configs ${VERSION})/kubelet.service" \
+    install_binary "$(kube_tools_binaries "${VERSION}")/kubelet"
+    install_config "$(kube_tools_configs "${VERSION}")/kubelet.service" \
                     /etc/systemd/system 444
 }
 function install_kubectl {
     local VERSION="$1"
 
     log "Installing kubectl ${VERSION}..."
-    install_binary "$(kube_tools_binaries ${VERSION})/kubectl"
+    install_binary "$(kube_tools_binaries "${VERSION}")/kubectl"
 }
 function install_crictl {
     local VERSION="$1"
 
     log "Installing crictl ${VERSION}..."
-    install_binary_archive "$(crictl_archive ${VERSION})"
+    install_binary_archive "$(crictl_archive "${VERSION}")"
 }
 function install_cni_plugins {
     local VERSION="$1"
 
     log "Installing CNI plugins ${VERSION}..."
-    install_binary_archive "$(cni_plugins_archive ${VERSION})" /opt/cni/bin
+    install_binary_archive "$(cni_plugins_archive "${VERSION}")" /opt/cni/bin
 }
 
 function install_images_master {
@@ -176,9 +176,9 @@ function install_images_worker {
     local VERSION="$1"
     local CALICO_VERSION="$2"
 
-    local IMAGES=$(/opt/bin/kubeadm config images list \
-                                    --kubernetes-version "${VERSION}" | \
-                       grep "kube-proxy\\|pause")
+    local IMAGES; IMAGES=$(/opt/bin/kubeadm config images list \
+                                            --kubernetes-version "${VERSION}" | \
+                               grep "kube-proxy\\|pause")
 
     log "Pulling worker images ${VERSION}..."
     for IMAGE in ${IMAGES}; do docker pull "${IMAGE}"; done
@@ -204,8 +204,8 @@ function install_binary_archive {
     mkdir -p "${TMPDIR}"
     curl -L "${URL}" | tar -C "${TMPDIR}" -xz
     sudo mkdir -p "${DEST}"
-    sudo install $(find "${TMPDIR}" -type f) "${DEST}"
-    rm $(find "${TMPDIR}" -type f)
+    sudo install "$(find "${TMPDIR}" -type f)" "${DEST}"
+    rm "$(find "${TMPDIR}" -type f)"
     rmdir "${TMPDIR}"
 }
 function install_config {
@@ -216,15 +216,15 @@ function install_config {
 
     sudo mkdir -p "${DEST}"
     curl -sL "${URL}" | sed "s:/usr/bin:/opt/bin:g" | \
-                       sudo dd of="${DEST}/${CONFIG}"
+                        sudo dd of="${DEST}/${CONFIG}"
     sudo chmod "${MODE}" "${DEST}/${CONFIG}"
 }
 function install_template {
-    local URLS="$@"
+    local URLS=$*
 
     sudo mkdir -m 755 -p "$(templates)"
     for URL in ${URLS}; do
-        local FILE=$(basename "${URL}")
+        local FILE; FILE=$(basename "${URL}")
         log "Installing template ${FILE}..."
         curl -sL "${URL}" | sudo dd of="$(templates)/${FILE}"
         sudo chmod 600 "$(templates)/${FILE}"
