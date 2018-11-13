@@ -102,7 +102,7 @@ function create_role_binding {
 
     sudo sed -e "s/_USERNAME_/${USERNAME}/g" \
              "$(templates)/rbac-user-admin-crb.yaml" | \
-         kubectl apply -f -
+         kubectl apply --filename -
 }
 
 function create_user {
