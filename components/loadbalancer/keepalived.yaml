@@ -1,3 +1,30 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: keepalived-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keepalived-config
+  namespace: keepalived-system
+data:
+  keepalived.conf: |
+    vrrp_instance VI_1 {
+        state MASTER
+        interface _IFACE_
+        virtual_router_id 1
+        priority 100
+        advert_int 1
+        authentication {
+            auth_type PASS
+            auth_pass _PASSWORD_
+        }
+        virtual_ipaddress {
+            _IP_
+        }
+    }
+---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
