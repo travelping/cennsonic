@@ -43,6 +43,36 @@ function kubectl {
     sudo /opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf "$@"
 }
 
+function create_user {
+    local USERNAME="$1"
+    shift
+
+    log "Creating user ${USERNAME}..."
+
+    for ARG in "$@"; do
+        case "${ARG}" in
+            -c=*|--company=*) COMPANY="${ARG#*=}"; shift ;;
+            -d=*|--days=*) DAYS="${ARG#*=}"; shift ;;
+            -s=*|--server=*) SERVER="${ARG#*=}"; shift ;;
+            *=*) >&2 echo "Unknown argument: ${ARG%=*}"; exit 2 ;;
+            *) >&2 echo "Unknown argument: ${ARG}"; exit 2 ;;
+        esac
+    done
+
+    COMPANY="${COMPANY:-Kubernetes}"
+    DAYS="${DAYS:-365}"
+    NAMESPACE="${NAMESPACE:-default}"
+    SERVER="${SERVER:-k8s.$(cluster_name)}"
+
+    create_cert_key "${USERNAME}"
+    create_cert "${USERNAME}" "${COMPANY}"
+    sign_cert "${USERNAME}" "${DAYS}"
+    create_kubeconfig "${USERNAME}" "${NAMESPACE}" "${SERVER}"
+    delete_cert "${USERNAME}"
+    delete_cert_key "${USERNAME}"
+    create_role_binding "${USERNAME}"
+}
+
 function create_cert_key {
     local USERNAME="$1"
     openssl genrsa -out "${USERNAME}-key.pem" 2048
@@ -109,36 +139,6 @@ function create_role_binding {
     sudo sed -e "s/_USERNAME_/${USERNAME}/g" \
              "$(templates)/rbac-user-admin-crb.yaml" | \
          kubectl apply --filename -
-}
-
-function create_user {
-    local USERNAME="$1"
-    shift
-
-    log "Creating user ${USERNAME}..."
-
-    for ARG in "$@"; do
-        case "${ARG}" in
-            -c=*|--company=*) COMPANY="${ARG#*=}"; shift ;;
-            -d=*|--days=*) DAYS="${ARG#*=}"; shift ;;
-            -s=*|--server=*) SERVER="${ARG#*=}"; shift ;;
-            *=*) >&2 echo "Unknown argument: ${ARG%=*}"; exit 2 ;;
-            *) >&2 echo "Unknown argument: ${ARG}"; exit 2 ;;
-        esac
-    done
-    
-    COMPANY="${COMPANY:-Kubernetes}"
-    DAYS="${DAYS:-365}"
-    NAMESPACE="${NAMESPACE:-default}"
-    SERVER="${SERVER:-k8s.$(cluster_name)}"
-    
-    create_cert_key "${USERNAME}"
-    create_cert "${USERNAME}" "${COMPANY}"
-    sign_cert "${USERNAME}" "${DAYS}"
-    create_kubeconfig "${USERNAME}" "${NAMESPACE}" "${SERVER}"
-    delete_cert "${USERNAME}"
-    delete_cert_key "${USERNAME}"
-    create_role_binding "${USERNAME}"
 }
 
 function server_endpoint {
