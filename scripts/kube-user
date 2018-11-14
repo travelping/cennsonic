@@ -30,11 +30,17 @@ function main {
     show_completion_time "${START_TIME}"
 }
 
-function kubectl {
-    sudo /opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf "$@"
+function ca_cert {
+    echo "/etc/kubernetes/pki/ca.crt"
+}
+function ca_cert_key {
+    echo "/etc/kubernetes/pki/ca.key"
 }
 function templates {
     echo "/etc/kubernetes/templates"
+}
+function kubectl {
+    sudo /opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf "$@"
 }
 
 function create_cert_key {
@@ -62,8 +68,8 @@ function sign_cert {
     local DAYS="$2"
 
     sudo openssl x509 -req -in "${USERNAME}.pem" \
-                      -CA /etc/kubernetes/pki/ca.crt \
-                      -CAkey /etc/kubernetes/pki/ca.key \
+                      -CA "$(ca_cert)" \
+                      -CAkey "$(ca_cert_key)" \
                       -CAcreateserial \
                       -out "${USERNAME}.pem" \
                       -days "${DAYS}"
@@ -78,7 +84,7 @@ function create_kubeconfig {
     /opt/bin/kubectl config set-cluster "$(cluster_name)" \
         --kubeconfig="${KUBECONFIG}" \
         --server="$(server_endpoint "${SERVER}")" \
-        --certificate-authority=/etc/kubernetes/pki/ca.crt \
+        --certificate-authority="$(ca_cert)" \
         --embed-certs=true
     
     /opt/bin/kubectl config set-credentials "${USERNAME}-$(cluster_name)" \
