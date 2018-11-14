@@ -10,9 +10,9 @@ Actions
     delete
 
 Options
-    -c|--company=<Company>
-    -d|--days=<Days>
-    -s|--server=<Server>
+    -c, --company=<Company>
+    -d, --days=<Days>
+    -s, --server=<Server>
 EOF
 )
 
