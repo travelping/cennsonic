@@ -3,7 +3,11 @@
 set -e
 
 USAGE=$(cat <<EOF
-Usage: kube-user create <Username> [Options]
+Usage: kube-user <Action> <Username> [Options]
+
+Actions
+    create
+    delete
 
 Options
     -c|--company=<Company>
@@ -22,6 +26,13 @@ function main {
             shift 2
 
             create_user "${USERNAME}" "$@"
+            show_completion_time "${START_TIME}"
+        ;;
+        "delete $2")
+            local USERNAME="$2"
+            if [ -z "${USERNAME}" ]; then usage; fi
+
+            delete_user "${USERNAME}"
             show_completion_time "${START_TIME}"
         ;;
         *) usage ;;
@@ -47,8 +58,6 @@ function create_user {
     local USERNAME="$1"
     shift
 
-    log "Creating user ${USERNAME}..."
-
     for ARG in "$@"; do
         case "${ARG}" in
             -c=*|--company=*) COMPANY="${ARG#*=}"; shift ;;
@@ -58,6 +67,8 @@ function create_user {
             *) >&2 echo "Unknown argument: ${ARG}"; exit 2 ;;
         esac
     done
+
+    log "Creating user ${USERNAME}..."
 
     COMPANY="${COMPANY:-Kubernetes}"
     DAYS="${DAYS:-365}"
@@ -71,6 +82,13 @@ function create_user {
     delete_cert "${USERNAME}"
     delete_cert_key "${USERNAME}"
     create_role_binding "${USERNAME}"
+}
+function delete_user {
+    local USERNAME="$1"
+    shift
+
+    log "Deleting user ${USERNAME}..."
+    delete_role_binding "${USERNAME}"
 }
 
 function create_cert_key {
@@ -132,13 +150,19 @@ function create_kubeconfig {
     /opt/bin/kubectl config use-context "${USERNAME}-$(cluster_name)" \
         --kubeconfig="${KUBECONFIG}"
 }
-
 function create_role_binding {
-    local USERNAME="$1"
+    role_binding apply "$@"
+}
+function delete_role_binding {
+    role_binding delete "$@"
+}
+function role_binding {
+    local ACTION="$1"
+    local USERNAME="$2"
 
     sudo sed -e "s/_USERNAME_/${USERNAME}/g" \
              "$(templates)/rbac-user-admin-crb.yaml" | \
-         kubectl apply --filename -
+         kubectl "${ACTION}" --filename -
 }
 
 function server_endpoint {
