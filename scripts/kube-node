@@ -26,14 +26,20 @@ function main {
 
     case "$1 $2 $3 $4 $5" in
         "master init $3 $4 $5")
-            NODE_IP="$3" API_IP="$4" API_IFACE="$5"
+            local NODE_IP="$3"
+            local API_IP="$4"
+            local API_IFACE="$5"
+
             if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ]; then usage; fi
 
             master_init "${NODE_IP}" "${API_IP}" "${API_IFACE}"
             show_completion_time "${START_TIME}"
         ;;
         "master join $3 $4 $5")
-            NODE_IP="$3" API_IP="$4" PKI_ARCHIVE="$5"
+            local NODE_IP="$3"
+            local API_IP="$4"
+            local PKI_ARCHIVE="$5"
+
             if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
                [ -z "${PKI_ARCHIVE}" ]; then usage; fi
 
@@ -41,14 +47,16 @@ function main {
             show_completion_time "${START_TIME}"
         ;;
         "master delete $3  ")
-            NODE_NAME="$3"
+            local NODE_NAME="$3"
+
             if [ -z "${NODE_NAME}" ]; then usage; fi
 
             master_delete "${NODE_NAME}"
             show_completion_time "${START_TIME}"
         ;;
         "master pki make $4 ")
-            PKI_ARCHIVE="$4"
+            local PKI_ARCHIVE="$4"
+
             if [ -z "${PKI_ARCHIVE}" ]; then usage; fi
 
             master_pki_make "${PKI_ARCHIVE}"
@@ -62,7 +70,10 @@ function main {
             show_completion_time "${START_TIME}"
         ;;
         "worker join $3 $4 $5")
-            NODE_IP="$3" API_IP="$4" JOIN_INFO="$5"
+            local NODE_IP="$3"
+            local API_IP="$4"
+            local JOIN_INFO="$5"
+
             if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
                [ -z "${JOIN_INFO}" ]; then usage; fi
 
@@ -74,13 +85,17 @@ function main {
             show_completion_time "${START_TIME}"
         ;;
         "role set $3 $4 ")
-            ROLE="$3" NODE_NAME="$4"
+            local ROLE="$3"
+            local NODE_NAME="$4"
+
             if [ -z "${ROLE}" ]; then usage; fi
 
             role_set "${ROLE}" "${NODE_NAME}"
         ;;
         "role unset $3 $4 ")
-            ROLE="$3" NODE_NAME="$4"
+            local ROLE="$3"
+            local NODE_NAME="$4"
+
             if [ -z "${ROLE}" ]; then usage; fi
 
             role_unset "${ROLE}" "${NODE_NAME}"
