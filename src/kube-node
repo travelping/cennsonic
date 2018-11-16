@@ -14,6 +14,7 @@ Commands:
     master pki make <PKI Archive>
 
     worker join <Node IP> <API IP> <Join Info>
+    worker delete <Node Name>
     worker reset
 
     role set <Role> [Node Name]
@@ -78,6 +79,14 @@ function main {
                [ -z "${JOIN_INFO}" ]; then usage; fi
 
             worker_join "${NODE_IP}" "${API_IP}" "${JOIN_INFO}"
+            show_completion_time "${START_TIME}"
+        ;;
+        "worker delete $3  ")
+            local NODE_NAME="$3"
+
+            if [ -z "${NODE_NAME}" ]; then usage; fi
+
+            worker_delete "${NODE_NAME}"
             show_completion_time "${START_TIME}"
         ;;
         "worker reset   ")
@@ -296,6 +305,10 @@ function worker_join {
 
     sudo mkdir -m 700 -p /etc/kubernetes/manifests
     sudo /opt/bin/kubeadm join ${JOIN_INFO}
+}
+function worker_delete {
+    local NODE_NAME="$1"
+    kubectl delete node "${NODE_NAME}.$(cluster_name)"
 }
 function worker_reset {
     log "Resetting worker of $(cluster_name)..."
