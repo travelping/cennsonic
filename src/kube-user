@@ -63,12 +63,12 @@ function create_user {
 
     for ARG in "$@"; do
         case "${ARG}" in
-            -a|--admin) ADMIN=true; shift ;;
-            -c=*|--company=*) COMPANY="${ARG#*=}"; shift ;;
-            -d=*|--days=*) DAYS="${ARG#*=}"; shift ;;
-            -s=*|--server=*) SERVER="${ARG#*=}"; shift ;;
-                 --ca-cert=*) CA_CERT="${ARG#*=}"; shift ;;
-                 --ca-cert-key=*) CA_CERT_KEY="${ARG#*=}"; shift ;;
+            -a|--admin) local ADMIN=true; shift ;;
+            -c=*|--company=*) local COMPANY="${ARG#*=}"; shift ;;
+            -d=*|--days=*) local DAYS="${ARG#*=}"; shift ;;
+            -s=*|--server=*) local SERVER="${ARG#*=}"; shift ;;
+                 --ca-cert=*) local CA_CERT="${ARG#*=}"; shift ;;
+                 --ca-cert-key=*) local CA_CERT_KEY="${ARG#*=}"; shift ;;
             *=*) >&2 echo "Unknown argument: ${ARG%=*}"; exit 2 ;;
             *) >&2 echo "Unknown argument: ${ARG}"; exit 2 ;;
         esac
