@@ -102,8 +102,8 @@ function calico_template {
 function keepaived_template {
     echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/keepalived.yaml"
 }
-function crb_user_admin_template {
-    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/rbac-user-admin-crb.yaml"
+function user_admin_crb_template {
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/user-admin-crb.yaml"
 }
 function master_images {
     local VERSION="$1"
@@ -136,7 +136,7 @@ function install_master {
     install_template "$(kubeadm_template)" \
                      "$(calico_template)" \
                      "$(keepaived_template)" \
-                     "$(crb_user_admin_template)"
+                     "$(user_admin_crb_template)"
 
     enable_service docker kubelet
 }

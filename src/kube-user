@@ -161,7 +161,7 @@ function role_binding {
     local USERNAME="$2"
 
     sudo sed -e "s/_USERNAME_/${USERNAME}/g" \
-             "$(templates)/rbac-user-admin-crb.yaml" | \
+             "$(templates)/user-admin-crb.yaml" | \
          kubectl "${ACTION}" --filename -
 }
 
