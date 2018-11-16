@@ -303,6 +303,8 @@ function worker_join {
     resolve_node_to "${NODE_IP}"
     resolve_api_to "${API_IP}"
 
+    kubelet_extra_set
+
     sudo mkdir -m 700 -p /etc/kubernetes/manifests
     sudo /opt/bin/kubeadm join ${JOIN_INFO}
 }
@@ -312,11 +314,13 @@ function worker_delete {
 }
 function worker_reset {
     log "Resetting worker of $(cluster_name)..."
+    kubelet_extra_reset
     node_reset
 }
 
 function node_reset {
     sudo /opt/bin/kubeadm reset --force
+    cni_reset
     resolve_reset
 }
 
@@ -406,6 +410,28 @@ function pods {
     local JSONPATH="${4:+--output jsonpath=$4}"
 
     kubectl get pods "${POD_NAME}" "${NAMESPACE}" "${SELECTOR}" "${JSONPATH}"
+}
+
+function cni_reset {
+    echo "Resetting CNI..."
+    sudo find /opt/cni/bin -type f -exec rm "{}" 2>/dev/null \;
+    sudo find /etc/cni/net.d -type f -exec rm "{}" 2>/dev/null \;
+    sudo rmdir -p /opt/cni/bin 2>/dev/null || true
+    sudo rmdir -p /etc/cni/net.d 2>/dev/null || true
+}
+
+function kubelet_extra_set {
+    echo "Setting Kubelet extra flags..."
+
+    printf %b "KUBELET_EXTRA_ARGS=" \
+              "--allowed-unsafe-sysctls=net.* " | \
+        sudo tee /etc/default/kubelet
+
+    sudo chmod 600 /etc/default/kubelet
+}
+function kubelet_extra_reset {
+    echo "Resetting Kubelet extra flags..."
+    sudo rm /etc/default/kubelet
 }
 
 function resolve_node_to {
