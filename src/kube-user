@@ -10,6 +10,7 @@ Actions
     delete
 
 Options
+    -a, --admin
     -c, --company=<Company>
     -d, --days=<Days>
     -s, --server=<Server>
@@ -62,6 +63,7 @@ function create_user {
 
     for ARG in "$@"; do
         case "${ARG}" in
+            -a|--admin) ADMIN=true; shift ;;
             -c=*|--company=*) COMPANY="${ARG#*=}"; shift ;;
             -d=*|--days=*) DAYS="${ARG#*=}"; shift ;;
             -s=*|--server=*) SERVER="${ARG#*=}"; shift ;;
@@ -74,6 +76,7 @@ function create_user {
 
     log "Creating user ${USERNAME}..."
 
+    ADMIN=false
     COMPANY="${COMPANY:-Kubernetes}"
     DAYS="${DAYS:-365}"
     NAMESPACE="${NAMESPACE:-default}"
@@ -87,14 +90,15 @@ function create_user {
     create_kubeconfig "${USERNAME}" "${NAMESPACE}" "${SERVER}" "${CA_CERT}"
     delete_cert "${USERNAME}"
     delete_cert_key "${USERNAME}"
-    create_role_binding "${USERNAME}"
+
+    if "${ADMIN}"; then create_admin_binding "${USERNAME}"; fi
 }
 function delete_user {
     local USERNAME="$1"
     shift
 
     log "Deleting user ${USERNAME}..."
-    delete_role_binding "${USERNAME}"
+    delete_admin_binding "${USERNAME}"
 }
 
 function create_cert_key {
@@ -159,13 +163,13 @@ function create_kubeconfig {
     /opt/bin/kubectl config use-context "${USERNAME}-$(cluster_name)" \
         --kubeconfig="${KUBECONFIG}"
 }
-function create_role_binding {
-    role_binding apply "$@"
+function create_admin_binding {
+    admin_binding create "$@"
 }
-function delete_role_binding {
-    role_binding delete "$@"
+function delete_admin_binding {
+    admin_binding delete "$@"
 }
-function role_binding {
+function admin_binding {
     local ACTION="$1"
     local USERNAME="$2"
 
