@@ -13,6 +13,8 @@ Options
     -c, --company=<Company>
     -d, --days=<Days>
     -s, --server=<Server>
+        --ca-cert=<CA Cert Path>
+        --ca-cert-key=<CA Cert Key Path>
 EOF
 )
 
@@ -63,6 +65,8 @@ function create_user {
             -c=*|--company=*) COMPANY="${ARG#*=}"; shift ;;
             -d=*|--days=*) DAYS="${ARG#*=}"; shift ;;
             -s=*|--server=*) SERVER="${ARG#*=}"; shift ;;
+                 --ca-cert=*) CA_CERT="${ARG#*=}"; shift ;;
+                 --ca-cert-key=*) CA_CERT_KEY="${ARG#*=}"; shift ;;
             *=*) >&2 echo "Unknown argument: ${ARG%=*}"; exit 2 ;;
             *) >&2 echo "Unknown argument: ${ARG}"; exit 2 ;;
         esac
@@ -74,11 +78,13 @@ function create_user {
     DAYS="${DAYS:-365}"
     NAMESPACE="${NAMESPACE:-default}"
     SERVER="${SERVER:-k8s.$(cluster_name)}"
+    CA_CERT="${CA_CERT:-$(ca_cert)}"
+    CA_CERT_KEY="${CA_CERT_KEY:-$(ca_cert_key)}"
 
     create_cert_key "${USERNAME}"
     create_cert "${USERNAME}" "${COMPANY}"
-    sign_cert "${USERNAME}" "${DAYS}"
-    create_kubeconfig "${USERNAME}" "${NAMESPACE}" "${SERVER}"
+    sign_cert "${USERNAME}" "${DAYS}" "${CA_CERT}" "${CA_CERT_KEY}"
+    create_kubeconfig "${USERNAME}" "${NAMESPACE}" "${SERVER}" "${CA_CERT}"
     delete_cert "${USERNAME}"
     delete_cert_key "${USERNAME}"
     create_role_binding "${USERNAME}"
@@ -114,10 +120,12 @@ function delete_cert {
 function sign_cert {
     local USERNAME="$1"
     local DAYS="$2"
+    local CA_CERT="$3"
+    local CA_CERT_KEY="$4"
 
     sudo openssl x509 -req -in "${USERNAME}.pem" \
-                      -CA "$(ca_cert)" \
-                      -CAkey "$(ca_cert_key)" \
+                      -CA "${CA_CERT}" \
+                      -CAkey "${CA_CERT_KEY}" \
                       -CAcreateserial \
                       -out "${USERNAME}.pem" \
                       -days "${DAYS}"
@@ -127,12 +135,13 @@ function create_kubeconfig {
     local USERNAME="$1"
     local NAMESPACE="$2"
     local SERVER="$3"
+    local CA_CERT="$4"
     local KUBECONFIG="${USERNAME}.conf"
 
     /opt/bin/kubectl config set-cluster "$(cluster_name)" \
         --kubeconfig="${KUBECONFIG}" \
         --server="$(server_endpoint "${SERVER}")" \
-        --certificate-authority="$(ca_cert)" \
+        --certificate-authority="${CA_CERT}" \
         --embed-certs=true
     
     /opt/bin/kubectl config set-credentials "${USERNAME}-$(cluster_name)" \
