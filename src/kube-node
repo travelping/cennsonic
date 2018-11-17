@@ -170,8 +170,8 @@ function master_init {
     local API_IP="$2"
     local API_IFACE="$3"
 
-    resolve_node_to "${NODE_IP}"
-    resolve_api_to "${NODE_IP}"
+    resolve_node_hostname_to "${NODE_IP}"
+    resolve_api_hostname_to "${NODE_IP}"
     master_prepare new "${NODE_IP}"
 
     log "Initialising first master of $(cluster_name)..."
@@ -185,7 +185,7 @@ function master_init {
         install_keepalived "${API_IP}" "${API_IFACE}"
     fi
     if [ "${NODE_IP}" != "${API_IP}" ]; then
-        resolve_api_to "${API_IP}"
+        resolve_api_hostname_to "${API_IP}"
     fi
 
     log "Waiting for Etcd..."
@@ -198,8 +198,8 @@ function master_join {
 
     master_pki_install "${PKI_ARCHIVE}"
 
-    resolve_node_to "${NODE_IP}"
-    resolve_api_to "${API_IP}"
+    resolve_node_hostname_to "${NODE_IP}"
+    resolve_api_hostname_to "${API_IP}"
     master_prepare existing "${NODE_IP}"
 
     log "Joining master to $(cluster_name)..."
@@ -300,8 +300,8 @@ function worker_join {
 
     log "Joining worker to $(cluster_name)..."
 
-    resolve_node_to "${NODE_IP}"
-    resolve_api_to "${API_IP}"
+    resolve_node_hostname_to "${NODE_IP}"
+    resolve_api_hostname_to "${API_IP}"
 
     kubelet_extra_set
 
@@ -434,11 +434,11 @@ function kubelet_extra_reset {
     sudo rm /etc/default/kubelet
 }
 
-function resolve_node_to {
+function resolve_node_hostname_to {
     local IP="$1"
     ensure_in_hosts "${IP}" "$(node_hostname)"
 }
-function resolve_api_to {
+function resolve_api_hostname_to {
     local IP="$1"
     ensure_in_hosts "${IP}" "$(api_hostname)"
 }
