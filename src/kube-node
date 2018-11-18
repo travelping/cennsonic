@@ -465,7 +465,7 @@ function delete_from_hosts {
 }
 
 function join_token {
-    sudo /opt/bin/kubeadm token list | tail -n-1 | sed "s/ .*//"
+    sudo /opt/bin/kubeadm token list | sed -n 2p | sed "s/ .*//"
 }
 function discovery_token_ca_cert_hash {
     openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
