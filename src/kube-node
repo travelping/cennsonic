@@ -414,8 +414,8 @@ function pods {
 
 function cni_reset {
     echo "Resetting CNI..."
-    sudo find /opt/cni/bin -type f -exec rm "{}" 2>/dev/null \;
-    sudo find /etc/cni/net.d -type f -exec rm "{}" 2>/dev/null \;
+    sudo find /opt/cni/bin -type f -exec rm -f "{}" 2>/dev/null \; || true
+    sudo find /etc/cni/net.d -type f -exec rm -f "{}" 2>/dev/null \; || true
     sudo rmdir -p /opt/cni/bin 2>/dev/null || true
     sudo rmdir -p /etc/cni/net.d 2>/dev/null || true
 }
@@ -431,7 +431,7 @@ function kubelet_extra_set {
 }
 function kubelet_extra_reset {
     echo "Resetting Kubelet extra flags..."
-    sudo rm /etc/default/kubelet
+    sudo rm -f /etc/default/kubelet
 }
 
 function resolve_node_hostname_to {
