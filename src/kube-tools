@@ -99,6 +99,10 @@ function calico_template {
     echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/calico.yaml"
     echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/calico-rbac-kdd.yaml"
 }
+function multus_cni_template {
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/multus-cni.yaml"
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/multus-cni-rbac.yaml"
+}
 function keepaived_template {
     echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/keepalived.yaml"
 }
@@ -118,11 +122,13 @@ function master_images {
 function worker_images {
     local VERSION="$1"
     local CALICO_VERSION="$2"
+    local CNI_NODE_VERSION="0.3.0"
 
     /opt/bin/kubeadm config images list \
         --kubernetes-version "${VERSION}" | grep "kube-proxy\\|pause"
 
     echo "quay.io/calico/node:${CALICO_VERSION}"
+    echo "quay.io/openvnf/cni-node:${CNI_NODE_VERSION}"
 }
 
 function install_master {
@@ -135,6 +141,7 @@ function install_master {
     install_images master "${VERSION}" "${CALICO_VERSION}"
     install_template "$(kubeadm_template)" \
                      "$(calico_template)" \
+                     "$(multus_cni_template)" \
                      "$(keepaived_template)" \
                      "$(user_admin_crb_template)"
 

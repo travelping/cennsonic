@@ -178,8 +178,8 @@ function master_init {
     kubeadm init
 
     log "Installing Calico..."
-    kubectl apply --filename "$(templates)/calico-rbac-kdd.yaml"
-    kubectl apply --filename "$(templates)/calico.yaml"
+    kubectl create --filename "$(templates)/calico-rbac-kdd.yaml"
+    kubectl create --filename "$(templates)/calico.yaml"
 
     if [ -n "${API_IFACE}" ]; then
         install_keepalived "${API_IP}" "${API_IFACE}"
@@ -190,6 +190,10 @@ function master_init {
 
     log "Waiting for Etcd..."
     wait_for etcd_ready
+
+    log "Installing Multus CNI..."
+    kubectl create --filename "$(templates)/multus-cni-rbac.yaml"
+    kubectl create --filename "$(templates)/multus-cni.yaml"
 }
 function master_join {
     local NODE_IP="$1"
@@ -355,7 +359,7 @@ function install_keepalived {
              -e "s/_IFACE_/${API_IFACE}/" \
              -e "s/_PASSWORD_/$(openssl rand -base64 8)/" \
              "$(templates)/keepalived.yaml" | \
-         kubectl apply --filename -
+         kubectl create --filename -
 
     log "Waiting for Keepalived..."
     wait_for keepalived_ready

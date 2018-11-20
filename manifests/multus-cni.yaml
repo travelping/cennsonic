@@ -1,0 +1,141 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: multus-cni-config
+  namespace: kube-system
+data:
+  05-multus-cni.conf: |
+    {"name": "multus-cni",
+     "cniVersion":"0.1.0",
+     "type": "multus-cni",
+     "kubeconfig": "/etc/kubernetes/kubelet.conf",
+     "delegates": [
+       __10-calico.conflist__
+     ]
+    }
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: multus-cni
+  namespace: kube-system
+  labels:
+    app: multus-cni
+spec:
+  selector:
+    matchLabels:
+      app: multus-cni
+  template:
+    metadata:
+      labels:
+        app: multus-cni
+    spec:
+      tolerations:
+      - key: node.kubernetes.io/not-ready
+        effect: NoSchedule
+      containers:
+      - name: multus-cni
+        image: quay.io/openvnf/cni-node:0.3.0
+        command:
+        - cni-node
+        - install
+        - --plugins=multus-cni,macvlan
+        - --configs=05-multus-cni.conf
+        - --manifests=multus-cni-crb.yaml
+        - --wait
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - cni-node
+              - uninstall
+              - --plugins=multus-cni,macvlan
+              - --configs=05-multus-cni.conf
+              - --manifests=multus-cni-crb.yaml
+        env:
+        - name: NODE_HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        volumeMounts:
+        - name: cnibin
+          mountPath: /host/opt/cni/bin
+        - name: cnicfg
+          mountPath: /host/etc/cni/net.d
+        - name: multus-cni-config
+          mountPath: /etc/cni/net.d
+        - name: multus-cni-crb
+          mountPath: /etc/kubernetes/manifests
+      volumes:
+      - name: cnibin
+        hostPath:
+          path: /opt/cni/bin
+      - name: cnicfg
+        hostPath:
+          path: /etc/cni/net.d
+      - name: multus-cni-config
+        configMap:
+          name: multus-cni-config
+      - name: multus-cni-crb
+        configMap:
+          name: multus-cni-crb
+      serviceAccount: multus-cni
+      serviceAccountName: multus-cni
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: network-attachment-definitions.k8s.cni.cncf.io
+spec:
+  group: k8s.cni.cncf.io
+  version: v1
+  scope: Namespaced
+  names:
+    kind: NetworkAttachmentDefinition
+    plural: network-attachment-definitions
+    singular: network-attachment-definition
+    shortNames:
+    - nad
+  validation:
+    openAPIV3Schema:
+      properties:
+        spec:
+          properties:
+            config:
+              type: string
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: multus-cni-crd
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- nonResourceURLs:
+  - '*'
+  verbs:
+  - '*'
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: multus-cni-crb
+  namespace: kube-system
+data:
+  multus-cni-crb.yaml: |
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: multus-cni-${NODE_HOSTNAME}
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: multus-cni-crd
+    subjects:
+    - kind: User
+      name: system:node:${NODE_HOSTNAME}
+      apiGroup: rbac.authorization.k8s.io
