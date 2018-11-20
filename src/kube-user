@@ -76,7 +76,7 @@ function create_user {
 
     log "Creating user ${USERNAME}..."
 
-    ADMIN=false
+    ADMIN="${ADMIN:-false}"
     COMPANY="${COMPANY:-Kubernetes}"
     DAYS="${DAYS:-365}"
     NAMESPACE="${NAMESPACE:-default}"
