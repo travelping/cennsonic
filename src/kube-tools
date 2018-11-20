@@ -112,12 +112,14 @@ function user_admin_crb_template {
 function master_images {
     local VERSION="$1"
     local CALICO_VERSION="$2"
+    local KEEPALIVED_VERSION="2.0.7"
 
     /opt/bin/kubeadm config images list \
         --kubernetes-version "${VERSION}"
 
     echo "quay.io/calico/node:${CALICO_VERSION}"
     echo "quay.io/calico/cni:${CALICO_VERSION}"
+    echo "docker.io/aialferov/keepalived:${KEEPALIVED_VERSION}"
 }
 function worker_images {
     local VERSION="$1"
