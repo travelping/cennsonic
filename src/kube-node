@@ -182,7 +182,7 @@ function master_init {
     kubectl create --filename "$(templates)/calico.yaml"
 
     if [ -n "${API_IFACE}" ]; then
-        install_keepalived "${API_IP}" "${API_IFACE}"
+        install_kubealived "${API_IP}" "${API_IFACE}"
     fi
     if [ "${NODE_IP}" != "${API_IP}" ]; then
         resolve_api_hostname_to "${API_IP}"
@@ -350,22 +350,22 @@ function role_unset {
     role_set "${ROLE}" "${NODE_NAME}" -
 }
 
-function install_keepalived {
+function install_kubealived {
     local API_IP="$1"
     local API_IFACE="$2"
 
-    log "Installing Keepalived..."
+    log "Installing Kubealived..."
     sudo sed -e "s/_IP_/${API_IP}/" \
              -e "s/_IFACE_/${API_IFACE}/" \
              -e "s/_PASSWORD_/$(openssl rand -base64 8)/" \
-             "$(templates)/keepalived.yaml" | \
+             "$(templates)/kubealived.yaml" | \
          kubectl create --filename -
 
-    log "Waiting for Keepalived..."
-    wait_for keepalived_ready
+    log "Waiting for Kubealived..."
+    wait_for kubealived_ready
 }
-function keepalived_ready {
-    [ "$(pods "" keepalived-system app=keepalived \
+function kubealived_ready {
+    [ "$(pods "" kubealived-system app=kubealived \
               "{.items[0].status.containerStatuses[0].ready}" \
               2>/dev/null)" = "true" ]
 }
