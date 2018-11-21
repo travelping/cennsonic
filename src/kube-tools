@@ -246,17 +246,20 @@ function install_config {
 
     sudo mkdir -p "${DEST}"
     curl -sL "${URL}" | sed "s:/usr/bin:/opt/bin:g" | \
-                        sudo dd of="${DEST}/${CONFIG}"
+                        sudo tee "${DEST}/${CONFIG}" > /dev/null
     sudo chmod "${MODE}" "${DEST}/${CONFIG}"
 }
 function install_template {
-    local URLS=$*
+    local TEMPLATES=$*
 
     sudo mkdir -m 700 -p "$(templates)"
-    for URL in ${URLS}; do
-        local FILE; FILE=$(basename "${URL}")
-        log "Installing template ${FILE}..."
-        curl -sL "${URL}" | sudo dd of="$(templates)/${FILE}"
+    for TEMPLATE in ${TEMPLATES}; do
+        local FILE="${TEMPLATE%%=*}"
+        local URL="${TEMPLATE#*=}"
+        if [ "${FILE}" = "${URL}" ]; then FILE="$(basename "${URL}")"; fi
+
+        log "Installing ${URL} as ${FILE}..."
+        curl -sL "${URL}" | sudo tee "$(templates)/${FILE}" > /dev/null
         sudo chmod 600 "$(templates)/${FILE}"
     done
 }
