@@ -2,8 +2,8 @@
 
 set -e
 
-#K8S_VERSION=v1.12.1
-#CNI_VERSION=v0.7.1
+#KUBERNETES_VERSION=v1.12.1
+#CNI_PLUGINS_VERSION=v0.7.4
 #CRICTL_VERSION=v1.12.0
 #CALICO_VERSION=v3.1.3
 
@@ -103,8 +103,11 @@ function multus_cni_template {
     echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/multus-cni.yaml"
     echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/multus-cni-rbac.yaml"
 }
-function keepaived_template {
-    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/keepalived.yaml"
+function kubealived_template {
+    local VERSION="$1"
+    printf %b "kubealived.yaml=" \
+              "https://raw.githubusercontent.com/openvnf/kubealived/"\
+              "${VERSION}/bundle.yaml"
 }
 function user_admin_crb_template {
     echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/user-admin-crb.yaml"
@@ -112,14 +115,14 @@ function user_admin_crb_template {
 function master_images {
     local VERSION="$1"
     local CALICO_VERSION="$2"
-    local KEEPALIVED_VERSION="2.0.7"
+    local KUBEALIVED_VERSION="1.0.0"
 
     /opt/bin/kubeadm config images list \
         --kubernetes-version "${VERSION}"
 
     echo "quay.io/calico/node:${CALICO_VERSION}"
     echo "quay.io/calico/cni:${CALICO_VERSION}"
-    echo "docker.io/aialferov/keepalived:${KEEPALIVED_VERSION}"
+    echo "quay.io/openvnf/kubealived:${KUBEALIVED_VERSION}"
 }
 function worker_images {
     local VERSION="$1"
@@ -136,6 +139,7 @@ function worker_images {
 function install_master {
     local VERSION="$1"
     local CALICO_VERSION="$2"
+    local KUBEALIVED_VERSION="1.0.0"
 
     install_kubeadm "${VERSION}"
     install_kubelet "${VERSION}"
@@ -144,7 +148,7 @@ function install_master {
     install_template "$(kubeadm_template)" \
                      "$(calico_template)" \
                      "$(multus_cni_template)" \
-                     "$(keepaived_template)" \
+                     "$(kubealived_template "${KUBEALIVED_VERSION}")" \
                      "$(user_admin_crb_template)"
 
     enable_service docker kubelet
