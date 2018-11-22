@@ -1,0 +1,27 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: multus-macvlan-test
+  labels:
+    run: multus-macvlan-test
+spec:
+  selector:
+    matchLabels:
+      run: multus-macvlan-test
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[
+          {"name": "macvlan0",
+           "interfaceRequest": "macvi0"}
+        ]'
+      labels:
+        run: multus-macvlan-test
+    spec:
+      containers:
+      - image: aialferov/pause
+        imagePullPolicy: Always
+        name: multus-macvlan-test
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
