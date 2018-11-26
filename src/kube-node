@@ -95,7 +95,7 @@ function main {
 
             if [ -z "${ROLE}" ]; then usage; fi
 
-            role_set "${ROLE}" "${NODE_NAME}"
+            node_role set "${ROLE}" "${NODE_NAME}"
         ;;
         "role unset $3 $4 ")
             local ROLE="$3"
@@ -103,7 +103,7 @@ function main {
 
             if [ -z "${ROLE}" ]; then usage; fi
 
-            role_unset "${ROLE}" "${NODE_NAME}"
+            node_role unset "${ROLE}" "${NODE_NAME}"
         ;;
         *) usage ;;
     esac
@@ -319,26 +319,77 @@ function node_reset {
     kubelet_extra_reset
 }
 
-function role_set {
-    local ROLE="node-role.kubernetes.io/$1"
-    local NODE; NODE="${2:-$(node_name)}.$(cluster_name)"
-    local ACTION="${3:-=}"
+function node_role {
+    local ACTION="$1"
+    local ROLE="$2"
+    local NODE_NAME; NODE_NAME="${3:-$(node_name)}"
 
-    local WORKER_ROLE="node-role.kubernetes.io/worker"
+    node_role_label "${ACTION}" "${ROLE}" "${NODE_NAME}"
 
-    kubectl label node "${NODE}" "${ROLE}${ACTION}"
-
-    if [ "${ROLE}" = "${WORKER_ROLE}" ]; then return; fi
-
-    case "${ACTION}" in
-        =) kubectl taint node "${NODE}" "${ROLE}=:NoSchedule" ;;
-        -) kubectl taint node "${NODE}" "${ROLE}:NoSchedule-" ;;
+    case "${ACTION} ${ROLE}" in
+        "set worker") node_role_taint unset master "${NODE_NAME}" ;;
+        "unset worker") if node_has_role_label master "${NODE_NAME}"; then
+                            node_role_taint set master "${NODE_NAME}"
+                        fi ;;
+        "set master") if ! node_has_role_label worker "${NODE_NAME}"; then
+                          node_role_taint set master "${NODE_NAME}"
+                      fi ;;
+        *) node_role_taint "${ACTION}" "${ROLE}" "${NODE_NAME}" ;;
     esac
 }
-function role_unset {
+function node_role_label {
+    local ACTION="$1"
+    local ROLE="$2"
+    local NODE_NAME="$3"
+
+    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
+    local LABEL="node-role.kubernetes.io/${ROLE}"
+
+    case "${ACTION}" in
+          set) if ! node_has_role_label "${ROLE}" "${NODE_NAME}"; then
+                   kubectl label node "${NODE}" "${LABEL}=true" --overwrite
+               fi ;;
+        unset) if node_has_role_label "${ROLE}" "${NODE_NAME}"; then
+                   kubectl label node "${NODE}" "${LABEL}-"
+               fi ;;
+    esac
+}
+function node_role_taint {
+    local ACTION="$1"
+    local ROLE="$2"
+    local NODE_NAME="$3"
+
+    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
+    local TAINT="node-role.kubernetes.io/${ROLE}"
+
+    case "${ACTION}" in
+          set) if ! node_has_role_taint "${ROLE}" "${NODE_NAME}"; then
+                   kubectl taint node "${NODE}" "${TAINT}=:NoSchedule"
+               fi ;;
+        unset) if node_has_role_taint "${ROLE}" "${NODE_NAME}"; then
+                   kubectl taint node "${NODE}" "${TAINT}:NoSchedule-"
+               fi ;;
+    esac
+}
+function node_has_role_label {
     local ROLE="$1"
     local NODE_NAME="$2"
-    role_set "${ROLE}" "${NODE_NAME}" -
+
+    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
+    local LABEL="node-role\\.kubernetes\\.io/${ROLE}"
+
+    local JP="jsonpath={.metadata.labels.${LABEL}}"
+    [ "$(kubectl get node "${NODE}" -o "${JP}")" = "true" ]
+}
+function node_has_role_taint {
+    local ROLE="$1"
+    local NODE_NAME="$2"
+
+    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
+    local TAINT="node-role.kubernetes.io/${ROLE}"
+
+    local JP="jsonpath={.spec.taints[?(@.key==\"${TAINT}\")].effect}"
+    [ "$(kubectl get node "${NODE}" -o "${JP}")" = "NoSchedule" ]
 }
 
 function install_kubealived {
