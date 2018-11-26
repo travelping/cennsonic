@@ -9,13 +9,13 @@ Commands:
     master init <Node IP> <API IP> [API Interface]
     master join <Node IP> <API IP> <PKI Archive>
     master delete <Node Name>
-    master reset
     master info join
     master pki make <PKI Archive>
 
     worker join <Node IP> <API IP> <Join Info>
     worker delete <Node Name>
-    worker reset
+
+    reset
 
     role set <Role> [Node Name]
     role unset <Role> [Node Name]
@@ -66,10 +66,6 @@ function main {
         "master info join  ")
             master_info_join
         ;;
-        "master reset   ")
-            master_reset
-            show_completion_time "${START_TIME}"
-        ;;
         "worker join $3 $4 $5")
             local NODE_IP="$3"
             local API_IP="$4"
@@ -89,8 +85,8 @@ function main {
             worker_delete "${NODE_NAME}"
             show_completion_time "${START_TIME}"
         ;;
-        "worker reset   ")
-            worker_reset
+        "reset    ")
+            node_reset
             show_completion_time "${START_TIME}"
         ;;
         "role set $3 $4 ")
@@ -261,11 +257,6 @@ function master_delete {
                 --endpoints="https://${ETCD_IP}:2379" \
             member remove "${ETCD_ID}"
 }
-function master_reset {
-    log "Resetting master of $(cluster_name)..."
-    sudo rm -f "$(kubeadm_config)"
-    node_reset
-}
 function master_info_join {
     local HASH; HASH="$(discovery_token_ca_cert_hash)"
 
@@ -316,16 +307,16 @@ function worker_delete {
     local NODE_NAME="$1"
     kubectl delete node "${NODE_NAME}.$(cluster_name)"
 }
-function worker_reset {
-    log "Resetting worker of $(cluster_name)..."
-    kubelet_extra_reset
-    node_reset
-}
 
 function node_reset {
+    log "Resetting node of $(cluster_name)..."
+
     sudo /opt/bin/kubeadm reset --force
+    sudo rm -f "$(kubeadm_config)"
+
     cni_reset
     resolve_reset
+    kubelet_extra_reset
 }
 
 function role_set {
