@@ -69,7 +69,8 @@ function main {
         "worker join $3 $4 $5")
             local NODE_IP="$3"
             local API_IP="$4"
-            local JOIN_INFO="$5"
+            shift 4
+            local JOIN_INFO=$*
 
             if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
                [ -z "${JOIN_INFO}" ]; then usage; fi
@@ -291,7 +292,8 @@ function master_pki_install {
 function worker_join {
     local NODE_IP="$1"
     local API_IP="$2"
-    local JOIN_INFO="$3"
+    shift 2
+    local JOIN_INFO=$*
 
     log "Joining worker to $(cluster_name)..."
 
