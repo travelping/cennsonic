@@ -173,6 +173,7 @@ function master_init {
 
     log "Initialising first master of $(cluster_name)..."
     kubeadm init
+    node_role set master
 
     log "Installing Calico..."
     kubectl create --filename "$(templates)/calico-rbac-kdd.yaml"
@@ -227,6 +228,8 @@ function master_join {
     kubeadm_alpha controlplane all
     kubeadm_alpha kubelet config annotate-cri
     kubeadm_alpha mark-master
+
+    node_role set master
 
     log "Waiting for Etcd..."
     wait_for etcd_ready
