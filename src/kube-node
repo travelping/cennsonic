@@ -123,7 +123,16 @@ function kubeadm_config {
     echo "/etc/kubernetes/kubeadm.conf"
 }
 function kubectl {
-    sudo /opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf $*
+    sudo /opt/bin/kubectl --kubeconfig "$(kubeconfig)" $*
+}
+function kubeconfig {
+    echo "/etc/kubernetes/kubeconfig"
+}
+function kubeconfig_master {
+    echo "/etc/kubernetes/admin.conf"
+}
+function kubeconfig_worker {
+    echo "/etc/kubernetes/kubelet.conf"
 }
 
 function templates {
@@ -173,6 +182,8 @@ function master_init {
 
     log "Initialising first master of $(cluster_name)..."
     kubeadm init
+
+    sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
     node_role set master
 
     log "Installing Calico..."
@@ -229,6 +240,7 @@ function master_join {
     kubeadm_alpha kubelet config annotate-cri
     kubeadm_alpha mark-master
 
+    sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
     node_role set master
 
     log "Waiting for Etcd..."
@@ -307,6 +319,9 @@ function worker_join {
 
     sudo mkdir -m 700 -p /etc/kubernetes/manifests
     sudo /opt/bin/kubeadm join ${JOIN_INFO}
+
+    sudo ln -s "$(kubeconfig_worker)" "$(kubeconfig)"
+    node_role set worker
 }
 function worker_delete {
     local NODE_NAME="$1"
