@@ -210,6 +210,7 @@ function master_join {
     local PKI_ARCHIVE="$3"
 
     master_pki_install "${PKI_ARCHIVE}"
+    sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
 
     resolve_node_hostname_to "${NODE_IP}"
     resolve_api_hostname_to "${API_IP}"
@@ -240,7 +241,6 @@ function master_join {
     kubeadm_alpha kubelet config annotate-cri
     kubeadm_alpha mark-master
 
-    sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
     node_role set master
 
     log "Waiting for Etcd..."
