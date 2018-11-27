@@ -8,8 +8,8 @@ Usage: kube-node <Command>
 Commands:
     master init <Node IP> <API IP> [API Interface]
     master join <Node IP> <API IP> <PKI Archive>
+    master join-info
     master delete <Node Name>
-    master info join
     master pki make <PKI Archive>
 
     worker join <Node IP> <API IP> <Join Info>
@@ -47,6 +47,9 @@ function main {
             master_join "${NODE_IP}" "${API_IP}" "${PKI_ARCHIVE}"
             show_completion_time "${START_TIME}"
         ;;
+        "master join-info   ")
+            master_join_info
+        ;;
         "master delete $3  ")
             local NODE_NAME="$3"
 
@@ -62,9 +65,6 @@ function main {
 
             master_pki_make "${PKI_ARCHIVE}"
             show_completion_time "${START_TIME}"
-        ;;
-        "master info join  ")
-            master_info_join
         ;;
         "worker join $3 $4 $5")
             local NODE_IP="$3"
@@ -234,6 +234,13 @@ function master_join {
     log "Waiting for Etcd..."
     wait_for etcd_ready
 }
+function master_join_info {
+    local HASH; HASH="$(discovery_token_ca_cert_hash)"
+
+    echo -n "--token $(join_token) "
+    echo -n "$(api_server_ip):$(api_server_port) "
+    echo -n "--discovery-token-ca-cert-hash sha256:${HASH}"
+}
 function master_delete {
     local NODE_NAME="$1"
 
@@ -260,13 +267,6 @@ function master_delete {
                 --cert-file /etc/kubernetes/pki/etcd/peer.crt \
                 --endpoints="https://${ETCD_IP}:2379" \
             member remove "${ETCD_ID}"
-}
-function master_info_join {
-    local HASH; HASH="$(discovery_token_ca_cert_hash)"
-
-    echo -n "--token $(join_token) "
-    echo -n "$(api_server_ip):$(api_server_port) "
-    echo -n "--discovery-token-ca-cert-hash sha256:${HASH}"
 }
 function master_pki_make {
     local ARCHIVE="$1"
