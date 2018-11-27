@@ -1,0 +1,70 @@
+#!/bin/bash
+
+set -e
+
+USAGE=$(cat <<EOF
+Usage: kube-tools-centos install [User]
+EOF
+)
+
+function main {
+    local START_TIME; START_TIME="$(start_time)"
+
+    case "$1" in
+        install) shift 1; centos_install "$@" ;;
+        *) usage ;;
+    esac
+
+    show_completion_time "${START_TIME}"
+}
+
+function centos_install {
+    local USER="${1:-centos}"
+
+    log "Preparing CentOS with user ${USER}..."
+    
+    sudo yum-config-manager --add-repo \
+             https://download.docker.com/linux/centos/docker-ce.repo
+    
+    sudo yum install docker-ce-18.06.1.ce-3.el7 ebtables ethtool -y
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    
+    sudo swapoff -a
+    sudo sed -i "s/\\(.*\\)swap\\(.*\\)/#\\1swap\\2/" /etc/fstab
+    
+    sudo ln -sf /opt/bin/kube{adm,ctl,let} /usr/bin
+    
+    sudo adduser -p "$(openssl rand -base64 8)" "${USER}"
+    sudo usermod -aG wheel "${USER}"
+    sudo usermod -aG docker "${USER}"
+    
+    sudo mkdir -p "/home/${USER}/.ssh"
+    sudo -E cp "${HOME}/.ssh/authorized_keys" \
+               "/home/${USER}/.ssh/authorized_keys"
+    sudo chown -R "${USER}:${USER}" "/home/${USER}/.ssh"
+    
+    echo "${USER} ALL=(ALL) NOPASSWD: ALL" | \
+        sudo tee "/etc/sudoers.d/${USER}" > /dev/null
+}
+
+function node_name {
+    hostname -s
+}
+function start_time {
+    date +%s
+}
+function show_completion_time {
+    local START_TIME="$1"
+    local END_TIME; END_TIME="$(date +%s)"
+    log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
+}
+function log {
+    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
+}
+function usage {
+    >&2 echo "${USAGE}"
+    exit 2
+}
+
+main "$@"
