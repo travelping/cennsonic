@@ -20,26 +20,18 @@ EOF
 )
 
 function main {
-    local START_TIME; START_TIME="$(start_time)"
-
     case "$1 $2" in
-        "create $2")
+        "create $2"|\
+        "delete $2")
+            local ACTION="$1"
             local USERNAME="$2"
-            if [ -z "${USERNAME}" ]; then usage; fi
             shift 2
 
-            create_user "${USERNAME}" "$@"
-        ;;
-        "delete $2")
-            local USERNAME="$2"
             if [ -z "${USERNAME}" ]; then usage; fi
-
-            delete_user "${USERNAME}"
+            "${ACTION}_user" "${USERNAME}" "$@"
         ;;
         *) usage ;;
     esac
-
-    show_completion_time "${START_TIME}"
 }
 
 function ca_cert {
@@ -188,14 +180,6 @@ function cluster_name {
     hostname -d
 }
 
-function start_time {
-    date +%s
-}
-function show_completion_time {
-    local START_TIME="$1"
-    local END_TIME; END_TIME="$(date +%s)"
-    log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
-}
 function log {
     echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
 }
