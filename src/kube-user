@@ -164,7 +164,7 @@ function create_kubeconfig {
         --kubeconfig="${KUBECONFIG}"
 }
 function create_admin_binding {
-    admin_binding create "$@"
+    admin_binding apply "$@"
 }
 function delete_admin_binding {
     admin_binding delete "$@"
