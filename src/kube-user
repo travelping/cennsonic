@@ -29,14 +29,12 @@ function main {
             shift 2
 
             create_user "${USERNAME}" "$@"
-            show_completion_time "${START_TIME}"
         ;;
         "delete $2")
             local USERNAME="$2"
             if [ -z "${USERNAME}" ]; then usage; fi
 
             delete_user "${USERNAME}"
-            show_completion_time "${START_TIME}"
         ;;
         *) usage ;;
     esac
