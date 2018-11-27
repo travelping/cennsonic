@@ -168,7 +168,7 @@ function master_prepare {
              -e "s\\_ETCD_CLUSTER_\\${ETCD_CLUSTER}\\g" \
              -e "s/_ETCD_STATE_/${ETCD_STATE}/g" \
              "$(templates)/kubeadm.yaml" | \
-         sudo dd of="$(kubeadm_config)"
+         sudo tee "$(kubeadm_config)" > /dev/null
     sudo chmod 600 "$(kubeadm_config)"
 }
 function master_init {
@@ -247,11 +247,10 @@ function master_join {
     wait_for etcd_ready
 }
 function master_join_info {
-    local HASH; HASH="$(discovery_token_ca_cert_hash)"
-
-    echo -n "--token $(join_token) "
-    echo -n "$(api_server_ip):$(api_server_port) "
-    echo -n "--discovery-token-ca-cert-hash sha256:${HASH}"
+    printf %b "--token $(join_token) " \
+              "$(api_server_ip):$(api_server_port) " \
+              "--discovery-token-ca-cert-hash " \
+                  "sha256:$(discovery_token_ca_cert_hash)"
 }
 function master_delete {
     local NODE_NAME="$1"
