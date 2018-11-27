@@ -48,6 +48,7 @@ esac
 for i in "$@"; do
     case $i in
         -n|--dry-run) run=echo ;;
+        --pk) private_key="${HOME}/.ssh/id_rsa" ;;
         --pk=*|--private-key=*) private_key="${i#*=}"; shift ;;
         -k|--ask-pass) extra_args="$extra_args --ask-pass" ;;
         -K|--ask-become-pass) extra_args="$extra_args --ask-become-pass" ;;
