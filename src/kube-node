@@ -255,7 +255,9 @@ function master_delete {
     local NODE_NAME="$1"
 
     log "Deleting master ${NODE_NAME} from $(cluster_name)..."
-    kubectl delete node "${NODE_NAME}.$(cluster_name)"
+
+    node_role unset master "${NODE_NAME}"
+    wait_for kubealived_absent "${NODE_NAME}"
 
     local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname_this)"
     local ETCD_IP; ETCD_IP="$(etcd_ip_this)"
@@ -277,6 +279,8 @@ function master_delete {
                 --cert-file /etc/kubernetes/pki/etcd/peer.crt \
                 --endpoints="https://${ETCD_IP}:2379" \
             member remove "${ETCD_ID}"
+
+    kubectl delete node "${NODE_NAME}.$(cluster_name)"
 }
 function master_pki_make {
     local ARCHIVE="$1"
@@ -429,6 +433,15 @@ function kubealived_ready {
     [ "$(pods "" kubealived-system app=kubealived \
               "{.items[0].status.containerStatuses[0].ready}" \
               2>/dev/null)" = "true" ]
+}
+function kubealived_absent {
+    local NODE_NAME="$1"
+    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
+
+    local JP="jsonpath={.items[?(@.spec.nodeName==\"${NODE}\")].status.phase}"
+
+    local PHASE
+    PHASE="$(kubectl -n kubealived-system get po -o "$JP")" && [ -z "${PHASE}" ]
 }
 
 function etcd_cluster {
