@@ -540,8 +540,9 @@ function discovery_token_ca_cert_hash {
 
 function wait_for {
     local CONDITION="$1"
+    shift
 
-    while ! "${CONDITION}"; do
+    while ! "${CONDITION}" "$@"; do
         echo -en "\\b=>"
         sleep 2
     done
