@@ -332,6 +332,7 @@ function node_reset {
 
     sudo /opt/bin/kubeadm reset --force
     sudo rm -f "$(kubeadm_config)"
+    sudo rm -f "$(kubeconfig)"
 
     cni_reset
     resolve_reset
