@@ -25,7 +25,7 @@ function main {
             if [ -z "${UNIT}" ] || \
                [ -z "${TARGET}" ]; then usage; fi
 
-            cat "./src/kube-${UNIT}" | ssh "${TARGET}" bash -s "$@"
+            ssh "${TARGET}" bash -s "$@" < "./src/kube-${UNIT}"
         ;;
         *) usage ;;
     esac
