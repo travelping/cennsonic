@@ -244,7 +244,10 @@ function master_join {
     wait_for etcd_ready
 }
 function master_join_info {
-    printf %b "--token $(join_token) " \
+    local TOKEN; TOKEN="$(join_token)"
+    TOKEN="${TOKEN:-$(join_token_create)}"
+
+    printf %b "--token ${TOKEN} " \
               "$(api_server_ip):$(api_server_port) " \
               "--discovery-token-ca-cert-hash " \
                   "sha256:$(discovery_token_ca_cert_hash)"
@@ -545,6 +548,9 @@ function delete_from_hosts {
 
 function join_token {
     sudo /opt/bin/kubeadm token list | sed -n 2p | sed "s/ .*//"
+}
+function join_token_create {
+    sudo /opt/bin/kubeadm token create
 }
 function discovery_token_ca_cert_hash {
     openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
