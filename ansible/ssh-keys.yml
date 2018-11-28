@@ -7,12 +7,12 @@
     authorized_key:
       user: "{{ ansible_user }}"
       state: present
-      key: "{{ item }}.keys"
+      key: "{{ item }}"
     with_items: "{{ ssh_keys }}"
   - name: SSH keys delete
     when: no_ssh_keys is defined
     authorized_key:
       user: "{{ ansible_user }}"
       state: absent
-      key: "{{ item }}.keys"
+      key: "{{ item }}"
     with_items: "{{ no_ssh_keys }}"

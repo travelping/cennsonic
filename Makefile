@@ -1,12 +1,18 @@
-REGISTRY = docker.io
-USER = travelping
 PROJECT = cennsonic
-VERSION = $(shell cat src/$(PROJECT) | grep version= | cut -d= -f2)
+VERSION = $(shell cat src/$(PROJECT) | grep VERSION= | cut -d= -f2)
+
+REGISTRY = quay.io
+USER = travelping
 
 GIT_SHA = $(shell git rev-parse HEAD | cut -c1-8)
 
 IMAGE = $(REGISTRY)/$(USER)/$(PROJECT):$(VERSION)
 IMAGE_LATEST = $(REGISTRY)/$(USER)/$(PROJECT):latest
+
+BUILD_ARGS = \
+	--build-arg PROJECT=$(PROJECT) \
+	--build-arg VERSION=$(VERSION) \
+	--build-arg GIT_SHA=$(GIT_SHA)
 
 usage:
 	@echo "Usage: make <Command> [Options]"
@@ -15,8 +21,6 @@ usage:
 	@echo "    install"
 	@echo "    uninstall"
 	@echo
-	@echo "    git-release"
-	@echo
 	@echo "    docker-build"
 	@echo "    docker-clean"
 	@echo "    docker-distclean"
@@ -24,13 +28,14 @@ usage:
 	@echo "    docker-release"
 	@echo "    docker-local-release"
 	@echo
+	@echo "    git-release"
 	@echo "    version"
 	@echo
 	@echo "Options"
-	@echo "    REGISTRY=<Docker registry> (default: $(REGISTRY))"
-	@echo "    PROJECT=<Image Name> (default: $(PROJECT))"
-	@echo "    USER=<Docker ID> (default: $(USER))"
-	@echo "    VERSION=<Version> (default: $(VERSION))"
+	@echo "    REGISTRY=<Docker Registry> # current: $(REGISTRY)"
+	@echo "    PROJECT=<Image Name> # current: $(PROJECT)"
+	@echo "    USER=<Docker ID> # current: $(USER)"
+	@echo "    VERSION=<Version> # current: $(VERSION)"
 
 install:
 	install src/$(PROJECT) /usr/local/bin/$(PROJECT)
@@ -38,27 +43,27 @@ install:
 uninstall:
 	rm -f /usr/local/bin/$(PROJECT)
 
-git-release:
-	git tag -a $(VERSION)
-	git push origin $(VERSION)
-
 docker-build:
-	docker build . -t $(IMAGE)
-
-docker-clean:
-	docker system prune -f --filter label=project=$(PROJECT)
-
-docker-distclean: docker-clean
-	docker images -qf label=project=cennsonic | docker rmi
+	docker build $(BUILD_ARGS) . -t $(IMAGE)
 
 docker-push:
 	docker push $(IMAGE)
 
-docker-local-release:
-	docker tag $(IMAGE) $(IMAGE_LATEST)
-
 docker-release: docker-local-release docker-push
 	docker push $(IMAGE_LATEST)
 
+docker-local-release:
+	docker tag $(IMAGE) $(IMAGE_LATEST)
+
+docker-clean:
+	docker system prune -f --filter label=PROJECT=$(PROJECT)
+
+docker-distclean: docker-clean
+	docker rmi $(IMAGE_LATEST) $(IMAGE) 2>/dev/null || true
+
+git-release:
+	git tag -a $(VERSION)
+	git push origin $(VERSION)
+
 version:
-	@echo "Version $(VERSION) (git-$(GIT_SHA))"
+	@echo "$(VERSION) (git-$(GIT_SHA))"

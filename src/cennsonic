@@ -1,105 +1,119 @@
 #!/bin/bash
 
-version=0.2.0
+set -e
 
-if [ ! "$(docker version 2>/dev/null)" ]; then
-    echo "Docker is not installed."
-    echo "Please refer https://docs.docker.com/install/#supported-platforms to install for your OS."
-    exit 127
-fi
+VERSION="0.2.0"
 
-container_private_key="/root/.ssh/key"
+USAGE=$(cat <<EOF
+Usage: cennsonic <Command> [Options]
 
-usage="\
-Usage: $(basename $0) <Action> [Options]\n\
-\n\
-Actions:\n\
-    init                   create initial cluster configuration\n\
-    deploy                 deploy a Kubernetes cluster\n\
-    scale                  scale a Kubernetes cluster\n\
-    ssh-keys               provision SSH keys\n\
-    disable-sudo           disable sudo on all the nodes\n\
-    disable-swap           disable swap on all the nodes\n\
-    rook-clean-up          delete all the rook based data from the worker nodes\n\
-    etcd-certs-symlinks    create symlinks for etcd cert files (used by Multus)\n\
+Command:
+    init <Cluster Name>    create initial cluster configuration
+    deploy                 deploy a Kubernetes cluster
+    scale                  scale a Kubernetes cluster
+    ssh-keys               provision SSH keys
+    bootstrap              make all the nodes Ansible ready
+    disable-sudo-password  disable sudo password on all the nodes
+    disable-swap           disable swap on all the nodes
+    rook-clean-up          delete all the rook based data from the worker nodes
     help                   print this message
     version                print version
-\n\
+
 Options:
-    --pk,--private-key=<Path>    SSH private key for the nodes access\n\
-    -k,--ask-pass                ask for SSH password for the nodes access\n\
-    -K,--ask-become-pass         ask for sudo password when needed\n\
-    -n,--dry-run                 do not do anything, just show the plan"
+    --pk,--private-key=<Path>    SSH private key for the nodes access
+    -k,--ask-pass                ask for SSH password for the nodes access
+    -K,--ask-become-pass         ask for sudo password when needed
+    -n,--dry-run                 do not do anything, just show the plan
+EOF
+)
 
-action="$1"; shift
+function main {
+    case "$1" in
+        init)
+            local CLUSTER_NAME="$2"
+            if [ -z "${CLUSTER_NAME}" ]; then usage; fi
 
-case "$action" in
-    init)
-        cluster="$1"; shift
-        if [ -z "$cluster" ]; then
-            echo "Usage: $(basename $0) init <ClusterName> [-n]"
-            exit 2
-        fi
-    ;;
-    version) echo "$version"; exit 0 ;;
-    -h|--help|help) echo -e "$usage"; exit 0 ;;
-esac
+            init_cluster "${CLUSTER_NAME}"
+        ;;
+        "$1")
+            local ACTION="$1"
+            if [ -z "${ACTION}" ]; then usage; fi
 
-for i in "$@"; do
-    case $i in
-        -n|--dry-run) run=echo ;;
-        --pk) private_key="${HOME}/.ssh/id_rsa" ;;
-        --pk=*|--private-key=*) private_key="${i#*=}"; shift ;;
-        -k|--ask-pass) extra_args="$extra_args --ask-pass" ;;
-        -K|--ask-become-pass) extra_args="$extra_args --ask-become-pass" ;;
-        *) echo "Warning: invalid argument \"$i\"" ;;
+            run_action "${ACTION}" "$@"
+        ;;
+        version) echo "${VERSION}"; exit 0 ;;
+        -h|--help|help) echo "${USAGE}"; exit 0 ;;
     esac
-done
+}
 
-if [ -z "$action" ]; then
-    echo -e "$usage"
-    exit 2
-fi
+function init_cluster {
+    local CLUSTER_NAME="$1"
 
-if [ "$action" = "init" ]; then
-    if [ -d "$cluster" ]; then
-        echo "Directory \"$cluster\" already exists."
+    if [ -d "${CLUSTER_NAME}" ]; then
+        echo "Directory ${CLUSTER_NAME} already exists."
         exit 1
     fi
 
-    $run mkdir -p "$cluster"
-    $run docker run \
-          -e UID:$UID \
-          --rm -v $PWD/$cluster:/$cluster \
-          travelping/cennsonic:$version sh -c \
-              "cp -a /cluster/. /$cluster && \
-               chown -R $UID:$UID /$cluster"
+    mkdir -p "${CLUSTER_NAME}"
+    docker run \
+          -e "UID:${UID}" \
+          --rm -v "${PWD}/${CLUSTER_NAME}:/${CLUSTER_NAME}" \
+          "quay.io/travelping/cennsonic:${VERSION}" sh -c \
+               "cp -a /cluster/. /${CLUSTER_NAME} && \
+                chown -R ${UID}:${UID} /${CLUSTER_NAME}"
 
-    sample_cluster="cennsonic.example.net"
-    if [ -z "$run" ]; then
-        if [ "$(uname)" = "Darwin" ]; then
-            find $(grep "$sample_cluster" -rl "$cluster") \
-                -exec sed -i "" "s/$sample_cluster/$cluster/g" "{}" \;
-        else
-            find $(grep "$sample_cluster" -rl "$cluster") \
-                -exec sed -i"" "s/$sample_cluster/$cluster/g" "{}" \;
-        fi
+    local CLUSTER_TEMPLATE_NAME="cennsonic.example.net"
+
+    if [ "$(uname)" = "Darwin" ]; then
+        find $(grep "${CLUSTER_TEMPLATE_NAME}" -rl "${CLUSTER_NAME}") \
+            -exec sed -i "" "s/${CLUSTER_TEMPLATE_NAME}/${CLUSTER_NAME}/g" "{}" \;
     else
-        $run find \$\(grep "$sample_cluster" -rl "$cluster"\) \
-            -exec sed -i "" \"s/$sample_cluster/$cluster/g\" \"{}\" \\\;
+        find $(grep "${CLUSTER_TEMPLATE_NAME}" -rl "${CLUSTER_NAME}") \
+            -exec sed -i"" "s/${CLUSTER_TEMPLATE_NAME}/${CLUSTER_NAME}/g" "{}" \;
+    fi
+}
+
+function run_action {
+    local ACTION="$1"
+    local CONTAINER_PRIVATE_KEY="/root/.ssh/key"
+    shift
+
+    for ARG in "$@"; do
+        case "${ARG}" in
+            --pk) PRIVATE_KEY="${HOME}/.ssh/id_rsa" ;;
+            --pk=*|--private-key=*) PRIVATE_KEY="${ARG#*=}"; shift ;;
+            -k|--ask-pass) EXTRA_ARGS="${EXTRA_ARGS} --ask-pass" ;;
+            -K|--ask-become-pass) EXTRA_ARGS="${EXTRA_ARGS} --ask-become-pass" ;;
+            *) echo "Warning: unknown argument ${ARG}" ;;
+        esac
+    done
+
+    if [ -n "${PRIVATE_KEY}" ]; then
+        EXTRA_ARGS="${EXTRA_ARGS} --private-key=${CONTAINER_PRIVATE_KEY}"
+        EXTRA_MOUNT="${EXTRA_MOUNT} -v ${PRIVATE_KEY}:${CONTAINER_PRIVATE_KEY}"
     fi
 
-    exit 0
-fi
+    docker run \
+        --rm -it \
+        -v "${PWD}/config:/cluster/config" ${EXTRA_MOUNT} \
+        "quay.io/travelping/cennsonic:${VERSION}" \
+            ansible-playbook "${ACTION}.yml" \
+            -vbi /cluster/config/hosts.ini ${EXTRA_ARGS}
+}
 
-if [ -n "$private_key" ]; then
-    extra_args="$extra_args --private-key=$container_private_key"
-    extra_mount="$extra_mount -v $private_key:$container_private_key"
-fi
+function check_docker {
+    if [ ! "$(docker version 2>/dev/null)" ]; then
+        printf %b "Docker is not installed.\\n"\
+                  "Please refer "\
+                  "https://docs.docker.com/install/#supported-platforms "\
+                  "to install for your OS."
+        exit 127
+    fi
+}
 
-$run docker run \
-    --rm -it \
-    -v $PWD/config:/cluster/config $extra_mount \
-    travelping/cennsonic:$version \
-        ansible-playbook "$action.yml" \
-        -vbi /cluster/config/hosts.ini $extra_args
+function usage {
+    >&2 echo "${USAGE}"
+    exit 2
+}
+
+main "$@"
