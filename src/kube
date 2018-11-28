@@ -1,7 +1,7 @@
 #!/bin/bash
 
 USAGE=$(cat <<EOF
-Usage: kube <Unit> <Target IP> [Args]
+Usage: kube <Unit> <[User@]Hostname> [Args]
        kube <Unit> help
 
 Units
@@ -20,11 +20,12 @@ function main {
         "$1 $2")
             local UNIT="$1"
             local TARGET="$2"
-
-            if [ -z "${UNIT}" ] || [ -z "${TARGET}" ]; then usage; fi
-
             shift 2
-            cat "./src/kube-${UNIT}" | ssh "core@${TARGET}" bash -s "$@"
+
+            if [ -z "${UNIT}" ] || \
+               [ -z "${TARGET}" ]; then usage; fi
+
+            cat "./src/kube-${UNIT}" | ssh "${TARGET}" bash -s "$@"
         ;;
         *) usage ;;
     esac
