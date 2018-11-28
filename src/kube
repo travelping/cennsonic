@@ -1,10 +1,10 @@
 #!/bin/bash
 
 USAGE=$(cat <<EOF
-Usage: kube <Unit> <[User@]Hostname> [Args]
-       kube <Unit> help
+Usage: kube <Command> <[User@]Hostname> [Args]
+       kube <Command> help
 
-Units
+Commands
     tools
     node
     user
