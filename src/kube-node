@@ -11,6 +11,7 @@ Commands:
     master join-info
     master delete <Node Name>
     master pki make <PKI Archive>
+    master pki install <PKI Archive>
 
     worker join <Node IP> <API IP> <Join Info>
     worker delete <Node Name>
@@ -41,7 +42,8 @@ function main {
             local API_IP="$4"
             local PKI_ARCHIVE="$5"
 
-            if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
+            if [ -z "${NODE_IP}" ] || \
+               [ -z "${API_IP}" ] || \
                [ -z "${PKI_ARCHIVE}" ]; then usage; fi
 
             master_join "${NODE_IP}" "${API_IP}" "${PKI_ARCHIVE}"
@@ -58,12 +60,14 @@ function main {
             master_delete "${NODE_NAME}"
             show_completion_time "${START_TIME}"
         ;;
-        "master pki make $4 ")
+        "master pki make $4 "|\
+        "master pki install $4 ")
+            local PKI_ACTION="$3"
             local PKI_ARCHIVE="$4"
 
             if [ -z "${PKI_ARCHIVE}" ]; then usage; fi
 
-            master_pki_make "${PKI_ARCHIVE}"
+            "master_pki_${PKI_ACTION}" "${PKI_ARCHIVE}"
             show_completion_time "${START_TIME}"
         ;;
         "worker join $3 $4 $5")
