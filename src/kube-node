@@ -253,11 +253,14 @@ function master_join_info {
 }
 function master_delete {
     local NODE_NAME="$1"
+    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
 
-    log "Deleting master ${NODE_NAME} from $(cluster_name)..."
+    log "Deleting ${NODE_NAME} from $(cluster_name)..."
 
     node_role unset master "${NODE_NAME}"
-    wait_for kubealived_absent "${NODE_NAME}"
+
+    log "Waiting for Kubealived is terminated on ${NODE_NAME}..."
+    wait_for kubealived_terminated "${NODE_NAME}"
 
     local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname_this)"
     local ETCD_IP; ETCD_IP="$(etcd_ip_this)"
@@ -269,7 +272,7 @@ function master_delete {
                 --key-file /etc/kubernetes/pki/etcd/peer.key \
                 --cert-file /etc/kubernetes/pki/etcd/peer.crt \
                 --endpoints="https://${ETCD_IP}:2379" \
-            member list | grep "${NODE_NAME}.$(cluster_name)" | sed s/:.*//)
+            member list | grep "${NODE}" | sed s/:.*//)
 
     log "Removing Etcd member ${NODE_NAME} (id: ${ETCD_ID})..."
     kubectl --namespace kube-system \
@@ -280,7 +283,7 @@ function master_delete {
                 --endpoints="https://${ETCD_IP}:2379" \
             member remove "${ETCD_ID}"
 
-    kubectl delete node "${NODE_NAME}.$(cluster_name)"
+    kubectl delete node "${NODE}"
 }
 function master_pki_make {
     local ARCHIVE="$1"
@@ -434,7 +437,7 @@ function kubealived_ready {
               "{.items[0].status.containerStatuses[0].ready}" \
               2>/dev/null)" = "true" ]
 }
-function kubealived_absent {
+function kubealived_terminated {
     local NODE_NAME="$1"
     local NODE; NODE="${NODE_NAME}.$(cluster_name)"
 
