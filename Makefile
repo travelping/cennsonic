@@ -1,7 +1,7 @@
 REGISTRY = docker.io
 USER = travelping
 PROJECT = cennsonic
-VERSION = $(shell cat bin/$(PROJECT) | grep version= | cut -d= -f2)
+VERSION = $(shell cat src/$(PROJECT) | grep version= | cut -d= -f2)
 
 GIT_SHA = $(shell git rev-parse HEAD | cut -c1-8)
 
@@ -33,7 +33,7 @@ usage:
 	@echo "    VERSION=<Version> (default: $(VERSION))"
 
 install:
-	install bin/$(PROJECT) /usr/local/bin/$(PROJECT)
+	install src/$(PROJECT) /usr/local/bin/$(PROJECT)
 
 uninstall:
 	rm -f /usr/local/bin/$(PROJECT)
