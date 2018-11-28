@@ -2,22 +2,24 @@
 
 set -e
 
+USAGE="Usage: kube-pki <[User@]From> <[User@]To>"
+
+function main {
+    local FROM="$1"
+    local TO="$2"
+    local ARCHIVE="/tmp/pki.tgz"
+
+    if [ -z "${FROM}" ] || [ -z "${TO}" ]; then usage; fi
+
+    ssh "${FROM}" bash -s < ./src/kube-node master pki make "${ARCHIVE}"
+    scp -3 "${FROM}:${ARCHIVE}" "${TO}:${ARCHIVE}"
+    ssh "${FROM}" rm \\"${ARCHIVE}"\\
+    #ssh "${TO}" bash -s < ./src/kube-node master pki install "${ARCHIVE}"
+}
+
 function usage {
-    >&2 echo "Usage: kube-pki <PKI Archive> <From IP> <To IP>"
+    >&2 echo "${USAGE}"
     exit 2
 }
 
-ARCHIVE="$1"
-FROM="$2"
-TO="$3"
-
-if [ -z "${ARCHIVE}" ] || [ -z "${FROM}" ] || [ -z "${TO}" ]; then usage; fi
-
-FROM="core@${FROM}"
-TO="core@${TO}"
-
-ssh "${FROM}" bash -s < ./scripts/kube-node master pki make "${ARCHIVE}"
-scp "${FROM}:$ARCHIVE" "./${ARCHIVE}"
-scp "./${ARCHIVE}" "${TO}:${ARCHIVE}"
-ssh "${FROM}" rm \\"${ARCHIVE}\\"
-rm "${ARCHIVE}"
+main "$@"
