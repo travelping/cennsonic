@@ -7,7 +7,7 @@ Usage: kube-node <Command>
 
 Commands:
     master init <Node IP> <API IP> [API Interface]
-    master join <Node IP> <API IP> <PKI Archive>
+    master join <Node IP> <API IP>
     master join-info
     master delete <Node Name>
     master pki make <PKI Archive>
@@ -40,13 +40,10 @@ function main {
         "master join $3 $4 $5")
             local NODE_IP="$3"
             local API_IP="$4"
-            local PKI_ARCHIVE="$5"
 
-            if [ -z "${NODE_IP}" ] || \
-               [ -z "${API_IP}" ] || \
-               [ -z "${PKI_ARCHIVE}" ]; then usage; fi
+            if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ]; then usage; fi
 
-            master_join "${NODE_IP}" "${API_IP}" "${PKI_ARCHIVE}"
+            master_join "${NODE_IP}" "${API_IP}"
             show_completion_time "${START_TIME}"
         ;;
         "master join-info   ")
@@ -211,9 +208,7 @@ function master_init {
 function master_join {
     local NODE_IP="$1"
     local API_IP="$2"
-    local PKI_ARCHIVE="$3"
 
-    master_pki_install "${PKI_ARCHIVE}"
     sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
 
     resolve_node_hostname_to "${NODE_IP}"
