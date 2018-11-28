@@ -9,7 +9,7 @@ Commands:
     master init <Node IP> <API IP> [API Interface]
     master join <Node IP> <API IP>
     master join-info
-    master delete <Node Name>
+    master delete [Node Name]
     master pki make <PKI Archive>
     master pki install <PKI Archive>
 
@@ -51,8 +51,6 @@ function main {
         ;;
         "master delete $3  ")
             local NODE_NAME="$3"
-
-            if [ -z "${NODE_NAME}" ]; then usage; fi
 
             master_delete "${NODE_NAME}"
             show_completion_time "${START_TIME}"
@@ -252,7 +250,7 @@ function master_join_info {
                   "sha256:$(discovery_token_ca_cert_hash)"
 }
 function master_delete {
-    local NODE_NAME="$1"
+    local NODE_NAME; NODE_NAME="${1:-$(node_name)}"
     local NODE; NODE="${NODE_NAME}.$(cluster_name)"
 
     log "Deleting ${NODE_NAME} from $(cluster_name)..."
