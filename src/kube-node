@@ -344,8 +344,6 @@ function node_role {
     local ROLE="$2"
     local NODE_NAME; NODE_NAME="${3:-$(node_name)}"
 
-    node_role_label "${ACTION}" "${ROLE}" "${NODE_NAME}"
-
     case "${ACTION} ${ROLE}" in
         "set worker") node_role_taint unset master "${NODE_NAME}" ;;
         "unset worker") if node_has_role_label master "${NODE_NAME}"; then
@@ -356,6 +354,8 @@ function node_role {
                       fi ;;
         *) node_role_taint "${ACTION}" "${ROLE}" "${NODE_NAME}" ;;
     esac
+
+    node_role_label "${ACTION}" "${ROLE}" "${NODE_NAME}"
 }
 function node_role_label {
     local ACTION="$1"
