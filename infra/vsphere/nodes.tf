@@ -126,8 +126,7 @@ data "ignition_networkd_unit" "iface" {
 Name=${var.iface}
 [Network]
 DNS=${var.dns_server}
-Address=${var.ipv4_address["${lookup(var.name, count.index)}"]}
-Netmask=${var.ipv4_netmask}
+Address=${var.ipv4_address["${lookup(var.name, count.index)}"]}/${var.ipv4_netmask}
 Gateway=${var.ipv4_gateway}
 EOF
 }
