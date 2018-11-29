@@ -12,16 +12,16 @@ USAGE=$(cat <<EOF
 Usage: kube-tools install <Target> <Args>
 
 Targets
-    master <Version> <Calico Version>
-    worker <Version> <Calico Version>
+    master <Version>
+    worker <Version>
     kubeadm <Version>
     kubelet <Version>
     kubectl <Version>
     crictl <Version>
     calicoctl <Version>
     cni-plugins <Version>
-    images-master <Version> <Calico Version>
-    images-worker <Version> <Calico Version>
+    images-master <Version>
+    images-worker <Version>
     template <Name>
 EOF
 )
@@ -34,10 +34,10 @@ function main {
         "install worker"|\
         "install images-master"|\
         "install images-worker")
-            local TARGET="$2"; local VERSION="$3"; local CALICO_VERSION="$4"
+            local TARGET="$2"; local VERSION="$3"
 
-            if [ -z "${VERSION}" ] || [ -z "${CALICO_VERSION}" ]; then usage; fi
-            install_"${TARGET//-/_}" "${VERSION}" "${CALICO_VERSION}"
+            if [ -z "${VERSION}" ]; then usage; fi
+            install_"${TARGET//-/_}" "${VERSION}"
         ;;
         "install kubeadm"|\
         "install kubelet"|\
@@ -112,9 +112,14 @@ function kubealived_template {
 function user_admin_crb_template {
     echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/user-admin-crb.yaml"
 }
+function calico_version {
+    for TEMPLATE in $(calico_template); do
+        curl -sL "${TEMPLATE}"
+    done | sed -n "s/.*Calico Version \\(.*\\)/\\1/p" | sort -u
+}
 function master_images {
     local VERSION="$1"
-    local CALICO_VERSION="$2"
+    local CALICO_VERSION; CALICO_VERSION="$(calico_version)"
     local CNI_NODE_VERSION="0.3.0"
     local KUBEALIVED_VERSION="1.1.0"
 
@@ -128,7 +133,7 @@ function master_images {
 }
 function worker_images {
     local VERSION="$1"
-    local CALICO_VERSION="$2"
+    local CALICO_VERSION; CALICO_VERSION="$(calico_version)"
     local CNI_NODE_VERSION="0.3.0"
 
     /opt/bin/kubeadm config images list \
@@ -140,13 +145,12 @@ function worker_images {
 
 function install_master {
     local VERSION="$1"
-    local CALICO_VERSION="$2"
     local KUBEALIVED_VERSION="1.1.0"
 
     install_kubeadm "${VERSION}"
     install_kubelet "${VERSION}"
     install_kubectl "${VERSION}"
-    install_images master "${VERSION}" "${CALICO_VERSION}"
+    install_images master "${VERSION}"
     install_template "$(kubeadm_template)" \
                      "$(calico_template)" \
                      "$(multus_cni_template)" \
@@ -157,12 +161,11 @@ function install_master {
 }
 function install_worker {
     local VERSION="$1"
-    local CALICO_VERSION="$2"
 
     install_kubeadm "${VERSION}"
     install_kubelet "${VERSION}"
     install_kubectl "${VERSION}"
-    install_images worker "${VERSION}" "${CALICO_VERSION}"
+    install_images worker "${VERSION}"
 
     enable_service docker kubelet
 }
@@ -216,10 +219,9 @@ function install_images_worker {
 function install_images {
     local NODE="$1"
     local VERSION="$2"
-    local CALICO_VERSION="$3"
 
     log "Pulling ${NODE} images..."
-    for IMAGE in $("${NODE}_images" "${VERSION}" "${CALICO_VERSION}"); do
+    for IMAGE in $("${NODE}_images" "${VERSION}"); do
         docker pull "${IMAGE}"
     done
 }
