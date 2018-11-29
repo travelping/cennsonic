@@ -162,6 +162,7 @@ function install_worker {
 
     install_kubeadm "${VERSION}"
     install_kubelet "${VERSION}"
+    install_kubectl "${VERSION}"
     install_images worker "${VERSION}" "${CALICO_VERSION}"
 
     enable_service docker kubelet
