@@ -30,6 +30,7 @@ Options
     --calico=<Version>
     --cni-node=<Version>
     --kubealived=<Version>
+    --arch=<Architecture>
 EOF
 )
 
@@ -40,6 +41,7 @@ function main {
     local KUBEALIVED_VERSION=1.1.0
     #local CNI_PLUGINS_VERSION=v0.7.4
     #local CRICTL_VERSION=v1.12.0
+    local ARCH=amd64
 
     local COMMAND="$1"
     local TARGET="$2"
@@ -51,6 +53,7 @@ function main {
     shift 3
     for ARG in "$@"; do
         case "${ARG}" in
+            --arch=*) ARCH="${ARG#*=}" ;;
             --calico=*) CALICO_VERSION="${ARG#*=}" ;;
             --cni-node=*) CNI_NODE_VERSION="${ARG#*=}" ;;
             --kubealived=*) KUBEALIVED_VERSION="${ARG#*=}" ;;
@@ -65,19 +68,21 @@ function main {
             install_"${TARGET//-/_}" "${VERSION}" \
                                      "${CALICO_VERSION}" \
                                      "${CNI_NODE_VERSION}" \
-                                     "${KUBEALIVED_VERSION}" ;;
+                                     "${KUBEALIVED_VERSION}" \
+                                     "${ARCH}" ;;
         "install worker"|\
         "install images-worker")
             install_"${TARGET//-/_}" "${VERSION}" \
                                      "${CALICO_VERSION}" \
-                                     "${CNI_NODE_VERSION}" ;;
+                                     "${CNI_NODE_VERSION}" \
+                                     "${ARCH}" ;;
         "install kubeadm"|\
         "install kubelet"|\
         "install kubectl"|\
         "install crictl"|\
         "install calicoctl"|\
         "install cni-plugins")
-            install_"${TARGET//-/_}" "${VERSION}"
+            install_"${TARGET//-/_}" "${VERSION}" "${ARCH}"
         ;;
         "install template-${TEMPLATE_NAME}")
             install_template "$("${TEMPLATE_NAME//-/_}"_template)" \
@@ -94,8 +99,9 @@ function templates {
 
 function kube_tools_binaries {
     local VERSION="$1"
+    local ARCH="$2"
     printf %b "https://storage.googleapis.com/kubernetes-release/release/" \
-              "${VERSION}/bin/linux/amd64"
+              "${VERSION}/bin/linux/${ARCH}"
 }
 function kube_tools_configs {
     local VERSION="$1"
@@ -104,9 +110,10 @@ function kube_tools_configs {
 }
 function crictl_archive {
     local VERSION="$1"
+    local ARCH="$2"
     printf %b "https://github.com/kubernetes-incubator/cri-tools/" \
               "releases/download/${VERSION}/" \
-              "crictl-${VERSION}-linux-amd64.tar.gz"
+              "crictl-${VERSION}-linux-${ARCH}.tar.gz"
 }
 function calicoctl_binary {
     local VERSION="$1"
@@ -115,9 +122,10 @@ function calicoctl_binary {
 }
 function cni_plugins_archive {
     local VERSION="$1"
+    local ARCH="$2"
     printf %b "https://github.com/containernetworking/plugins/" \
               "releases/download/${VERSION}/" \
-              "cni-plugins-amd64-${VERSION}.tgz"
+              "cni-plugins-${ARCH}-${VERSION}.tgz"
 }
 function kubeadm_template {
     echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/kubeadm.yaml"
@@ -169,10 +177,11 @@ function install_master {
     local CALICO_VERSION="$2"
     local CNI_NODE_VERSION="$3"
     local KUBEALIVED_VERSION="$4"
+    local ARCH="$5"
 
-    install_kubeadm "${KUBERNETES_VERSION}"
-    install_kubelet "${KUBERNETES_VERSION}"
-    install_kubectl "${KUBERNETES_VERSION}"
+    install_kubeadm "${KUBERNETES_VERSION}" "${ARCH}" 
+    install_kubelet "${KUBERNETES_VERSION}" "${ARCH}"
+    install_kubectl "${KUBERNETES_VERSION}" "${ARCH}"
     install_images master "${KUBERNETES_VERSION}" \
                           "${CALICO_VERSION}" \
                           "${CNI_NODE_VERSION}" \
@@ -189,10 +198,11 @@ function install_worker {
     local KUBERNETES_VERSION="$1"
     local CALICO_VERSION="$2"
     local CNI_NODE_VERSION="$3"
+    local ARCH="$4"
 
-    install_kubeadm "${KUBERNETES_VERSION}"
-    install_kubelet "${KUBERNETES_VERSION}"
-    install_kubectl "${KUBERNETES_VERSION}"
+    install_kubeadm "${KUBERNETES_VERSION}" "${ARCH}"
+    install_kubelet "${KUBERNETES_VERSION}" "${ARCH}"
+    install_kubectl "${KUBERNETES_VERSION}" "${ARCH}"
     install_images worker "${KUBERNETES_VERSION}" \
                           "${CALICO_VERSION}" \
                           "${CNI_NODE_VERSION}"
@@ -202,31 +212,35 @@ function install_worker {
 
 function install_kubeadm {
     local VERSION="$1"
+    local ARCH="$2"
 
-    log "Installing kubeadm ${VERSION}..."
-    install_binary "$(kube_tools_binaries "${VERSION}")/kubeadm"
+    log "Installing kubeadm ${VERSION} ${ARCH}..."
+    install_binary "$(kube_tools_binaries "${VERSION}" "${ARCH}")/kubeadm"
     install_config "$(kube_tools_configs "${VERSION}")/10-kubeadm.conf" \
                     /etc/systemd/system/kubelet.service.d 644
 }
 function install_kubelet {
     local VERSION="$1"
+    local ARCH="$2"
 
-    log "Installing kubelet ${VERSION}..."
-    install_binary "$(kube_tools_binaries "${VERSION}")/kubelet"
+    log "Installing kubelet ${VERSION} ${ARCH}..."
+    install_binary "$(kube_tools_binaries "${VERSION}" "${ARCH}")/kubelet"
     install_config "$(kube_tools_configs "${VERSION}")/kubelet.service" \
                     /etc/systemd/system 444
 }
 function install_kubectl {
     local VERSION="$1"
+    local ARCH="$2"
 
-    log "Installing kubectl ${VERSION}..."
-    install_binary "$(kube_tools_binaries "${VERSION}")/kubectl"
+    log "Installing kubectl ${VERSION} ${ARCH}..."
+    install_binary "$(kube_tools_binaries "${VERSION}" "${ARCH}")/kubectl"
 }
 function install_crictl {
     local VERSION="$1"
+    local ARCH="$2"
 
-    log "Installing crictl ${VERSION}..."
-    install_binary_archive "$(crictl_archive "${VERSION}")"
+    log "Installing crictl ${VERSION} ${ARCH}..."
+    install_binary_archive "$(crictl_archive "${VERSION}" "${ARCH}")"
 }
 function install_calicoctl {
     local VERSION="$1"
@@ -236,9 +250,11 @@ function install_calicoctl {
 }
 function install_cni_plugins {
     local VERSION="$1"
+    local ARCH="$2"
 
-    log "Installing CNI plugins ${VERSION}..."
-    install_binary_archive "$(cni_plugins_archive "${VERSION}")" /opt/cni/bin
+    log "Installing CNI plugins ${VERSION} ${ARCH}..."
+    install_binary_archive "$(cni_plugins_archive "${VERSION}" "${ARCH}")" \
+                           /opt/cni/bin
 }
 function install_images_master {
     install_images master "$@"
