@@ -264,9 +264,10 @@ function install_images_worker {
 }
 function install_images {
     local NODE_TYPE="$1"
+    shift
 
     log "Pulling ${NODE_TYPE} images..."
-    for IMAGE in $("${NODE_TYPE}_images"); do
+    for IMAGE in $("${NODE_TYPE}_images" "$@"); do
         docker pull "${IMAGE}"
     done
 }
