@@ -178,6 +178,8 @@ function master_init {
     local API_IP="$2"
     local API_IFACE="$3"
 
+    sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
+
     resolve_node_hostname_to "${NODE_IP}"
     resolve_api_hostname_to "${NODE_IP}"
     master_prepare new "${NODE_IP}"
@@ -185,7 +187,6 @@ function master_init {
     log "Initialising first master of $(cluster_name)..."
     kubeadm init --skip-token-print
 
-    sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
     node_role set master
 
     log "Installing Calico..."
