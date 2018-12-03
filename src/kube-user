@@ -103,7 +103,8 @@ function create_cert {
     local USERNAME="$1"
     local COMPANY="$2"
 
-    openssl req -new -key "${USERNAME}-key.pem" \
+    openssl req -new \
+                -key "${USERNAME}-key.pem" \
                 -out "${USERNAME}.pem" \
                 -subj "/CN=${USERNAME}/O=${COMPANY}"
 }
@@ -117,7 +118,8 @@ function sign_cert {
     local CA_CERT="$3"
     local CA_CERT_KEY="$4"
 
-    sudo openssl x509 -req -in "${USERNAME}.pem" \
+    sudo openssl x509 -req \
+                      -in "${USERNAME}.pem" \
                       -CA "${CA_CERT}" \
                       -CAkey "${CA_CERT_KEY}" \
                       -CAcreateserial \
