@@ -134,6 +134,9 @@ function kubeconfig_worker {
     echo "/etc/kubernetes/kubelet.conf"
 }
 
+function pki {
+    echo "/etc/kubernetes/pki"
+}
 function templates {
     echo "/etc/kubernetes/templates"
 }
@@ -226,9 +229,9 @@ function master_join {
     log "Joining Etcd ${ETCD_HOSTNAME} (${ETCD_IP})..."
     kubectl --namespace kube-system \
             exec "etcd-${ETCD_HOSTNAME}" -- \
-       etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
-               --key-file /etc/kubernetes/pki/etcd/peer.key \
-               --cert-file /etc/kubernetes/pki/etcd/peer.crt \
+       etcdctl --ca-file "$(pki)/etcd/ca.crt" \
+               --key-file "$(pki)/etcd/peer.key" \
+               --cert-file "$(pki)/etcd/peer.crt" \
                --endpoints="https://${ETCD_IP}:2379" \
            member add "$(node_hostname)" "https://${NODE_IP}:2380"
 
@@ -269,18 +272,18 @@ function master_delete {
     log "Retrieving ${NODE_NAME} Etcd ID..."
     local ETCD_ID; ETCD_ID=$(kubectl --namespace kube-system \
             exec "etcd-${ETCD_HOSTNAME}" -- \
-        etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
-                --key-file /etc/kubernetes/pki/etcd/peer.key \
-                --cert-file /etc/kubernetes/pki/etcd/peer.crt \
+        etcdctl --ca-file "$(pki)/etcd/ca.crt" \
+                --key-file "$(pki)/etcd/peer.key" \
+                --cert-file "$(pki)/etcd/peer.crt" \
                 --endpoints="https://${ETCD_IP}:2379" \
             member list | grep "${NODE}" | sed s/:.*//)
 
     log "Removing Etcd member ${NODE_NAME} (id: ${ETCD_ID})..."
     kubectl --namespace kube-system \
             exec "etcd-${ETCD_HOSTNAME}" -- \
-        etcdctl --ca-file /etc/kubernetes/pki/etcd/ca.crt \
-                --key-file /etc/kubernetes/pki/etcd/peer.key \
-                --cert-file /etc/kubernetes/pki/etcd/peer.crt \
+        etcdctl --ca-file "$(pki)/etcd/ca.crt" \
+                --key-file "$(pki)/etcd/peer.key" \
+                --cert-file "$(pki)/etcd/peer.crt" \
                 --endpoints="https://${ETCD_IP}:2379" \
             member remove "${ETCD_ID}"
 
@@ -292,9 +295,9 @@ function master_pki_make {
     log "Making PKI archive ${ARCHIVE}..."
 
     mkdir -p kubernetes/pki/etcd
-    sudo cp /etc/kubernetes/pki/{ca.{crt,key},sa.{key,pub}} kubernetes/pki
-    sudo cp /etc/kubernetes/pki/front-proxy-ca.{crt,key} kubernetes/pki
-    sudo cp /etc/kubernetes/pki/etcd/ca.{crt,key} kubernetes/pki/etcd
+    sudo cp "$(pki)"/{ca.{crt,key},sa.{key,pub}} kubernetes/pki
+    sudo cp "$(pki)"/front-proxy-ca.{crt,key} kubernetes/pki
+    sudo cp "$(pki)"/etcd/ca.{crt,key} kubernetes/pki/etcd
     sudo cp /etc/kubernetes/admin.conf kubernetes
 
     sudo chown -R "${USER}:${USER}" kubernetes
@@ -553,7 +556,7 @@ function join_token_create {
     sudo /opt/bin/kubeadm token create
 }
 function discovery_token_ca_cert_hash {
-    openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | \
+    openssl x509 -pubkey -in "$(pki)/ca.crt" | \
         openssl rsa -pubin -outform der 2>/dev/null | \
             openssl dgst -sha256 -hex | sed "s/^.* //"
 }
