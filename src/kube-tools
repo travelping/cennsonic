@@ -85,8 +85,7 @@ function main {
             install_"${TARGET//-/_}" "${VERSION}" "${ARCH}"
         ;;
         "install template-${TEMPLATE_NAME}")
-            install_template "$("${TEMPLATE_NAME//-/_}"_template)" \
-                             "${VERSION}"
+            install_template "$("${TEMPLATE_NAME//-/_}"_template "${VERSION}")"
         ;;
         *) usage ;;
     esac
