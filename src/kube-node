@@ -180,7 +180,7 @@ function master_init {
     master_prepare new "${NODE_IP}"
 
     log "Initialising first master of $(cluster_name)..."
-    kubeadm init
+    kubeadm init --skip-token-print
 
     sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
     node_role set master
