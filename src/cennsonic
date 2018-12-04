@@ -9,6 +9,7 @@ Usage: cennsonic <Command> [Options]
 
 Command:
     init <Cluster Name>    create initial cluster configuration
+    user                   manage cluster users
     deploy                 deploy a Kubernetes cluster
     scale                  scale a Kubernetes cluster
     ssh-keys               provision SSH keys
@@ -35,6 +36,10 @@ function main {
 
             init_cluster "${CLUSTER_NAME}"
         ;;
+        user)
+            shift 1
+            cluster_user "$@"
+        ;;
         "$1")
             local ACTION="$1"
             if [ -z "${ACTION}" ]; then usage; fi
@@ -44,6 +49,26 @@ function main {
         version) echo "${VERSION}"; exit 0 ;;
         -h|--help|help) echo "${USAGE}"; exit 0 ;;
     esac
+}
+
+function cluster_user {
+    local USERNAME="$2"
+    local SSH_USER="$(sed -n "s/.*ansible_ssh_user=\\(.*\\)/\\1/p" \
+                             config/hosts.ini)"
+    local SSH_HOST="$(sed -n "s/.*ansible_ssh_host=\\(.*\\) .*/\\1/p" \
+                             config/hosts.ini)"
+
+    curl -sL "$(cluster_user_script)" | \
+         ssh "${SSH_USER}@${SSH_HOST}" bash -s "$@"
+
+    scp "${SSH_USER}@${SSH_HOST}:${USERNAME}.conf" ./
+    ssh "${SSH_USER}@${SSH_HOST}" rm \\"${USERNAME}.conf\\"
+
+    exit 0
+}
+function cluster_user_script {
+    printf "%b" "https://raw.githubusercontent.com/travelping/cennsonic/" \
+                "master/src/cennsonic-user"
 }
 
 function init_cluster {

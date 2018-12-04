@@ -4,11 +4,8 @@
 [![GitHub Release Badge]][GitHub Releases]
 ![Unstable Badge]
 
-Cennso is cloud enabled network service operations. Cennsonic is a Cennso
-network integration cluster.
-
-Defines set of tools and guides for [NFV] enabled [Kubernetes] cluster setup and
-operations.
+Cennso stands for Cloud ENabled Network Service Operations. Cennsonic is a
+[Kubernetes] based Cennso Network Integration Cluster.
 
 * [Setup](#setup)
   * [Infrastructure](#infrastructure)
@@ -19,9 +16,17 @@ operations.
 
 ## Setup
 
-The NFV cluster is based on a regular Kubernetes cluster, so we start from
+As said Cennsonic is based on a regular Kubernetes cluster, so we start from
 setting it up. For the setup we use [Kubespray] packed into a [Docker image],
 so [Docker] is required. Also [kubectl] is required for cluster operations.
+
+The [Cennsonic Tool] simplifies operations with Kubespray in Docker. To download
+and install it:
+
+```
+$ wget https://raw.githubusercontent.com/travelping/cennsonic/master/bin/cennsonic
+$ install cennsonic /usr/local/bin/cennsonic
+```
 
 See also:
 
@@ -55,6 +60,7 @@ worker-[01:XX].cennsonic.example.net
 
 See also:
 
+* [Setup Infrastructure on Bare Metal →] **NYI**
 * [Setup Infrastructure on vSphere →] **NYI**
 * [Setup Infrastructure on Packet →] **NYI**
 * [Setup Infrastructure on AWS →] **NYI**
@@ -69,14 +75,6 @@ Requires [Configuration](#configuration):
 
 ### Configuration
 
-The [Cennsonic Tool] might be helpful to shorten some commands from this guide.
-Download and install:
-
-```
-$ wget https://raw.githubusercontent.com/travelping/cennsonic/master/bin/cennsonic
-$ install cennsonic /usr/local/bin/cennsonic
-```
-
 Let's name our cluster "cennsonic.example.net" (any other name can be used) and
 get its initial configuration:
 
@@ -84,26 +82,16 @@ get its initial configuration:
 $ cennsonic init cennsonic.example.net
 ```
 
-without "cennsonic":
+That should create a "cennsonic.example.net" cluster directory (further refered
+as "Cluster Directory") with the configuration files in it:
 
 ```
-$ CLUSTER=cennsonic.example.net
-$ mkdir $CLUSTER
-$ docker run \
-        --rm -v $PWD/$CLUSTER:/$CLUSTER \
-        travelping/cennsonic cp -r /cluster /$CLUSTER
-```
-
-that should end up with the following structure:
-
-```
-$ tree $CLUSTER
-cennsonic.example.net
-└── config
-    ├── group_vars
-    │   ├── all.yml
-    │   └── k8s-cluster.yml
-    └── hosts.ini
+$ tree cennsonic.example.net/config
+cennsonic.example.net/config
+ ├── group_vars
+ │   ├── all.yml
+ │   └── k8s-cluster.yml
+ └── hosts.ini
 
 3 directories, 3 files
 ```
@@ -118,8 +106,6 @@ Let's have a look into the files:
    the following:
 
    - kube_version — Kubernetes version
-
-   - cluster_name — use your name if differs from "cennsonic.example.net"
 
    - supplementary_addresses\_in\_ssl\_keys — list of all the IP addresses and
      DNS names that might be used to access Kubernetes API of the cluster.
@@ -138,62 +124,30 @@ evolve this cluster. Well, also makes sense if you do not plan that.
 Once the configuration is ready, a plain Kubernetes cluster can be deployed:
 
 ```
-$ cd <Cluster Root Path>
+$ cd <Cluster Directory>
 $ cennsonic deploy
     [-k,--ask-pass] # if SSH password should be specified
     [-K,--ask-become-pass] # if "sudo" password should be specified
-    [--pk,--private-key=<Path>] # if SSH private key should be specified
+    [--pk,--private-key[=Path]] # if SSH private key should be specified
 ```
 
-without "cennsonic":
+To acceess the newly deployed cluster a kubeconfig file should be created:
 
 ```
-$ cd <Cluster Root Path>
-$ docker run \
-        --rm -it \
-        -v $PWD/config:/cluster/config \
-        [-v $HOME/.ssh/id_rsa:/root/.ssh/key \] # if SSH private key should be specified
-        travelping/cennsonic ansible-playbook deploy.yml \
-        -vbi /cluster/config/hosts.ini
-        [-k or --ask-pass] # if SSH password should be specified
-        [-K or --ask-become-pass] # if "sudo" password should be specified
-        [--key-file /root/.ssh/key] # if SSH private key should be specified
+$ cd <Cluster Directory>
+$ cennsonic user create <Username> -a
 ```
 
-If the deployment process succeeded the newly created cluster kubeconfig could
-be merged into the main kubeconfig file. The existing config will be changed
-so backup it if feel unsafe:
+The "-a" option means the user will be bound to the "cluster-admin" role meaning
+full cluster access. Omit this option if a user should not have full access.
+In this case you will need to create a separate role and a rolebinding.
+
+Your kubeconfig should now be in the current directory, and you can get the
+nodes or pods list to make sure API is accessible and the cluster is functional:
 
 ```
-$ cp ~/.kube/config ~/.kube/config.bkp
-```
-
-If you specified internal IP addresses for the nodes ("ip=") in the
-"config/hosts.ini" file, one of them will be used in the generated kubeconfig
-by default and therefore the cluster API will not be reachable from the outside.
-Change the server address to one of the public ones before merging:
-
-```
-$ kubectl config set-cluster $(basename $(pwd)) --server=https://<Public IP>:6443 --kubeconfig=config/artifacts/admin.conf
-```
-
-Now you can merge the new config into the existing one:
-
-```
-$ KUBECONFIG=config/artifacts/admin.conf:~/.kube/config kubectl config view --flatten > config.new
-$ mv config.new ~/.kube/config
-```
-
-It is not recommended to put this file under version control, therefore it
-should be removed from the cluster file tree after merging into the main
-kubeconfig file.
-
-Check the nodes and pods list to make sure API is accessible and the cluster is
-functional:
-
-```
-$ kubectl get nodes
-$ kubectl get pods --all-namespaces
+$ kubectl --kubeconfig <Username>.conf get nodes
+$ kubectl --kubeconfig <Username>.conf get pods --all-namespaces
 ```
 
 See also:
@@ -257,6 +211,7 @@ limitations under the License.
 
 [Kubespray in Docker →]: docs/kubespray_in_docker.md
 
+[Setup Infrastructure on Bare Metal →]: docs/infra/bare_metal.md
 [Setup Infrastructure on vSphere →]: docs/infra/vsphere.md
 [Setup Infrastructure on Packet →]: docs/infra/packet.md
 [Setup Infrastructure on IBM →]: docs/infra/ibm.md
