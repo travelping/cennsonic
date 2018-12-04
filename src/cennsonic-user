@@ -25,9 +25,10 @@ function main {
         "delete $2")
             local ACTION="$1"
             local USERNAME="$2"
-            shift 2
 
             if [ -z "${USERNAME}" ]; then usage; fi
+
+            shift 2
             "${ACTION}_user" "${USERNAME}" "$@"
         ;;
         *) usage ;;
@@ -162,11 +163,11 @@ function delete_admin_binding {
 function admin_binding {
     local ACTION="$1"
     local USERNAME="$2"
-    local MANIFEST="$(print "%b")"
+    local MANIFEST="$(admin_binding_manifest)"
 
     curl -sL "$(admin_binding_manifest)" | \
-        sed -e "s/_USERNAME_/${USERNAME}/g" | \
-            kubectl "${ACTION}" --filename -
+        sed "s/_USERNAME_/${USERNAME}/g" | \
+             kubectl "${ACTION}" --filename -
 }
 function admin_binding_manifest {
     printf "%b" "https://raw.githubusercontent.com/travelping/cennsonic/" \
