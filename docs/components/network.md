@@ -73,12 +73,12 @@ metadata:
 ```
 
 This annotation refers to the attachment "macvlan0" (as in the "nad" example)
-and requires interface name in the pod to be named "macvi0". If no interface
+and requests interface name in the pod to be named "macvi0". If no interface
 name specified the "net[0-N]" one will be given.
 
 After the pod with this annotation is started it should contain an interface
 with requested name and an IP address from the defined (in the "nad") subnet
-attached.
+assigned.
 
 ### CNI Plugins Set
 
@@ -105,11 +105,16 @@ the pods.
 
 ### Installation
 
-The controller could be installed this way:
+Install controller from the [Kube Vxlan Controller Manifest]:
 
 ```
 $ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/kube-vxlan-controller.yaml
 ```
+
+### Usage
+
+Please refer the [Kube Vxlan Controller] documentation and
+[Kube Vxlan Controller Usage Example].
 
 ### Configuration
 
@@ -135,6 +140,7 @@ $ kubectl apply -f components/network/kube-vxlan-controller-networks.yaml
 [Calico]: https://www.projectcalico.org
 [CNI Node]: https://github.com/openvnf/cni-node
 [CNI Plugins]: https://github.com/containernetworking/plugins
+[Kube Vxlan Controller Manifest]: ../../components/network/kube-vxlan-controller.yaml
 [Multus CNI Manifest]: ../../components/network/multus-cni.yaml
 [Multus CNI RBAC Manifest]: ../../components/network/multus-cni-rbac.yaml
 [Macvlan]: https://docs.docker.com/network/macvlan
