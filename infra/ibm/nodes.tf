@@ -14,9 +14,14 @@ resource "ibm_compute_vm_instance" "master-cennsonic-example-net" {
     cores = 2
     memory = 4096
     disks = [25]
+    ipv6_enabled = true
     hourly_billing = true
     ssh_key_ids = ["${data.ibm_compute_ssh_key.public_key.id}"]
     tags = ["master", "cennsonic", "fra02"]
+
+    provisioner "local-exec" {
+        command = "echo \"${self.hostname} ansible_ssh_host=${self.ipv4_address} ip=${self.ipv4_address_private}\" >> hosts.ini"
+    }
 }
 
 resource "ibm_compute_vm_instance" "worker-cennsonic-example-net" {
@@ -29,9 +34,14 @@ resource "ibm_compute_vm_instance" "worker-cennsonic-example-net" {
     cores = 4
     memory = 8192
     disks = [100]
+    ipv6_enabled = true
     hourly_billing = true
     ssh_key_ids = ["${data.ibm_compute_ssh_key.public_key.id}"]
     tags = ["worker", "cennsonic", "fra02"]
+
+    provisioner "local-exec" {
+        command = "echo \"${self.hostname} ansible_ssh_host=${self.ipv4_address} ip=${self.ipv4_address_private}\" >> hosts.ini"
+    }
 }
 
 #data "ibm_compute_vm_instance" "worker-cennsonic-example-net" {
