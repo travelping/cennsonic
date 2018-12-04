@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 USAGE=$(cat <<EOF
 Usage: cennsonic-user <Action> <Username> [Options]
@@ -162,10 +162,15 @@ function delete_admin_binding {
 function admin_binding {
     local ACTION="$1"
     local USERNAME="$2"
+    local MANIFEST="$(print "%b")"
 
-    sudo sed -e "s/_USERNAME_/${USERNAME}/g" \
-             "$(templates)/user-admin-crb.yaml" | \
-         kubectl "${ACTION}" --filename -
+    curl -sL "$(admin_binding_manifest)" | \
+        sed -e "s/_USERNAME_/${USERNAME}/g" | \
+            kubectl "${ACTION}" --filename -
+}
+function admin_binding_manifest {
+    printf "%b" "https://raw.githubusercontent.com/travelping/cennsonic/" \
+                "master/components/users/user-admin-crb.yaml"
 }
 
 function server_endpoint {
