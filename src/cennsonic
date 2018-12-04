@@ -39,7 +39,7 @@ function main {
             local ACTION="$1"
             if [ -z "${ACTION}" ]; then usage; fi
 
-            run_action "${ACTION}" "$@"
+            run_action "$@"
         ;;
         version) echo "${VERSION}"; exit 0 ;;
         -h|--help|help) echo "${USAGE}"; exit 0 ;;
@@ -84,7 +84,7 @@ function run_action {
             --pk=*|--private-key=*) PRIVATE_KEY="${ARG#*=}"; shift ;;
             -k|--ask-pass) EXTRA_ARGS="${EXTRA_ARGS} --ask-pass" ;;
             -K|--ask-become-pass) EXTRA_ARGS="${EXTRA_ARGS} --ask-become-pass" ;;
-            *) echo "Warning: unknown argument ${ARG}" ;;
+            *) unknown_argument "${ARG}" ;;
         esac
     done
 
@@ -113,6 +113,11 @@ function check_docker {
 
 function usage {
     >&2 echo "${USAGE}"
+    exit 2
+}
+function unknown_argument {
+    local ARG="$1"
+    >&2 echo "Unknown argument: ${ARG}"
     exit 2
 }
 
