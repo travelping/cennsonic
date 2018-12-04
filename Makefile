@@ -39,8 +39,10 @@ usage:
 
 install:
 	install src/$(PROJECT) /usr/local/bin/$(PROJECT)
+	install src/$(PROJECT)-user /usr/local/bin/$(PROJECT)-user
 
 uninstall:
+	rm -f /usr/local/bin/$(PROJECT)-user
 	rm -f /usr/local/bin/$(PROJECT)
 
 docker-build:
