@@ -520,6 +520,50 @@ function kubelet_extra_reset {
     sudo rm -f /etc/default/kubelet
 }
 
+function calico_etcd_secrets_create {
+    local PKI="$(pki)/calico"
+
+    log "Creating certificates for Calico to access Etcd..."
+
+    sudo mkdir -p "${PKI}"
+    sudo cp "$(pki)/etcd/ca.crt" "${PKI}/etcd-ca"
+
+    sudo openssl genrsa -out "${PKI}/etcd-key" 2048
+
+    sudo openssl req -new \
+                     -key "${PKI}/etcd-key" \
+                     -out "${PKI}/etcd-csr" \
+                     -subj "/CN=calico.$(cluster_name)"
+
+    printf "%b" \
+           "[ext]\n" \
+           "basicConstraints = CA:false\n" \
+           "keyUsage = digitalSignature,keyEncipherment\n" \
+           "extendedKeyUsage = serverAuth,clientAuth\n" \
+           "subjectAltName = DNS:localhost,IP:127.0.0.1\n" \
+           "subjectKeyIdentifier = hash\n" | \
+        sudo tee "${PKI}/etcd-cnf" > /dev/null
+
+    sudo openssl x509 -req \
+                      -in "${PKI}/etcd-csr" \
+                      -out "${PKI}/etcd-cert" \
+                      -CA "$(pki)/etcd/ca.crt" \
+                      -CAkey "$(pki)/etcd/ca.key" \
+                      -CAcreateserial \
+                      -days 3650 \
+                      -extensions ext \
+                      -extfile "${PKI}/etcd-cnf"
+
+    kubectl create secret generic calico-etcd-secrets \
+            --namespace kube-system \
+            --from-file="${PKI}/etcd-ca" \
+            --from-file="${PKI}/etcd-key" \
+            --from-file="${PKI}/etcd-cert"
+
+    sudo rm "${PKI}"/etcd-{ca,key,csr,cnf,cert}
+    sudo rmdir "${PKI}"
+}
+
 function resolve_node_hostname_to {
     local IP="$1"
     ensure_in_hosts "${IP}" "$(node_hostname)"
