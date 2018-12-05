@@ -521,7 +521,7 @@ function kubelet_extra_reset {
 }
 
 function calico_etcd_secrets_create {
-    local PKI="$(pki)/calico"
+    local PKI; PKI="$(pki)/calico"
 
     log "Creating certificates for Calico to access Etcd..."
 
@@ -536,12 +536,12 @@ function calico_etcd_secrets_create {
                      -subj "/CN=calico.$(cluster_name)"
 
     printf "%b" \
-           "[ext]\n" \
-           "basicConstraints = CA:false\n" \
-           "keyUsage = digitalSignature,keyEncipherment\n" \
-           "extendedKeyUsage = serverAuth,clientAuth\n" \
-           "subjectAltName = DNS:localhost,IP:127.0.0.1\n" \
-           "subjectKeyIdentifier = hash\n" | \
+           "[ext]\\n" \
+           "basicConstraints = CA:false\\n" \
+           "keyUsage = digitalSignature,keyEncipherment\\n" \
+           "extendedKeyUsage = serverAuth,clientAuth\\n" \
+           "subjectAltName = DNS:localhost,IP:127.0.0.1\\n" \
+           "subjectKeyIdentifier = hash\\n" | \
         sudo tee "${PKI}/etcd-cnf" > /dev/null
 
     sudo openssl x509 -req \
@@ -596,9 +596,9 @@ function calico_etcd_endpoints_set {
 function calico_etcd_endpoints_patch {
     local ENDPOINTS="$1"
     printf "%b" \
-           "data:\n" \
-           "  etcd_endpoints:\n" \
-           "    ${ENDPOINTS}\n"
+           "data:\\n" \
+           "  etcd_endpoints:\\n" \
+           "    ${ENDPOINTS}\\n"
 }
 
 function resolve_node_hostname_to {
