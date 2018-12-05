@@ -178,13 +178,13 @@ function master_init {
     local API_IP="$2"
     local API_IFACE="$3"
 
+    log "Initialising first master of $(cluster_name)..."
     sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
 
     resolve_node_hostname_to "${NODE_IP}"
     resolve_api_hostname_to "${NODE_IP}"
     master_prepare new "${NODE_IP}"
 
-    log "Initialising first master of $(cluster_name)..."
     kubeadm init --skip-token-print
 
     node_role set master
@@ -211,13 +211,13 @@ function master_join {
     local NODE_IP="$1"
     local API_IP="$2"
 
+    log "Joining master to $(cluster_name)..."
     sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
 
     resolve_node_hostname_to "${NODE_IP}"
     resolve_api_hostname_to "${API_IP}"
     master_prepare existing "${NODE_IP}"
 
-    log "Joining master to $(cluster_name)..."
     kubeadm_alpha certs all
     kubeadm_alpha kubelet config write-to-disk
     kubeadm_alpha kubelet write-env-file
@@ -595,6 +595,8 @@ function calico_etcd_endpoints_list {
 }
 function calico_etcd_endpoints_set {
     local ENDPOINTS="$1"
+
+    log "Setting Calico Etcd endpoints to ${ENDPOINTS}..."
     kubectl patch configmap calico-config \
             --namespace kube-system \
             --patch "$(calico_etcd_endpoints_patch "${ENDPOINTS}")"
