@@ -53,10 +53,10 @@ function main {
 
 function cluster_user {
     local USERNAME="$2"
-    local SSH_USER="$(sed -n "s/.*ansible_ssh_user=\\(.*\\)/\\1/p" \
-                             config/hosts.ini)"
-    local SSH_HOST="$(sed -n "s/.*ansible_ssh_host=\\(.*\\) .*/\\1/p" \
-                             config/hosts.ini)"
+    local SSH_USER; SSH_USER="$(sed -n "s/.*ansible_ssh_user=\\(.*\\)/\\1/p" \
+                                       config/hosts.ini)"
+    local SSH_HOST; SSH_HOST="$(sed -n "s/.*ansible_ssh_host=\\(.*\\) .*/\\1/p" \
+                                       config/hosts.ini)"
 
     curl -sL "$(cluster_user_script)" | \
          ssh "${SSH_USER}@${SSH_HOST}" bash -s "$@"
