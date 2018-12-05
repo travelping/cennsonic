@@ -122,7 +122,7 @@ function kubeadm_config {
     echo "/etc/kubernetes/kubeadm.conf"
 }
 function kubectl {
-    sudo /opt/bin/kubectl --kubeconfig "$(kubeconfig)" $*
+    sudo /opt/bin/kubectl --kubeconfig "$(kubeconfig)" "$@"
 }
 function kubeconfig {
     echo "/etc/kubernetes/kubeconfig"
@@ -491,11 +491,17 @@ function api_server_port {
 
 function pods {
     local POD_NAME="$1"
-    local NAMESPACE="${2:+--namespace $2}"
-    local SELECTOR="${3:+--selector $3}"
-    local JSONPATH="${4:+--output jsonpath=$4}"
+    local NAMESPACE="$2"
+    local SELECTOR="$3"
+    local JSONPATH="$4"
+    local COMMAND="kubectl get pods"
 
-    kubectl get pods "${POD_NAME}" "${NAMESPACE}" "${SELECTOR}" "${JSONPATH}"
+    [ -n "${POD_NAME}" ] && COMMAND="${COMMAND} ${POD_NAME}"
+    [ -n "${NAMESPACE}" ] && COMMAND="${COMMAND} --namespace ${NAMESPACE}"
+    [ -n "${SELECTOR}" ] && COMMAND="${COMMAND} --selector ${SELECTOR}"
+    [ -n "${JSONPATH}" ] && COMMAND="${COMMAND} --output jsonpath=${JSONPATH}"
+
+    ${COMMAND}
 }
 
 function cni_reset {
