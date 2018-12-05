@@ -563,6 +563,43 @@ function calico_etcd_secrets_create {
     sudo rm "${PKI}"/etcd-{ca,key,csr,cnf,cert}
     sudo rmdir "${PKI}"
 }
+function calico_etcd_endpoints_add {
+    local IP="$1"
+    local ENDPOINTS; ENDPOINTS="$(calico_etcd_endpoints_list)"
+    ENDPOINTS="${ENDPOINTS:-https://${IP}:2379}"
+
+    case "${ENDPOINTS}" in
+        *"${IP}"*) ;;
+        *) ENDPOINTS="${ENDPOINTS},https://${IP}:2379" ;;
+    esac
+
+    calico_etcd_endpoints_set "${ENDPOINTS}"
+}
+function calico_etcd_endpoints_delete {
+    local IP="$1"
+    local ENDPOINTS; ENDPOINTS="$(calico_etcd_endpoints_list)"
+
+    ENDPOINTS="$(echo "${ENDPOINTS}" | sed "s/https:\\/\\/${IP}:2379,*//")"
+    calico_etcd_endpoints_set "${ENDPOINTS}"
+}
+function calico_etcd_endpoints_list {
+    kubectl get configmap calico-config \
+            --namespace kube-system \
+            --output jsonpath="{.data.etcd_endpoints}"
+}
+function calico_etcd_endpoints_set {
+    local ENDPOINTS="$1"
+    kubectl patch configmap calico-config \
+            --namespace kube-system \
+            --patch "$(calico_etcd_endpoints_patch "${ENDPOINTS}")"
+}
+function calico_etcd_endpoints_patch {
+    local ENDPOINTS="$1"
+    printf "%b" \
+           "data:\n" \
+           "  etcd_endpoints:\n" \
+           "    ${ENDPOINTS}\n"
+}
 
 function resolve_node_hostname_to {
     local IP="$1"
