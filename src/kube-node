@@ -571,21 +571,27 @@ function calico_etcd_secrets_create {
 }
 function calico_etcd_endpoints_add {
     local IP="$1"
+    local ENDPOINT="https://${IP}:2379"
     local ENDPOINTS; ENDPOINTS="$(calico_etcd_endpoints_list)"
-    ENDPOINTS="${ENDPOINTS:-https://${IP}:2379}"
+    ENDPOINTS="${ENDPOINTS:-$ENDPOINT}"
 
     case "${ENDPOINTS}" in
         *"${IP}"*) ;;
-        *) ENDPOINTS="${ENDPOINTS},https://${IP}:2379" ;;
+        *) ENDPOINTS="${ENDPOINTS},${ENDPOINT}" ;;
     esac
 
+    echo "Adding Calico Etcd endpoint ${ENDPOINT}..."
     calico_etcd_endpoints_set "${ENDPOINTS}"
 }
 function calico_etcd_endpoints_delete {
     local IP="$1"
-    local ENDPOINTS; ENDPOINTS="$(calico_etcd_endpoints_list)"
+    local ENDPOINT="https://${IP}:2379"
+    local ENDPOINTS
+    ENDPOINTS="$(calico_etcd_endpoints_list | \
+                     sed -e "s~${ENDPOINT}~~" \
+                         -e "s/^,//" -e "s/,,/,/" -e "s/,$//")"
 
-    ENDPOINTS="$(echo "${ENDPOINTS}" | sed "s/https:\\/\\/${IP}:2379,*//")"
+    echo "Deleting Calico Etcd endpoint ${ENDPOINT}..."
     calico_etcd_endpoints_set "${ENDPOINTS}"
 }
 function calico_etcd_endpoints_list {
