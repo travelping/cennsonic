@@ -14,6 +14,7 @@ Options
     -c, --company=<Company>
     -d, --days=<Days>
     -s, --server=<Server>
+    -p, --port=<Port>
     -C, --cluster=<Cluster Name>
         --ca-cert=<CA Cert Path>
         --ca-cert-key=<CA Cert Key Path>
@@ -58,6 +59,7 @@ function create_user {
             -c=*|--company=*) local COMPANY="${ARG#*=}"; shift ;;
             -d=*|--days=*) local DAYS="${ARG#*=}"; shift ;;
             -s=*|--server=*) local SERVER="${ARG#*=}"; shift ;;
+            -p=*|--port=*) local PORT="${ARG#*=}"; shift ;;
             -C=*|--cluster=*) local CLUSTER="${ARG#*=}"; shift ;;
                  --ca-cert=*) local CA_CERT="${ARG#*=}"; shift ;;
                  --ca-cert-key=*) local CA_CERT_KEY="${ARG#*=}"; shift ;;
@@ -73,6 +75,7 @@ function create_user {
     DAYS="${DAYS:-365}"
     NAMESPACE="${NAMESPACE:-default}"
     SERVER="${SERVER:-k8s.$(cluster_name)}"
+    PORT="${PORT:-6443}"
     CLUSTER="${CLUSTER:-$(cluster_name)}"
     CA_CERT="${CA_CERT:-$(ca_cert)}"
     CA_CERT_KEY="${CA_CERT_KEY:-$(ca_cert_key)}"
@@ -81,7 +84,7 @@ function create_user {
     create_cert "${USERNAME}" "${COMPANY}"
     sign_cert "${USERNAME}" "${DAYS}" "${CA_CERT}" "${CA_CERT_KEY}"
     create_kubeconfig "${USERNAME}" "${NAMESPACE}" \
-                      "${SERVER}" "${CLUSTER}" "${CA_CERT}"
+                      "${SERVER}" "${PORT}" "${CLUSTER}" "${CA_CERT}"
     delete_cert "${USERNAME}"
     delete_cert_key "${USERNAME}"
 
@@ -135,13 +138,14 @@ function create_kubeconfig {
     local USERNAME="$1"
     local NAMESPACE="$2"
     local SERVER="$3"
-    local CLUSTER="$4"
-    local CA_CERT="$5"
+    local PORT="$4"
+    local CLUSTER="$5"
+    local CA_CERT="$6"
     local KUBECONFIG="${USERNAME}.conf"
 
     /opt/bin/kubectl config set-cluster "${CLUSTER}" \
         --kubeconfig="${KUBECONFIG}" \
-        --server="$(server_endpoint "${SERVER}")" \
+        --server="$(server_endpoint "${SERVER}" "${PORT}")" \
         --certificate-authority="${CA_CERT}" \
         --embed-certs=true
     
@@ -177,7 +181,8 @@ function admin_binding {
 
 function server_endpoint {
     local SERVER="$1"
-    echo "https://${SERVER}:6443"
+    local PORT="$2"
+    echo "https://${SERVER}:${PORT}"
 }
 
 function node_name {
