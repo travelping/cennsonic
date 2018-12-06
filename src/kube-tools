@@ -38,7 +38,7 @@ function main {
     #local KUBERNETES_VERSION=v1.12.1
     local CALICO_VERSION=v3.1.4
     local CNI_NODE_VERSION=0.3.0
-    local KUBEALIVED_VERSION=1.1.0
+    local KUBEALIVED_VERSION=1.1.1
     #local CNI_PLUGINS_VERSION=v0.7.4
     #local CRICTL_VERSION=v1.12.0
     local ARCH=amd64
@@ -140,7 +140,7 @@ function multus_cni_template {
 function kubealived_template {
     local VERSION="$1"
     printf %b "https://raw.githubusercontent.com/openvnf/kubealived/"\
-              "${VERSION}/kubealived.yaml"
+              "${VERSION}/manifests/kubealived.yaml"
 }
 function user_admin_crb_template {
     echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/user-admin-crb.yaml"

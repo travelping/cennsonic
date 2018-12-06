@@ -428,9 +428,10 @@ function install_kubealived {
     local API_IFACE="$2"
 
     log "Installing Kubealived..."
-    sudo sed -e "s/_IP_/${API_IP}/" \
+    sudo sed -e "s/_VRID_/$((1 + RANDOM % 255))/" \
              -e "s/_IFACE_/${API_IFACE}/" \
-             -e "s/_PASSWORD_/$(openssl rand -base64 8 | tr -d '/')/" \
+             -e "s/_IP_/${API_IP}/" \
+             -e "s~_PASSWORD_~$(openssl rand -base64 8)~" \
              "$(templates)/kubealived.yaml" | \
          kubectl create --filename -
 
