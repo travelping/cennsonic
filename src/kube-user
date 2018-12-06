@@ -14,6 +14,7 @@ Options
     -c, --company=<Company>
     -d, --days=<Days>
     -s, --server=<Server>
+    -C, --cluster=<Cluster Name>
         --ca-cert=<CA Cert Path>
         --ca-cert-key=<CA Cert Key Path>
 EOF
@@ -57,6 +58,7 @@ function create_user {
             -c=*|--company=*) local COMPANY="${ARG#*=}"; shift ;;
             -d=*|--days=*) local DAYS="${ARG#*=}"; shift ;;
             -s=*|--server=*) local SERVER="${ARG#*=}"; shift ;;
+            -C=*|--cluster=*) local CLUSTER="${ARG#*=}"; shift ;;
                  --ca-cert=*) local CA_CERT="${ARG#*=}"; shift ;;
                  --ca-cert-key=*) local CA_CERT_KEY="${ARG#*=}"; shift ;;
             *=*) >&2 echo "Unknown argument: ${ARG%=*}"; exit 2 ;;
@@ -71,13 +73,15 @@ function create_user {
     DAYS="${DAYS:-365}"
     NAMESPACE="${NAMESPACE:-default}"
     SERVER="${SERVER:-k8s.$(cluster_name)}"
+    CLUSTER="${CLUSTER:-$(cluster_name)}"
     CA_CERT="${CA_CERT:-$(ca_cert)}"
     CA_CERT_KEY="${CA_CERT_KEY:-$(ca_cert_key)}"
 
     create_cert_key "${USERNAME}"
     create_cert "${USERNAME}" "${COMPANY}"
     sign_cert "${USERNAME}" "${DAYS}" "${CA_CERT}" "${CA_CERT_KEY}"
-    create_kubeconfig "${USERNAME}" "${NAMESPACE}" "${SERVER}" "${CA_CERT}"
+    create_kubeconfig "${USERNAME}" "${NAMESPACE}" \
+                      "${SERVER}" "${CLUSTER}" "${CA_CERT}"
     delete_cert "${USERNAME}"
     delete_cert_key "${USERNAME}"
 
@@ -131,28 +135,29 @@ function create_kubeconfig {
     local USERNAME="$1"
     local NAMESPACE="$2"
     local SERVER="$3"
-    local CA_CERT="$4"
+    local CLUSTER="$4"
+    local CA_CERT="$5"
     local KUBECONFIG="${USERNAME}.conf"
 
-    /opt/bin/kubectl config set-cluster "$(cluster_name)" \
+    /opt/bin/kubectl config set-cluster "${CLUSTER}" \
         --kubeconfig="${KUBECONFIG}" \
         --server="$(server_endpoint "${SERVER}")" \
         --certificate-authority="${CA_CERT}" \
         --embed-certs=true
     
-    /opt/bin/kubectl config set-credentials "${USERNAME}-$(cluster_name)" \
+    /opt/bin/kubectl config set-credentials "${USERNAME}-${CLUSTER}" \
         --kubeconfig="${KUBECONFIG}" \
         --client-certificate="${USERNAME}.pem" \
         --client-key="${USERNAME}-key.pem" \
         --embed-certs=true
     
-    /opt/bin/kubectl config set-context "${USERNAME}-$(cluster_name)" \
+    /opt/bin/kubectl config set-context "${USERNAME}-${CLUSTER}" \
         --kubeconfig="${KUBECONFIG}" \
-        --cluster="$(cluster_name)" \
-        --user="${USERNAME}-$(cluster_name)" \
+        --cluster="${CLUSTER}" \
+        --user="${USERNAME}-${CLUSTER}" \
         --namespace="${NAMESPACE}"
     
-    /opt/bin/kubectl config use-context "${USERNAME}-$(cluster_name)" \
+    /opt/bin/kubectl config use-context "${USERNAME}-${CLUSTER}" \
         --kubeconfig="${KUBECONFIG}"
 }
 function create_admin_binding {
