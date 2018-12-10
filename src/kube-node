@@ -308,7 +308,7 @@ function master_pki_make {
 function master_pki_install {
     local ARCHIVE="$1"
 
-    log "Installing existing PKI from ${ARCHIVE}..."
+    log "Installing PKI from ${ARCHIVE}..."
     sudo tar xf "${ARCHIVE}" -C /etc
     sudo chown -R root:root /etc/kubernetes
     rm "${ARCHIVE}"
@@ -506,7 +506,7 @@ function pods {
 }
 
 function cni_reset {
-    echo "Resetting CNI..."
+    log "Resetting CNI..."
     sudo find /opt/cni/bin -type f -exec rm -f "{}" 2>/dev/null \; || true
     sudo find /etc/cni/net.d -type f -exec rm -f "{}" 2>/dev/null \; || true
     sudo rmdir -p /opt/cni/bin 2>/dev/null || true
@@ -514,7 +514,7 @@ function cni_reset {
 }
 
 function kubelet_extra_set {
-    echo "Setting Kubelet extra flags..."
+    log "Setting Kubelet extra flags..."
 
     printf %b "KUBELET_EXTRA_ARGS=" \
               "--allowed-unsafe-sysctls=net.* " | \
@@ -523,7 +523,7 @@ function kubelet_extra_set {
     sudo chmod 600 /etc/default/kubelet
 }
 function kubelet_extra_reset {
-    echo "Resetting Kubelet extra flags..."
+    log "Resetting Kubelet extra flags..."
     sudo rm -f /etc/default/kubelet
 }
 
@@ -581,7 +581,7 @@ function calico_etcd_endpoints_add {
         *) ENDPOINTS="${ENDPOINTS},${ENDPOINT}" ;;
     esac
 
-    echo "Adding Calico Etcd endpoint ${ENDPOINT}..."
+    log "Adding Calico Etcd endpoint ${ENDPOINT}..."
     calico_etcd_endpoints_set "${ENDPOINTS}"
 }
 function calico_etcd_endpoints_delete {
@@ -592,7 +592,7 @@ function calico_etcd_endpoints_delete {
                      sed -e "s~${ENDPOINT}~~" \
                          -e "s/^,//" -e "s/,,/,/" -e "s/,$//")"
 
-    echo "Deleting Calico Etcd endpoint ${ENDPOINT}..."
+    log "Deleting Calico Etcd endpoint ${ENDPOINT}..."
     calico_etcd_endpoints_set "${ENDPOINTS}"
 }
 function calico_etcd_endpoints_list {
