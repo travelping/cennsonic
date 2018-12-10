@@ -271,14 +271,31 @@ function install_images {
     done
 }
 
+function file_digest {
+    local HASH_FUN="$1"
+    local FILENAME="$2"
+    openssl "${HASH_FUN}" "${FILENAME}" | sed "s/.*= //"
+}
 function install_binary {
     local URL="$1"
     local DEST="${2:-/opt/bin}"
     local BINARY; BINARY=$(basename "${URL}")
+    local REMOTE_DIGEST
+    local LOCAL_DIGEST
+    local HASH_FUN="sha1"
 
-    curl -LO "${URL}"
-    sudo mkdir -p "${DEST}"
-    sudo install "${BINARY}" "${DEST}" && rm "${BINARY}"
+    REMOTE_DIGEST="$(curl -L "${URL}.${HASH_FUN}")"
+    if [ -e "${DEST}/${BINARY}" ]; then
+        LOCAL_DIGEST="$(file_digest "${HASH_FUN}" "${DEST}/${BINARY}")"
+    fi
+
+    if [ "${LOCAL_DIGEST}" != "${REMOTE_DIGEST}" ]; then
+        curl -LO "${URL}"
+        sudo mkdir -p "${DEST}"
+        sudo install "${BINARY}" "${DEST}" && rm "${BINARY}"
+    fi
+
+    echo "Digest: ${HASH_FUN}:$(file_digest sha1 "${DEST}/${BINARY}")"
 }
 function install_binary_archive {
     local URL="$1"
