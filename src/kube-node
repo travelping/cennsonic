@@ -429,11 +429,10 @@ function kubealived_ready {
 function kubealived_terminated {
     local NODE_NAME="$1"
     local NODE; NODE="${NODE_NAME}.$(cluster_name)"
-
-    local JP="jsonpath={.items[?(@.spec.nodeName==\"${NODE}\")].status.phase}"
-
+    local JP="{.items[?(@.spec.nodeName==\"${NODE}\")].status.phase}"
     local PHASE
-    PHASE="$(kubectl -n kubealived-system get po -o "$JP")" && [ -z "${PHASE}" ]
+
+    PHASE="$(pods "" kubealived-system "" "$JP")" && [ -z "${PHASE}" ]
 }
 
 function etcd_exec {
@@ -606,10 +605,11 @@ function calico_etcd_endpoints_set {
 }
 function calico_etcd_endpoints_patch {
     local ENDPOINTS="$1"
-    printf "%b" \
-           "data:\\n" \
-           "  etcd_endpoints:\\n" \
-           "    ${ENDPOINTS}\\n"
+    cat <<EOF
+data:
+  etcd_endpoints:
+    ${ENDPOINTS}
+EOF
 }
 
 function resolve_node_hostname_to {
