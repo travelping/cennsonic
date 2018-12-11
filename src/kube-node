@@ -228,13 +228,8 @@ function master_join {
     local ETCD_IP; ETCD_IP="$(etcd_ip)"
 
     log "Joining Etcd ${ETCD_HOSTNAME} (${ETCD_IP})..."
-    kubectl --namespace kube-system \
-            exec "etcd-${ETCD_HOSTNAME}" -- \
-       etcdctl --ca-file "$(pki)/etcd/ca.crt" \
-               --key-file "$(pki)/etcd/peer.key" \
-               --cert-file "$(pki)/etcd/peer.crt" \
-               --endpoints="https://${ETCD_IP}:2379" \
-           member add "$(node_hostname)" "https://${NODE_IP}:2380"
+    etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" \
+              member add "$(node_hostname)" "https://${NODE_IP}:2380"
 
     kubeadm_alpha etcd local
     kubeadm_alpha kubeconfig all
@@ -259,34 +254,22 @@ function master_join_info {
 function master_delete {
     local NODE_NAME; NODE_NAME="${1:-$(node_name)}"
     local NODE; NODE="${NODE_NAME}.$(cluster_name)"
+    local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname_this)"
+    local ETCD_IP; ETCD_IP="$(etcd_ip_this)"
 
     log "Deleting ${NODE_NAME} from $(cluster_name)..."
-
     node_role unset master "${NODE_NAME}"
 
     log "Waiting for Kubealived is terminated on ${NODE_NAME}..."
     wait_for kubealived_terminated "${NODE_NAME}"
 
-    local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname_this)"
-    local ETCD_IP; ETCD_IP="$(etcd_ip_this)"
 
     log "Retrieving ${NODE_NAME} Etcd ID..."
-    local ETCD_ID; ETCD_ID=$(kubectl --namespace kube-system \
-            exec "etcd-${ETCD_HOSTNAME}" -- \
-        etcdctl --ca-file "$(pki)/etcd/ca.crt" \
-                --key-file "$(pki)/etcd/peer.key" \
-                --cert-file "$(pki)/etcd/peer.crt" \
-                --endpoints="https://${ETCD_IP}:2379" \
-            member list | grep "${NODE}" | sed s/:.*//)
+    local ETCD_ID; ETCD_ID=$(etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" \
+                             member list | grep "${NODE}" | sed s/:.*//)
 
     log "Removing Etcd member ${NODE_NAME} (id: ${ETCD_ID})..."
-    kubectl --namespace kube-system \
-            exec "etcd-${ETCD_HOSTNAME}" -- \
-        etcdctl --ca-file "$(pki)/etcd/ca.crt" \
-                --key-file "$(pki)/etcd/peer.key" \
-                --cert-file "$(pki)/etcd/peer.crt" \
-                --endpoints="https://${ETCD_IP}:2379" \
-            member remove "${ETCD_ID}"
+    etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" member remove "${ETCD_ID}"
 
     kubectl delete node "${NODE}"
 }
@@ -453,6 +436,19 @@ function kubealived_terminated {
     PHASE="$(kubectl -n kubealived-system get po -o "$JP")" && [ -z "${PHASE}" ]
 }
 
+function etcd_exec {
+    local ETCD_HOSTNAME="$1"
+    local ETCD_IP="$2"
+
+    shift 2
+    kubectl --namespace kube-system \
+            exec "etcd-${ETCD_HOSTNAME}" -- \
+        etcdctl --ca-file "$(pki)/etcd/ca.crt" \
+                --key-file "$(pki)/etcd/peer.key" \
+                --cert-file "$(pki)/etcd/peer.crt" \
+                --endpoints="https://${ETCD_IP}:2379" \
+            "$@"
+}
 function etcd_cluster {
     JSONPATH=$(printf %b \
         '{range.items[*]}' \
