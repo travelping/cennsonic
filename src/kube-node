@@ -656,22 +656,27 @@ function discovery_token_ca_cert_hash {
 
 function wait_for {
     local CONDITION="$1"
+    local START_TIME; START_TIME="$(start_time)"
     shift
 
+    echo -n "[>"
     while ! "${CONDITION}" "$@"; do
-        echo -en "\\b=>"
         sleep 2
+        echo -en "\\b=>"
     done
-    echo -e "\\b."
+    echo -e "\\b] $(completion_time "${START_TIME}")"
 }
 
 function start_time {
     date +%s
 }
-function show_completion_time {
+function completion_time {
     local START_TIME="$1"
     local END_TIME; END_TIME="$(date +%s)"
-    log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
+    date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss
+}
+function show_completion_time {
+    log "Complete in $(completion_time "$@")."
 }
 function log {
     echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
