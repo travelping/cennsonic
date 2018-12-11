@@ -658,11 +658,12 @@ function wait_for {
     local CONDITION="$1"
     shift
 
+    echo -n "[>"
     while ! "${CONDITION}" "$@"; do
-        echo -en "\\b=>"
         sleep 2
+        echo -en "\\b=>"
     done
-    echo -e "\\b."
+    echo -e "\\b]"
 }
 
 function start_time {
