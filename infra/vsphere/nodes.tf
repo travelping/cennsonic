@@ -70,9 +70,9 @@ variable "ipv4_netmask" {
 variable "ipv4_gateway" {
   default = "172.20.16.1"
 }
-variable "dns_server_list" {
-  default = ["8.8.8.8"]
-}
+#variable "dns_server_list" {
+#  default = ["8.8.8.8"]
+#}
 variable "dns_server" {
   default = "8.8.8.8"
 }
@@ -84,24 +84,45 @@ data "http" "aalferov_keys" { url = "https://github.com/aialferov.keys" }
 
 data "ignition_user" "core" {
   name = "core"
-  password_hash = "$1$4HeHmKEH$tiRQnP122R228tcmLrhbQ1" # generate with "openssl passwd -1"
+  # generate with "openssl rand -base64 8 | openssl passwd -1 -stdin"
+  password_hash = "$1$4HeHmKEH$tiRQnP122R228tcmLrhbQ1"
   ssh_authorized_keys = ["${chomp(data.http.aalferov_keys.body)}"]
 }
 
-data "ignition_file" "hosts" {
+data "ignition_file" "ip_vs" {
   count = "${length(var.name)}"
 
   filesystem = "root"
-  path = "/etc/hosts"
+  path = "/etc/modules-load.d/ip_vs.conf"
   mode = 420
-  content {
-    content = <<EOF
-127.0.0.1      localhost
-::1            localhost
-127.0.0.1      ${lookup(var.name, count.index)}.${var.cluster}.${var.datacenter}
-127.0.0.1      k8s.${var.cluster}.${var.datacenter}
-EOF
-  }
+  content { content = "ip_vs" }
+}
+
+data "ignition_file" "ip_vs_rr" {
+  count = "${length(var.name)}"
+
+  filesystem = "root"
+  path = "/etc/modules-load.d/ip_vs_rr.conf"
+  mode = 420
+  content { content = "ip_vs_rr" }
+}
+
+data "ignition_file" "ip_vs_wrr" {
+  count = "${length(var.name)}"
+
+  filesystem = "root"
+  path = "/etc/modules-load.d/ip_vs_wrr.conf"
+  mode = 420
+  content { content = "ip_vs_wrr" }
+}
+
+data "ignition_file" "ip_vs_sh" {
+  count = "${length(var.name)}"
+
+  filesystem = "root"
+  path = "/etc/modules-load.d/ip_vs_sh.conf"
+  mode = 420
+  content { content = "ip_vs_sh" }
 }
 
 data "ignition_file" "hostname" {
@@ -134,7 +155,10 @@ EOF
 data "ignition_config" "config" {
   count = "${length(var.name)}"
 
-  files = ["${element(data.ignition_file.hosts.*.id, count.index)}"]
+  files = ["${element(data.ignition_file.ip_vs.*.id, count.index)}"]
+  files = ["${element(data.ignition_file.ip_vs_rr.*.id, count.index)}"]
+  files = ["${element(data.ignition_file.ip_vs_wrr.*.id, count.index)}"]
+  files = ["${element(data.ignition_file.ip_vs_sh.*.id, count.index)}"]
   files = ["${element(data.ignition_file.hostname.*.id, count.index)}"]
   networkd = ["${element(data.ignition_networkd_unit.iface.*.id, count.index)}"]
   users = ["${data.ignition_user.core.id}"]
