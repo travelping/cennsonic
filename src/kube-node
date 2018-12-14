@@ -201,7 +201,7 @@ function master_init {
     fi
 
     log "Waiting for Etcd..."
-    wait_for etcd_ready
+    wait_for core_pod_ready etcd
 
     log "Installing Multus CNI..."
     kubectl create --filename "$(templates)/multus-cni-rbac.yaml"
@@ -240,7 +240,7 @@ function master_join {
     node_role set master
 
     log "Waiting for Etcd..."
-    wait_for etcd_ready
+    wait_for core_pod_ready etcd
 }
 function master_join_info {
     local TOKEN; TOKEN="$(join_token)"
@@ -469,10 +469,6 @@ function etcd_ip_this {
     pods "" kube-system component=etcd \
         "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].status.podIP}"
 }
-function etcd_ready {
-    [ "$(pods "etcd-$(node_hostname)" kube-system "" \
-              "{.status.containerStatuses[0].ready}" 2>/dev/null)" = "true" ]
-}
 
 function api_server_command {
     pods "" kube-system component=kube-apiserver \
@@ -483,6 +479,12 @@ function api_server_ip {
 }
 function api_server_port {
     api_server_command | sed "s/.*--secure-port=\\([0-9]\\+\\).*/\\1/"
+}
+
+function core_pod_ready {
+    local APP="$1"
+    [ "$(pods "${APP}-$(node_hostname)" kube-system "" \
+              "{.status.containerStatuses[0].ready}" 2>/dev/null)" = "true" ]
 }
 
 function pods {
