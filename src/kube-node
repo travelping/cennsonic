@@ -661,7 +661,7 @@ function delete_from_hosts {
 }
 
 function join_token {
-    sudo /opt/bin/kubeadm token list | sed -n 2p | sed "s/ .*//"
+    sudo /opt/bin/kubeadm token list | sed -n "2s/ .*//p"
 }
 function join_token_create {
     sudo /opt/bin/kubeadm token create
