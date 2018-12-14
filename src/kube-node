@@ -142,13 +142,13 @@ function templates {
 }
 
 function node_name {
-    hostname -s
+    cat /etc/hostname | sed "s/\\..*//"
 }
 function cluster_name {
-    hostname -d
+    cat /etc/hostname | sed "s/[^\\.]*\\.//"
 }
 function node_hostname {
-    hostname -f
+    cat /etc/hostname
 }
 function api_hostname {
     echo "k8s.$(cluster_name)"
