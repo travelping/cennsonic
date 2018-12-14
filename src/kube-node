@@ -192,6 +192,7 @@ function master_init {
     log "Installing Calico..."
     kubectl create --filename "$(templates)/calico-rbac-kdd.yaml"
     kubectl create --filename "$(templates)/calico.yaml"
+    wait_for_core_pods
 
     if [ -n "${API_IFACE}" ]; then
         install_kubealived "${API_IP}" "${API_IFACE}"
@@ -199,9 +200,6 @@ function master_init {
     if [ "${NODE_IP}" != "${API_IP}" ]; then
         resolve_api_hostname_to "${API_IP}"
     fi
-
-    log "Waiting for Etcd..."
-    wait_for core_pod_ready etcd
 
     log "Installing Multus CNI..."
     kubectl create --filename "$(templates)/multus-cni-rbac.yaml"
@@ -239,8 +237,7 @@ function master_join {
 
     node_role set master
 
-    log "Waiting for Etcd..."
-    wait_for core_pod_ready etcd
+    wait_for_core_pods
 
     ensure_dns_ha
 }
@@ -483,10 +480,31 @@ function api_server_port {
     api_server_command | sed "s/.*--secure-port=\\([0-9]\\+\\).*/\\1/"
 }
 
+function wait_for_core_pods {
+    local APP
+    for APP in kube-proxy kube-apiserver \
+               kube-controller-manager kube-scheduler etcd
+    do
+        echo "Waiting for ${APP}..."
+        wait_for core_pod_ready "${APP}"
+    done
+}
 function core_pod_ready {
     local APP="$1"
-    [ "$(pods "${APP}-$(node_hostname)" kube-system "" \
-              "{.status.containerStatuses[0].ready}" 2>/dev/null)" = "true" ]
+    local LABEL
+    local JP
+
+    case "${APP}" in
+        etcd|kube-apiserver|kube-scheduler|kube-controller-manager)
+            local LABEL=component
+        ;;
+        kube-proxy) local LABEL=k8s-app ;;
+    esac
+
+    JP="$(printf "%b" "{.items[?(@.spec.nodeName==\"$(node_hostname)\")]" \
+                       ".status.containerStatuses[0].ready}")"
+
+    [ "$(pods "" kube-system "${LABEL}=${APP}" "$JP" 2>/dev/null)" = "true" ]
 }
 
 function pods {
