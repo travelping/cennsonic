@@ -241,6 +241,8 @@ function master_join {
 
     log "Waiting for Etcd..."
     wait_for core_pod_ready etcd
+
+    ensure_dns_ha
 }
 function master_join_info {
     local TOKEN; TOKEN="$(join_token)"
@@ -522,6 +524,20 @@ function kubelet_extra_set {
 function kubelet_extra_reset {
     log "Resetting Kubelet extra flags..."
     sudo rm -f /etc/default/kubelet
+}
+
+function ensure_dns_ha {
+    local POD
+    local NODES
+
+    log "Ensuring DNS pods are on different nodes..."
+    NODES="$(pods "" kube-system k8s-app=kube-dns "{.items[*].spec.nodeName}")"
+
+    if [ "${NODES%% *}" == "${NODES##* }" ]; then
+        POD="$(pods "" kube-system k8s-app=kube-dns \
+                    "{.items[0].metadata.name}")"
+        kubectl delete pod "${POD}" --namespace kube-system
+    fi
 }
 
 function calico_etcd_secrets_create {
