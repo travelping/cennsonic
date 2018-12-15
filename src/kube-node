@@ -556,6 +556,16 @@ function ensure_dns_ha {
                     "{.items[0].metadata.name}")"
         kubectl delete pod "${POD}" --namespace kube-system
     fi
+    wait_for_dns
+}
+function wait_for_dns {
+    log "Waiting for kube-dns..."
+    wait_for dns_ready
+}
+function dns_ready {
+    [ "$(pods "" kube-system k8s-app=kube-dns \
+              "{.items[*].status.containerStatuses[*].ready}" \
+              2>/dev/null)" = "true true" ]
 }
 
 function calico_etcd_secrets_create {
