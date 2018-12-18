@@ -1,0 +1,18 @@
+1. Keepalived as sep repo and download manifest from there.
+2. Custom Calico manifest should be used from this repo.
+  2.1 Version for the image should be read from there
+  2.2 Provide documentation how to update Calico config mentioning all customizations
+3. Calico MTU to 1440
+4. Calico scrapable by prometheus
+5. Ability to specify versions for all the components optionally (kube-tools)
+6. Create kubeconfig localy. On the masters sign the cert only.
+7. Check the following about these modules "ip_vs_rr ip_vs_wrr ip_vs_sh ip_vs":
+   a) whether a single master can work without
+   b) whether HA master installation can work without
+   c) whether first joining worker can work without
+   d) whether second and other joining workers can work without
+   e) 420 appears 644 in the end filesystem
+8. The same join info for several workers in a row (within 24h)
+9. Handle single master with VRRP IP reboot issue (or all the masters reboot at once).
+10. Calico might not clean up peers on node delete, consider adding nodeSelector
+    to let Calico node terminate on node role unset.
