@@ -437,24 +437,22 @@ function api_server_port {
 
 function wait_for_core_pods {
     local APP
-    for APP in kube-proxy kube-apiserver \
-               kube-controller-manager kube-scheduler etcd
-    do
+    declare -A APPS=(
+        [kube-proxy]=k8s-app
+        [kube-apiserver]=component
+        [kube-scheduler]=component
+        [kube-controller-manager]=component
+        [etcd]=component
+    )
+    for APP in "${!APPS[@]}"; do
         echo "Waiting for ${APP}..."
-        wait_for core_pod_ready "${APP}"
+        wait_for core_pod_ready "${APPS[${APP}]}" "${APP}"
     done
 }
 function core_pod_ready {
-    local APP="$1"
-    local LABEL
+    local LABEL="$1"
+    local APP="$2"
     local JP
-
-    case "${APP}" in
-        etcd|kube-apiserver|kube-scheduler|kube-controller-manager)
-            LABEL=component
-        ;;
-        kube-proxy) LABEL=k8s-app ;;
-    esac
 
     JP="$(printf "%b" "{.items[?(@.spec.nodeName==\"$(node_hostname)\")]" \
                        ".status.containerStatuses[0].ready}")"
@@ -688,10 +686,10 @@ function delete_from_hosts {
 }
 
 function node_name {
-    cat /etc/hostname | sed "s/\\..*//"
+    node_hostname | sed "s/\\..*//"
 }
 function cluster_name {
-    cat /etc/hostname | sed "s/[^\\.]*\\.//"
+    node_hostname | sed "s/[^\\.]*\\.//"
 }
 function node_hostname {
     cat /etc/hostname
