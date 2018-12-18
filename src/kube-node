@@ -437,16 +437,18 @@ function api_server_port {
 
 function wait_for_core_pods {
     local APP
-    declare -A APPS=(
-        [kube-proxy]=k8s-app
-        [kube-apiserver]=component
-        [kube-scheduler]=component
-        [kube-controller-manager]=component
-        [etcd]=component
-    )
-    for APP in "${!APPS[@]}"; do
+    declare -A LABELS; declare -a APPS
+
+    LABELS[kube-proxy]=k8s-app; APPS+=(kube-proxy)
+    LABELS[calico-node]=k8s-app; APPS+=(calico-node)
+    LABELS[kube-apiserver]=component; APPS+=(kube-apiserver)
+    LABELS[kube-scheduler]=component; APPS+=(kube-scheduler)
+    LABELS[kube-controller-manager]=component; APPS+=(kube-controller-manager)
+    LABELS[etcd]=component; APPS+=(etcd)
+
+    for APP in "${APPS[@]}"; do
         echo "Waiting for ${APP}..."
-        wait_for core_pod_ready "${APPS[${APP}]}" "${APP}"
+        wait_for core_pod_ready "${LABELS[${APP}]}" "${APP}"
     done
 }
 function core_pod_ready {
