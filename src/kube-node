@@ -109,70 +109,6 @@ function main {
     esac
 }
 
-function k8s_version {
-    /opt/bin/kubelet --version | sed "s/.* //"
-}
-function kubeadm {
-    sudo /opt/bin/kubeadm --config "$(kubeadm_config)" "$@"
-}
-function kubeadm_alpha {
-    kubeadm alpha phase "$@"
-}
-function kubeadm_config {
-    echo "/etc/kubernetes/kubeadm.conf"
-}
-function kubectl {
-    sudo /opt/bin/kubectl --kubeconfig "$(kubeconfig)" "$@"
-}
-function kubeconfig {
-    echo "/etc/kubernetes/kubeconfig"
-}
-function kubeconfig_master {
-    echo "/etc/kubernetes/admin.conf"
-}
-function kubeconfig_worker {
-    echo "/etc/kubernetes/kubelet.conf"
-}
-
-function pki {
-    echo "/etc/kubernetes/pki"
-}
-function templates {
-    echo "/etc/kubernetes/templates"
-}
-
-function node_name {
-    cat /etc/hostname | sed "s/\\..*//"
-}
-function cluster_name {
-    cat /etc/hostname | sed "s/[^\\.]*\\.//"
-}
-function node_hostname {
-    cat /etc/hostname
-}
-function api_hostname {
-    echo "k8s.$(cluster_name)"
-}
-
-function master_prepare {
-    local CLUSTER_STATE="$1"
-    local NODE_IP="$2"
-
-    log "Preparing master for the ${CLUSTER_STATE} $(cluster_name)..."
-
-    local ETCD_STATE="${CLUSTER_STATE}"
-    [ "${CLUSTER_STATE}" = "existing" ] && ETCD_CLUSTER="$(etcd_cluster)"
-
-    sudo sed -e "s/_K8S_VERSION_/$(k8s_version)/g" \
-             -e "s/_API_HOSTNAME_/$(api_hostname)/g" \
-             -e "s/_NODE_HOSTNAME_/$(node_hostname)/g" \
-             -e "s/_NODE_IP_/${NODE_IP}/g" \
-             -e "s\\_ETCD_CLUSTER_\\${ETCD_CLUSTER}\\g" \
-             -e "s/_ETCD_STATE_/${ETCD_STATE}/g" \
-             "$(templates)/kubeadm.yaml" | \
-         sudo tee "$(kubeadm_config)" > /dev/null
-    sudo chmod 600 "$(kubeadm_config)"
-}
 function master_init {
     local NODE_IP="$1"
     local API_IP="$2"
@@ -240,6 +176,25 @@ function master_join {
     wait_for_core_pods
 
     ensure_dns_ha
+}
+function master_prepare {
+    local CLUSTER_STATE="$1"
+    local NODE_IP="$2"
+
+    log "Preparing master for the ${CLUSTER_STATE} $(cluster_name)..."
+
+    local ETCD_STATE="${CLUSTER_STATE}"
+    [ "${CLUSTER_STATE}" = "existing" ] && ETCD_CLUSTER="$(etcd_cluster)"
+
+    sudo sed -e "s/_K8S_VERSION_/$(k8s_version)/g" \
+             -e "s/_API_HOSTNAME_/$(api_hostname)/g" \
+             -e "s/_NODE_HOSTNAME_/$(node_hostname)/g" \
+             -e "s/_NODE_IP_/${NODE_IP}/g" \
+             -e "s\\_ETCD_CLUSTER_\\${ETCD_CLUSTER}\\g" \
+             -e "s/_ETCD_STATE_/${ETCD_STATE}/g" \
+             "$(templates)/kubeadm.yaml" | \
+         sudo tee "$(kubeadm_config)" > /dev/null
+    sudo chmod 600 "$(kubeadm_config)"
 }
 function master_join_info {
     local TOKEN; TOKEN="$(join_token)"
@@ -496,9 +451,9 @@ function core_pod_ready {
 
     case "${APP}" in
         etcd|kube-apiserver|kube-scheduler|kube-controller-manager)
-            local LABEL=component
+            LABEL=component
         ;;
-        kube-proxy) local LABEL=k8s-app ;;
+        kube-proxy) LABEL=k8s-app ;;
     esac
 
     JP="$(printf "%b" "{.items[?(@.spec.nodeName==\"$(node_hostname)\")]" \
@@ -658,6 +613,50 @@ data:
 EOF
 }
 
+function join_token {
+    sudo /opt/bin/kubeadm token list | sed -n "2s/ .*//p"
+}
+function join_token_create {
+    sudo /opt/bin/kubeadm token create
+}
+function discovery_token_ca_cert_hash {
+    openssl x509 -pubkey -in "$(pki)/ca.crt" | \
+        openssl rsa -pubin -outform der 2>/dev/null | \
+            openssl dgst -sha256 -hex | sed "s/^.* //"
+}
+
+function k8s_version {
+    /opt/bin/kubelet --version | sed "s/.* //"
+}
+function kubeadm {
+    sudo /opt/bin/kubeadm --config "$(kubeadm_config)" "$@"
+}
+function kubeadm_alpha {
+    kubeadm alpha phase "$@"
+}
+function kubeadm_config {
+    echo "/etc/kubernetes/kubeadm.conf"
+}
+function kubectl {
+    sudo /opt/bin/kubectl --kubeconfig "$(kubeconfig)" "$@"
+}
+function kubeconfig {
+    echo "/etc/kubernetes/kubeconfig"
+}
+function kubeconfig_master {
+    echo "/etc/kubernetes/admin.conf"
+}
+function kubeconfig_worker {
+    echo "/etc/kubernetes/kubelet.conf"
+}
+
+function pki {
+    echo "/etc/kubernetes/pki"
+}
+function templates {
+    echo "/etc/kubernetes/templates"
+}
+
 function resolve_node_hostname_to {
     local IP="$1"
     ensure_in_hosts "${IP}" "$(node_hostname)"
@@ -688,16 +687,17 @@ function delete_from_hosts {
     sudo sed -i "/${HOSTNAME}/d" /etc/hosts
 }
 
-function join_token {
-    sudo /opt/bin/kubeadm token list | sed -n "2s/ .*//p"
+function node_name {
+    cat /etc/hostname | sed "s/\\..*//"
 }
-function join_token_create {
-    sudo /opt/bin/kubeadm token create
+function cluster_name {
+    cat /etc/hostname | sed "s/[^\\.]*\\.//"
 }
-function discovery_token_ca_cert_hash {
-    openssl x509 -pubkey -in "$(pki)/ca.crt" | \
-        openssl rsa -pubin -outform der 2>/dev/null | \
-            openssl dgst -sha256 -hex | sed "s/^.* //"
+function node_hostname {
+    cat /etc/hostname
+}
+function api_hostname {
+    echo "k8s.$(cluster_name)"
 }
 
 function wait_for {
@@ -724,6 +724,7 @@ function completion_time {
 function show_completion_time {
     log "Complete in $(completion_time "$@")."
 }
+
 function log {
     echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
 }
