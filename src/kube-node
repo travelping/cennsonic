@@ -122,12 +122,9 @@ function master_init {
     master_prepare new "${NODE_IP}"
 
     kubeadm init --skip-token-print
-
     node_role set master
+    install_calico "${NODE_IP}"
 
-    log "Installing Calico..."
-    kubectl create --filename "$(templates)/calico-rbac-kdd.yaml"
-    kubectl create --filename "$(templates)/calico.yaml"
     wait_for_core_pods
 
     if [ -n "${API_IFACE}" ]; then
@@ -523,6 +520,13 @@ function dns_ready {
               2>/dev/null)" = "true true" ]
 }
 
+function install_calico {
+    local NODE_IP="$1"
+
+    log "Installing Calico..."
+    kubectl create --filename "$(templates)/calico-rbac-kdd.yaml"
+    kubectl create --filename "$(templates)/calico.yaml"
+}
 function calico_etcd_secrets_create {
     local PKI; PKI="$(pki)/calico"
 
