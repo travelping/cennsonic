@@ -357,6 +357,11 @@ function node_has_role_taint {
     [ "$(kubectl get node "${NODE}" -o "${JP}")" = "NoSchedule" ]
 }
 
+function ip_ready {
+    local IP="$1"
+    ping "${IP}" -c1 -W1 2>&1 > /dev/null
+}
+
 function install_kubealived {
     local API_IP="$1"
     local API_IFACE="$2"
@@ -371,6 +376,9 @@ function install_kubealived {
 
     log "Waiting for Kubealived..."
     wait_for kubealived_ready
+
+    log "Waiting for API IP..."
+    wait_for ip_ready "${API_IP}"
 }
 function kubealived_ready {
     [ "$(pods "" kubealived-system app=kubealived \
