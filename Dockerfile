@@ -37,3 +37,4 @@ COPY /ansible /$PROJECT
 WORKDIR "/${PROJECT}"
 
 RUN ln -s cluster.yml deploy.yml
+RUN ln -s upgrade-cluster.yml upgrade.yml
