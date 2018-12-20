@@ -40,14 +40,14 @@ function main {
             shift 1
             cluster_user "$@"
         ;;
+        version) echo "${VERSION}"; exit 0 ;;
+        -h|--help|help) echo "${USAGE}"; exit 0 ;;
         "$1")
             local ACTION="$1"
             if [ -z "${ACTION}" ]; then usage; fi
 
             run_action "$@"
         ;;
-        version) echo "${VERSION}"; exit 0 ;;
-        -h|--help|help) echo "${USAGE}"; exit 0 ;;
     esac
 }
 
@@ -55,7 +55,7 @@ function cluster_user {
     local USERNAME="$2"
     local SSH_USER; SSH_USER="$(sed -n "s/.*ansible_ssh_user=\\(.*\\)/\\1/p" \
                                        config/hosts.ini)"
-    local SSH_HOST; SSH_HOST="$(sed -n "s/.*ansible_ssh_host=\\(.*\\) .*/\\1/p" \
+    local SSH_HOST; SSH_HOST="$(sed -n "1s/.*ansible_ssh_host=\\(.*\\) .*/\\1/p" \
                                        config/hosts.ini)"
 
     curl -sL "$(cluster_user_script)" | \
