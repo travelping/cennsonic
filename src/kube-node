@@ -282,6 +282,7 @@ function node_reset {
     cni_reset
     resolve_reset
     kubelet_extra_reset
+    iptables_reset
 }
 
 function node_role {
@@ -502,6 +503,17 @@ function kubelet_extra_set {
 function kubelet_extra_reset {
     log "Resetting Kubelet extra flags..."
     sudo rm -f /etc/default/kubelet
+}
+
+function iptables_reset {
+    local TABLES=(raw nat mangle filter)
+    local TABLE
+
+    log "Resetting iptables..."
+    for TABLE in "${TABLES[@]}"; do
+        sudo iptables -t "${TABLE}" -F
+        sudo iptables -t "${TABLE}" -X
+    done
 }
 
 function ensure_dns_ha {
