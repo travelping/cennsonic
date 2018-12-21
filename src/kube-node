@@ -360,7 +360,7 @@ function node_has_role_taint {
 
 function ip_ready {
     local IP="$1"
-    ping "${IP}" -c1 -W1 2>&1 > /dev/null
+    ping "${IP}" -c1 -W1 > /dev/null 2>&1
 }
 
 function install_kubealived {
@@ -420,25 +420,35 @@ function etcd_hostname {
 }
 function etcd_hostname_this {
     pods "" kube-system component=etcd \
-        "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].spec.nodeName}"
+         "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].spec.nodeName}"
 }
 function etcd_ip {
     pods "" kube-system component=etcd "{.items[0].status.podIP}"
 }
 function etcd_ip_this {
     pods "" kube-system component=etcd \
-        "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].status.podIP}"
+         "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].status.podIP}"
 }
 
 function api_server_command {
+    local MODIFIER="${1:+_${1//-/_}}"
+
     pods "" kube-system component=kube-apiserver \
-         "{.items[0].spec.containers[0].command[*]}"
+         "$(api_server_command_jp"${MODIFIER}")"
+}
+function api_server_command_jp {
+    printf "%b" "{range.items[0].spec.containers[*].command[*]}" \
+                "{@}{\"\\\\n\"}{end}"
+}
+function api_server_command_jp_not_this {
+    printf "%b" "{range.items[?(@.spec.nodeName!=\"$(node_hostname)\")]" \
+                ".spec.containers[*].command[*]}{@}{\"\\\\n\"}{end}"
 }
 function api_server_ip {
-    api_server_command | sed "s/.*--advertise-address=\\([0-9|.]\\+\\).*/\\1/"
+    api_server_command "$@" | sed -n "s/--advertise-address=//p" | head -n1
 }
 function api_server_port {
-    api_server_command | sed "s/.*--secure-port=\\([0-9]\\+\\).*/\\1/"
+    api_server_command | sed -n "s/--secure-port=//p"
 }
 
 function wait_for_core_pods {
