@@ -118,7 +118,7 @@ function master_init {
     sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
 
     resolve_node_hostname_to "${NODE_IP}"
-    resolve_api_hostname_to "${NODE_IP}"
+    resolve_kubernetes_to "${NODE_IP}"
     master_prepare new "${NODE_IP}"
 
     kubeadm init --skip-token-print
@@ -129,9 +129,6 @@ function master_init {
 
     if [ -n "${API_IFACE}" ]; then
         install_kubealived "${API_IP}" "${API_IFACE}"
-    fi
-    if [ "${NODE_IP}" != "${API_IP}" ]; then
-        resolve_api_hostname_to "${API_IP}"
     fi
 
     log "Installing Multus CNI..."
@@ -146,7 +143,7 @@ function master_join {
     sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
 
     resolve_node_hostname_to "${NODE_IP}"
-    resolve_api_hostname_to "${API_IP}"
+    resolve_kubernetes_to "${API_IP}"
     master_prepare existing "${NODE_IP}"
 
     kubeadm_alpha certs all
@@ -171,6 +168,7 @@ function master_join {
     node_role set master
 
     wait_for_core_pods
+    resolve_kubernetes_to "${NODE_IP}"
 
     ensure_dns_ha
 }
@@ -207,6 +205,7 @@ function master_delete {
     local NODE; NODE="${NODE_NAME}.$(cluster_name)"
     local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname_this)"
     local ETCD_IP; ETCD_IP="$(etcd_ip_this)"
+    local API_IP; API_IP="$(api_server_ip not-this)"
 
     log "Deleting ${NODE_NAME} from $(cluster_name)..."
     node_role unset master "${NODE_NAME}"
@@ -214,15 +213,22 @@ function master_delete {
     log "Waiting for Kubealived is terminated on ${NODE_NAME}..."
     wait_for kubealived_terminated "${NODE_NAME}"
 
+    if [ -n "${API_IP}" ]; then
+        resolve_kubernetes_to "${API_IP}"
 
-    log "Retrieving ${NODE_NAME} Etcd ID..."
-    local ETCD_ID; ETCD_ID=$(etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" \
-                             member list | grep "${NODE}" | sed s/:.*//)
+        log "Retrieving ${NODE_NAME} Etcd ID..."
+        local ETCD_ID; ETCD_ID=$(etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" \
+                                 member list | grep "${NODE}" | sed s/:.*//)
 
-    log "Removing Etcd member ${NODE_NAME} (id: ${ETCD_ID})..."
-    etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" member remove "${ETCD_ID}"
+        log "Removing Etcd member ${NODE_NAME} (id: ${ETCD_ID})..."
+        etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" member remove "${ETCD_ID}"
 
-    kubectl delete node "${NODE}"
+        kubectl delete node "${NODE}"
+    fi
+
+    if [ "${NODE_NAME}" = "$(node_name)" ]; then
+        node_reset
+    fi
 }
 function master_pki_make {
     local ARCHIVE="$1"
@@ -257,7 +263,7 @@ function worker_join {
     log "Joining worker to $(cluster_name)..."
 
     resolve_node_hostname_to "${NODE_IP}"
-    resolve_api_hostname_to "${API_IP}"
+    resolve_kubernetes_to "${API_IP}"
 
     kubelet_extra_set
 
@@ -695,13 +701,13 @@ function resolve_node_hostname_to {
     local IP="$1"
     ensure_in_hosts "${IP}" "$(node_hostname)"
 }
-function resolve_api_hostname_to {
+function resolve_kubernetes_to {
     local IP="$1"
-    ensure_in_hosts "${IP}" "$(api_hostname)"
+    ensure_in_hosts "${IP}" "kubernetes"
 }
 function resolve_reset {
     delete_from_hosts "$(node_hostname)"
-    delete_from_hosts "$(api_hostname)"
+    delete_from_hosts "kubernetes"
 }
 function ensure_in_hosts {
     local IP="$1"

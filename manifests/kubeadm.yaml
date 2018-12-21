@@ -3,7 +3,7 @@ kind: ClusterConfiguration
 kubernetesVersion: _K8S_VERSION_
 apiServerCertSANs:
 - "_API_HOSTNAME_"
-controlPlaneEndpoint: "_API_HOSTNAME_:6443"
+controlPlaneEndpoint: "kubernetes:6443"
 etcd:
   local:
     extraArgs:
