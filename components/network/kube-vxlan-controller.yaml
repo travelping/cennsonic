@@ -13,9 +13,9 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
 subjects:
-  - kind: ServiceAccount
-    name: kube-vxlan-controller
-    namespace: kube-system
+- kind: ServiceAccount
+  name: kube-vxlan-controller
+  namespace: kube-system
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -56,7 +56,7 @@ spec:
     spec:
       containers:
       - name: kube-vxlan-controller
-        image: openvnf/kube-vxlan-controller:0.10.0
+        image: openvnf/kube-vxlan-controller:0.10.1
         args:
         - run
         volumeMounts:
