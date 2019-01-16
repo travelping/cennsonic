@@ -31,7 +31,7 @@ subjects:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: calico-etcd-sync
+  name: calico-etcd-sync-scripts
   namespace: kube-system
 data:
   calico-etcd-sync-watch: |
@@ -85,7 +85,8 @@ spec:
       - name: calico-etcd-sync
         image: quay.io/travelping/kube-watch:0.3.1
         imagePullPolicy: Always
-        command: calico-watch
+        command:
+        - calico-etcd-sync-watch
         volumeMounts:
         - name: kubectl
           mountPath: /bin/kubectl
