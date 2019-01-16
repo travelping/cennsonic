@@ -1,0 +1,39 @@
+#!/bin/bash
+
+USAGE=$(cat <<EOF
+Usage: kube <Command> <[User@]Hostname> [Args]
+       kube <Command> help
+
+Commands
+    tools
+    node
+    user
+EOF
+)
+
+function main {
+    case "$1 $2" in
+        "$1 help")
+            local UNIT="$1"
+            "./src/kube-${UNIT}"
+        ;;
+        "$1 $2")
+            local UNIT="$1"
+            local TARGET="$2"
+            shift 2
+
+            if [ -z "${UNIT}" ] || \
+               [ -z "${TARGET}" ]; then usage; fi
+
+            ssh "${TARGET}" bash -s "$@" < "./src/kube-${UNIT}"
+        ;;
+        *) usage ;;
+    esac
+}
+
+function usage {
+    >&2 echo "${USAGE}"
+    exit 2
+}
+
+main "$@"

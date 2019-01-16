@@ -1,0 +1,84 @@
+#!/bin/bash
+
+set -ex
+
+USAGE=$(cat <<EOF
+Usage: kube-tools-ubuntu install [User]
+EOF
+)
+
+function main {
+    local START_TIME; START_TIME="$(start_time)"
+
+    case "$1" in
+        install) shift 1; ubuntu_install "$@" ;;
+        *) usage ;;
+    esac
+
+    show_completion_time "${START_TIME}"
+}
+
+function ubuntu_install {
+    local USER="${1:-ubuntu}"
+
+    log "Preparing Ubuntu with user ${USER}..."
+
+    sudo apt-get update
+    sudo apt-get install curl \
+                         ca-certificates \
+                         apt-transport-https \
+                         software-properties-common -y
+
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    sudo apt-key fingerprint 0EBFCD88
+    sudo add-apt-repository "$(ubuntu_docker_repo)"
+    sudo apt-get update
+    sudo apt-get install ebtables ethtool docker-ce=18.06.1~ce~3-0~ubuntu -y
+    
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    
+    sudo swapoff -a
+    sudo sed -i "s/\\(.*\\)swap\\(.*\\)/#\\1swap\\2/" /etc/fstab
+    
+    sudo ln -sf /opt/bin/kube{adm,ctl,let} /usr/bin
+    
+    adduser --disabled-password --gecos "" "${USER}"
+    sudo usermod -aG sudo "${USER}"
+    sudo usermod -aG docker "${USER}"
+    
+    sudo mkdir -p "/home/${USER}/.ssh"
+    sudo -E cp "${HOME}/.ssh/authorized_keys" \
+               "/home/${USER}/.ssh/authorized_keys"
+    sudo chown -R "${USER}:${USER}" "/home/${USER}/.ssh"
+    
+    echo "${USER} ALL=(ALL) NOPASSWD: ALL" | \
+        sudo tee "/etc/sudoers.d/${USER}" > /dev/null
+}
+
+function ubuntu_docker_repo {
+    printf "%b" "deb [arch=amd64] https://download.docker.com/linux/ubuntu\n" \
+                "$(lsb_release -cs)\n" \
+                "stable"
+}
+
+function node_name {
+    cat /etc/hostname | sed "s/\\..*//"
+}
+function start_time {
+    date +%s
+}
+function show_completion_time {
+    local START_TIME="$1"
+    local END_TIME; END_TIME="$(date +%s)"
+    log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
+}
+function log {
+    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
+}
+function usage {
+    >&2 echo "${USAGE}"
+    exit 2
+}
+
+main "$@"

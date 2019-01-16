@@ -1,0 +1,372 @@
+#!/bin/bash
+
+set -e
+
+#CALICO=https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+
+USAGE=$(cat <<EOF
+Usage: kube-tools install <Target> <Version> [Options]
+
+Targets
+    master
+    worker
+    kubeadm
+    kubelet
+    kubectl
+    crictl
+    calicoctl
+    cni-plugins
+
+    images-master
+    images-worker
+
+    template-kubeadm
+    template-calico
+    template-multus-cni
+    template-kubealived
+    template-user-admin-crb
+
+Options
+    --calico=<Version>
+    --cni-node=<Version>
+    --kubealived=<Version>
+    --arch=<Architecture>
+EOF
+)
+
+function main {
+    #local KUBERNETES_VERSION=v1.12.1
+    local CALICO_VERSION=v3.1.4
+    local CNI_NODE_VERSION=0.3.0
+    local KUBEALIVED_VERSION=1.1.1
+    #local CNI_PLUGINS_VERSION=v0.7.4
+    #local CRICTL_VERSION=v1.12.0
+    local ARCH=amd64
+
+    local COMMAND="$1"
+    local TARGET="$2"
+    local VERSION="$3"
+    local TEMPLATE_NAME="${TARGET#template-}"
+
+    if [ -z "${VERSION}" ]; then usage; fi
+
+    shift 3
+    for ARG in "$@"; do
+        case "${ARG}" in
+            --arch=*) ARCH="${ARG#*=}" ;;
+            --calico=*) CALICO_VERSION="${ARG#*=}" ;;
+            --cni-node=*) CNI_NODE_VERSION="${ARG#*=}" ;;
+            --kubealived=*) KUBEALIVED_VERSION="${ARG#*=}" ;;
+            *) unknown_option "${ARG}" ;;
+        esac
+    done
+
+    local START_TIME; START_TIME="$(start_time)"
+    case "${COMMAND} ${TARGET}" in
+        "install master"|\
+        "install images-master")
+            install_"${TARGET//-/_}" "${VERSION}" \
+                                     "${CALICO_VERSION}" \
+                                     "${CNI_NODE_VERSION}" \
+                                     "${KUBEALIVED_VERSION}" \
+                                     "${ARCH}" ;;
+        "install worker"|\
+        "install images-worker")
+            install_"${TARGET//-/_}" "${VERSION}" \
+                                     "${CALICO_VERSION}" \
+                                     "${CNI_NODE_VERSION}" \
+                                     "${ARCH}" ;;
+        "install kubeadm"|\
+        "install kubelet"|\
+        "install kubectl"|\
+        "install crictl"|\
+        "install calicoctl"|\
+        "install cni-plugins")
+            install_"${TARGET//-/_}" "${VERSION}" "${ARCH}"
+        ;;
+        "install template-${TEMPLATE_NAME}")
+            install_template "$("${TEMPLATE_NAME//-/_}"_template "${VERSION}")"
+        ;;
+        *) usage ;;
+    esac
+    show_completion_time "${START_TIME}"
+}
+
+function templates {
+    echo "/etc/kubernetes/templates"
+}
+
+function kube_tools_binaries {
+    local VERSION="$1"
+    local ARCH="$2"
+    printf %b "https://storage.googleapis.com/kubernetes-release/release/" \
+              "${VERSION}/bin/linux/${ARCH}"
+}
+function kube_tools_configs {
+    local VERSION="$1"
+    printf %b "https://raw.githubusercontent.com/kubernetes/kubernetes/" \
+              "${VERSION}/build/debs"
+}
+function crictl_archive {
+    local VERSION="$1"
+    local ARCH="$2"
+    printf %b "https://github.com/kubernetes-incubator/cri-tools/" \
+              "releases/download/${VERSION}/" \
+              "crictl-${VERSION}-linux-${ARCH}.tar.gz"
+}
+function calicoctl_binary {
+    local VERSION="$1"
+    printf %b "https://github.com/projectcalico/calicoctl/" \
+              "releases/download/${VERSION}/calicoctl"
+}
+function cni_plugins_archive {
+    local VERSION="$1"
+    local ARCH="$2"
+    printf %b "https://github.com/containernetworking/plugins/" \
+              "releases/download/${VERSION}/" \
+              "cni-plugins-${ARCH}-${VERSION}.tgz"
+}
+function kubeadm_template {
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/kubeadm.yaml"
+}
+function calico_template {
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/calico.yaml"
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/calico-rbac-kdd.yaml"
+}
+function multus_cni_template {
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/multus-cni.yaml"
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/multus-cni-rbac.yaml"
+}
+function kubealived_template {
+    local VERSION="$1"
+    printf %b "https://raw.githubusercontent.com/openvnf/kubealived/"\
+              "${VERSION}/manifests/kubealived.yaml"
+}
+function user_admin_crb_template {
+    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/user-admin-crb.yaml"
+}
+function master_images {
+    local KUBERNETES_VERSION="$1"
+    local CALICO_VERSION="$2"
+    local CNI_NODE_VERSION="$3"
+    local KUBEALIVED_VERSION="$4"
+
+    /opt/bin/kubeadm config images list \
+        --kubernetes-version "${KUBERNETES_VERSION}"
+
+    echo "quay.io/calico/cni:${CALICO_VERSION}"
+    echo "quay.io/calico/node:${CALICO_VERSION}"
+    echo "quay.io/openvnf/cni-node:${CNI_NODE_VERSION}"
+    echo "quay.io/openvnf/kubealived:${KUBEALIVED_VERSION}"
+}
+function worker_images {
+    local KUBERNETES_VERSION="$1"
+    local CALICO_VERSION="$2"
+    local CNI_NODE_VERSION="$3"
+
+    /opt/bin/kubeadm config images list \
+        --kubernetes-version "${KUBERNETES_VERSION}" | grep "kube-proxy\\|pause"
+
+    echo "quay.io/calico/node:${CALICO_VERSION}"
+    echo "quay.io/openvnf/cni-node:${CNI_NODE_VERSION}"
+}
+
+function install_master {
+    local KUBERNETES_VERSION="$1"
+    local CALICO_VERSION="$2"
+    local CNI_NODE_VERSION="$3"
+    local KUBEALIVED_VERSION="$4"
+    local ARCH="$5"
+
+    install_kubeadm "${KUBERNETES_VERSION}" "${ARCH}" 
+    install_kubelet "${KUBERNETES_VERSION}" "${ARCH}"
+    install_kubectl "${KUBERNETES_VERSION}" "${ARCH}"
+    install_images master "${KUBERNETES_VERSION}" \
+                          "${CALICO_VERSION}" \
+                          "${CNI_NODE_VERSION}" \
+                          "${KUBEALIVED_VERSION}"
+    install_template "$(kubeadm_template)" \
+                     "$(calico_template)" \
+                     "$(multus_cni_template)" \
+                     "$(kubealived_template "${KUBEALIVED_VERSION}")" \
+                     "$(user_admin_crb_template)"
+
+    enable_service docker kubelet
+}
+function install_worker {
+    local KUBERNETES_VERSION="$1"
+    local CALICO_VERSION="$2"
+    local CNI_NODE_VERSION="$3"
+    local ARCH="$4"
+
+    install_kubeadm "${KUBERNETES_VERSION}" "${ARCH}"
+    install_kubelet "${KUBERNETES_VERSION}" "${ARCH}"
+    install_kubectl "${KUBERNETES_VERSION}" "${ARCH}"
+    install_images worker "${KUBERNETES_VERSION}" \
+                          "${CALICO_VERSION}" \
+                          "${CNI_NODE_VERSION}"
+
+    enable_service docker kubelet
+}
+
+function install_kubeadm {
+    local VERSION="$1"
+    local ARCH="$2"
+
+    log "Installing kubeadm ${VERSION} ${ARCH}..."
+    install_binary "$(kube_tools_binaries "${VERSION}" "${ARCH}")/kubeadm"
+    install_config "$(kube_tools_configs "${VERSION}")/10-kubeadm.conf" \
+                    /etc/systemd/system/kubelet.service.d 644
+}
+function install_kubelet {
+    local VERSION="$1"
+    local ARCH="$2"
+
+    log "Installing kubelet ${VERSION} ${ARCH}..."
+    install_binary "$(kube_tools_binaries "${VERSION}" "${ARCH}")/kubelet"
+    install_config "$(kube_tools_configs "${VERSION}")/kubelet.service" \
+                    /etc/systemd/system 444
+}
+function install_kubectl {
+    local VERSION="$1"
+    local ARCH="$2"
+
+    log "Installing kubectl ${VERSION} ${ARCH}..."
+    install_binary "$(kube_tools_binaries "${VERSION}" "${ARCH}")/kubectl"
+}
+function install_crictl {
+    local VERSION="$1"
+    local ARCH="$2"
+
+    log "Installing crictl ${VERSION} ${ARCH}..."
+    install_binary_archive "$(crictl_archive "${VERSION}" "${ARCH}")"
+}
+function install_calicoctl {
+    local VERSION="$1"
+
+    log "Installing calicoctl ${VERSION}..."
+    install_binary "$(calicoctl_binary "${VERSION}")"
+}
+function install_cni_plugins {
+    local VERSION="$1"
+    local ARCH="$2"
+
+    log "Installing CNI plugins ${VERSION} ${ARCH}..."
+    install_binary_archive "$(cni_plugins_archive "${VERSION}" "${ARCH}")" \
+                           /opt/cni/bin
+}
+function install_images_master {
+    install_images master "$@"
+}
+function install_images_worker {
+    install_images worker "$@"
+}
+function install_images {
+    local NODE_TYPE="$1"
+    shift
+
+    log "Pulling ${NODE_TYPE} images..."
+    for IMAGE in $("${NODE_TYPE}_images" "$@"); do
+        docker pull "${IMAGE}"
+    done
+}
+
+function file_digest {
+    local HASH_FUN="$1"
+    local FILENAME="$2"
+    openssl "${HASH_FUN}" "${FILENAME}" | sed "s/.*= //"
+}
+function install_binary {
+    local URL="$1"
+    local DEST="${2:-/opt/bin}"
+    local BINARY; BINARY=$(basename "${URL}")
+    local REMOTE_DIGEST
+    local LOCAL_DIGEST
+    local HASH_FUN="sha1"
+
+    REMOTE_DIGEST="$(curl -L "${URL}.${HASH_FUN}")"
+    if [ -e "${DEST}/${BINARY}" ]; then
+        LOCAL_DIGEST="$(file_digest "${HASH_FUN}" "${DEST}/${BINARY}")"
+    fi
+
+    if [ "${LOCAL_DIGEST}" != "${REMOTE_DIGEST}" ]; then
+        curl -LO "${URL}"
+        sudo mkdir -p "${DEST}"
+        sudo install "${BINARY}" "${DEST}" && rm "${BINARY}"
+    fi
+
+    echo "Digest: ${HASH_FUN}:$(file_digest sha1 "${DEST}/${BINARY}")"
+}
+function install_binary_archive {
+    local URL="$1"
+    local DEST="${2:-/opt/bin}"
+    local TMPDIR; TMPDIR=$(basename "${URL}")
+
+    mkdir -p "${TMPDIR}"
+    curl -L "${URL}" | tar -C "${TMPDIR}" -xz
+    sudo mkdir -p "${DEST}"
+    sudo install "$(find "${TMPDIR}" -type f)" "${DEST}"
+    rm "$(find "${TMPDIR}" -type f)"
+    rmdir "${TMPDIR}"
+}
+function install_config {
+    local URL="$1"
+    local DEST="$2"
+    local MODE="$3"
+    local CONFIG; CONFIG=$(basename "${URL}")
+
+    sudo mkdir -p "${DEST}"
+    curl -sL "${URL}" | sed "s:/usr/bin:/opt/bin:g" | \
+                        sudo tee "${DEST}/${CONFIG}" > /dev/null
+    sudo chmod "${MODE}" "${DEST}/${CONFIG}"
+}
+function install_template {
+    local TEMPLATES=$*
+
+    sudo mkdir -m 700 -p "$(templates)"
+    for TEMPLATE in ${TEMPLATES}; do
+        local FILE="${TEMPLATE%%=*}"
+        local URL="${TEMPLATE#*=}"
+        if [ "${FILE}" = "${URL}" ]; then FILE="$(basename "${URL}")"; fi
+
+        log "Installing ${URL} as ${FILE}..."
+        curl -sL "${URL}" | sudo tee "$(templates)/${FILE}" > /dev/null
+        sudo chmod 600 "$(templates)/${FILE}"
+    done
+}
+
+function enable_service {
+    local SERVICES="$*"
+
+    for SERVICE in ${SERVICES}; do
+        log "Enabling ${SERVICE}..."
+        sudo systemctl enable "${SERVICE}"
+    done
+}
+
+function node_name {
+    cat /etc/hostname | sed "s/\\..*//"
+}
+
+function start_time {
+    date +%s
+}
+function show_completion_time {
+    local START_TIME="$1"
+    local END_TIME; END_TIME="$(date +%s)"
+    log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
+}
+function log {
+    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
+}
+function usage {
+    >&2 echo "${USAGE}"
+    exit 2
+}
+function unknown_option {
+    local OPTION="$1"
+    >&2 echo "Unknown option: ${OPTION%%=*}"
+    exit 2
+}
+
+main "$@"
