@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: calico-etcd-sync
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: calico-etcd-sync
+  namespace: kube-system
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  resourceNames: ["calico-config"]
+  verbs: ["get", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: calico-etcd-sync
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: calico-etcd-sync
+subjects:
+- kind: ServiceAccount
+  name: calico-etcd-sync
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: calico-etcd-sync
+  namespace: kube-system
+data:
+  calico-etcd-sync-watch: |
+    #!/bin/sh
+    exec kube-watch object configmap calico-config \
+                    --jsonpath="{.data.etcd_endpoints}" \
+                    --handler="calico-etcd-sync-update"
+
+  calico-etcd-sync-update: |
+    #!/bin/sh
+
+    EtcdEndpoints="$2"
+    EtcdKeyFile="/etc/cni/net.d/calico-tls/etcd-key"
+    EtcdCertFile="/etc/cni/net.d/calico-tls/etcd-cert"
+    EtcdCaCertFile="/etc/cni/net.d/calico-tls/etcd-ca"
+    KubeconfigFilePath="/etc/cni/net.d/calico-kubeconfig"
+
+    kubectl get configmap calico-config \
+            --namespace kube-system \
+            --output jsonpath="{.data.cni_network_config}" \
+        |
+        sed -e "s~__ETCD_ENDPOINTS__~${EtcdEndpoints}~" \
+            -e "s~__ETCD_KEY_FILE__~${EtcdKeyFile}~" \
+            -e "s~__ETCD_CERT_FILE__~${EtcdCertFile}~" \
+            -e "s~__ETCD_CA_CERT_FILE__~${EtcdCaCertFile}~" \
+            -e "s~__KUBECONFIG_FILEPATH__~${KubeconfigFilePath}~" \
+            |
+            tee /host/etc/cni/net.d/10-calico.conflist
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: calico-etcd-sync
+  namespace: kube-system
+  labels:
+    app: calico-etcd-sync
+spec:
+  selector:
+    matchLabels:
+      app: calico-etcd-sync
+  template:
+    metadata:
+      labels:
+        app: calico-etcd-sync
+    spec:
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Exists"
+        effect: "NoSchedule"
+      containers:
+      - name: calico-etcd-sync
+        image: quay.io/travelping/kube-watch:0.3.1
+        imagePullPolicy: Always
+        command: calico-watch
+        volumeMounts:
+        - name: kubectl
+          mountPath: /bin/kubectl
+        - name: cnicfg
+          mountPath: /host/etc/cni/net.d
+        - name: scripts
+          mountPath: /usr/local/bin
+      volumes:
+      - name: kubectl
+        hostPath:
+          path: /opt/bin/kubectl
+      - name: cnicfg
+        hostPath:
+          path: /etc/cni/net.d
+      - name: scripts
+        configMap:
+          name: calico-etcd-sync-scripts
+          defaultMode: 0744
+      serviceAccount: calico-etcd-sync
+      serviceAccountName: calico-etcd-sync
