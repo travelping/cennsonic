@@ -134,8 +134,8 @@ function calico_template {
     echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/calico-kdd-rbac.yaml"
 }
 function multus_cni_template {
-    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/manifests/multus-cni.yaml"
-    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/manifests/multus-cni-rbac.yaml"
+    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni.yaml"
+    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni-rbac.yaml"
 }
 function kubealived_template {
     local VERSION="$1"
