@@ -32,7 +32,7 @@ First, we install objects from the [Multus CNI RBAC Manifest] for privileges,
 and the main object and workloads from the [Multus CNI Manifest]:
 
 ```
-$ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni-rbac.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni-ks-rbac.yaml
 $ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni-ks.yaml
 ```
 
@@ -94,7 +94,7 @@ order:
 
 ```
 $ kubectl delete -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni-ks.yaml
-$ kubectl delete -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni-rbac.yaml
+$ kubectl delete -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni-ks-rbac.yaml
 ```
 
 ## Kube Vxlan Controller
@@ -142,7 +142,7 @@ $ kubectl apply -f components/network/kube-vxlan-controller-networks.yaml
 [CNI Plugins]: https://github.com/containernetworking/plugins
 [Kube Vxlan Controller Manifest]: ../../components/network/kube-vxlan-controller.yaml
 [Multus CNI Manifest]: ../../components/network/multus-cni-ks.yaml
-[Multus CNI RBAC Manifest]: ../../components/network/multus-cni-rbac.yaml
+[Multus CNI RBAC Manifest]: ../../components/network/multus-cni-ks-rbac.yaml
 [Macvlan]: https://docs.docker.com/network/macvlan
 [Multus CNI]: https://github.com/intel/multus-cni
 [Multus CNI CRD]: https://github.com/intel/multus-cni#usage-with-kubernetes-crd-based-network-objects
