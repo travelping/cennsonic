@@ -132,7 +132,7 @@ function master_init {
     fi
 
     log "Installing Multus CNI..."
-    kubectl create --filename "$(templates)/multus-cni-rbac.yaml"
+    kubectl create --filename "$(templates)/multus-cni-config-rbac.yaml"
     kubectl create --filename "$(templates)/multus-cni.yaml"
 }
 function master_join {

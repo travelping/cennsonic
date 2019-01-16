@@ -1,88 +1,14 @@
-kind: ConfigMap
-apiVersion: v1
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
-  name: multus-cni-config
-  namespace: kube-system
-data:
-  05-multus-cni.conf: |
-    {"name": "multus-cni",
-     "cniVersion":"0.1.0",
-     "type": "multus-cni",
-     "kubeconfig": "/etc/kubernetes/kubelet.conf",
-     "delegates": [
-       __10-calico.conflist__
-     ]
-    }
----
-apiVersion: extensions/v1beta1
-kind: DaemonSet
-metadata:
-  name: multus-cni
-  namespace: kube-system
-  labels:
-    app: multus-cni
-spec:
-  selector:
-    matchLabels:
-      app: multus-cni
-  template:
-    metadata:
-      labels:
-        app: multus-cni
-    spec:
-      nodeSelector:
-        node-role.kubernetes.io/worker: "true"
-      tolerations:
-      - key: node.kubernetes.io/not-ready
-        effect: NoSchedule
-      containers:
-      - name: multus-cni
-        image: quay.io/openvnf/cni-node:0.3.0
-        command:
-        - cni-node
-        - install
-        - --plugins=multus-cni,macvlan
-        - --configs=05-multus-cni.conf
-        - --manifests=multus-cni-crb.yaml
-        - --wait
-        lifecycle:
-          preStop:
-            exec:
-              command:
-              - cni-node
-              - uninstall
-              - --plugins=multus-cni,macvlan
-              - --configs=05-multus-cni.conf
-              - --manifests=multus-cni-crb.yaml
-        env:
-        - name: NODE_HOSTNAME
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.nodeName
-        volumeMounts:
-        - name: cnibin
-          mountPath: /host/opt/cni/bin
-        - name: cnicfg
-          mountPath: /host/etc/cni/net.d
-        - name: multus-cni-config
-          mountPath: /etc/cni/net.d
-        - name: multus-cni-crb
-          mountPath: /etc/kubernetes/manifests
-      volumes:
-      - name: cnibin
-        hostPath:
-          path: /opt/cni/bin
-      - name: cnicfg
-        hostPath:
-          path: /etc/cni/net.d
-      - name: multus-cni-config
-        configMap:
-          name: multus-cni-config
-      - name: multus-cni-crb
-        configMap:
-          name: multus-cni-crb
-      serviceAccount: multus-cni
-      serviceAccountName: multus-cni
+  name: multus-cni-crd
+rules:
+- apiGroups: ["k8s.cni.cncf.io"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: [""]
+  resources: ["pods", "pods/status"]
+  verbs: ["get", "update"]
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -106,38 +32,151 @@ spec:
             config:
               type: string
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: multus-cni-crd
-rules:
-- apiGroups:
-  - '*'
-  resources:
-  - '*'
-  verbs:
-  - '*'
-- nonResourceURLs:
-  - '*'
-  verbs:
-  - '*'
----
-kind: ConfigMap
 apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: multus-cni-crb
+  name: multus-cni-scripts
   namespace: kube-system
 data:
-  multus-cni-crb.yaml: |
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRoleBinding
+  kube-watch-configmap-multus-cni: |
+    #!/bin/sh
+    exec kube-watch object configmap multus-cni \
+                    --jsonpath="{.data.$1}" \
+                    --handler="cni-node-apply-$1"
+
+  kube-watch-10-calico: |
+    #!/bin/sh
+    exec kube-watch file /host/etc/cni/net.d/10-calico.conflist \
+                    --handler=cni-node-apply-05-multus-cni
+
+  cni-node-apply-05-multus-cni: |
+    #!/bin/sh
+    cni-node install --configs=05-multus-cni.conf
+
+  cni-node-apply-plugins: |
+    #!/bin/sh
+    cni-node apply --plugins="$2:$3"
+
+  cni-node-apply-configs: |
+    #!/bin/sh
+    cni-node apply --configs="$2:$3"
+
+  cni-node-apply-manifests: |
+    #!/bin/sh
+    cni-node apply --manifests="$2:$3"
+
+  cni-node-uninstall: |
+    #!/bin/sh
+    cni-node uninstall "--$1"="$(cni-node-read "$1")"
+
+  cni-node-read: |
+    #!/bin/sh
+    kubectl get configmap multus-cni --output jsonpath="{.data.$1}"
+---
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: multus-cni-node
+  namespace: kube-system
+  labels:
+    app: multus-cni-node
+spec:
+  selector:
+    matchLabels:
+      app: multus-cni-node
+  template:
     metadata:
-      name: multus-cni-${NODE_HOSTNAME}
-    roleRef:
-      apiGroup: rbac.authorization.k8s.io
-      kind: ClusterRole
-      name: multus-cni-crd
-    subjects:
-    - kind: User
-      name: system:node:${NODE_HOSTNAME}
-      apiGroup: rbac.authorization.k8s.io
+      labels:
+        app: multus-cni-node
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: "true"
+      tolerations:
+      - key: node.kubernetes.io/not-ready
+        effect: NoSchedule
+      containers:
+      - name: plugins
+        image: quay.io/openvnf/cni-node:0.5.0
+        imagePullPolicy: Always
+        command: ["kube-watch-configmap-multus-cni", "plugins"]
+        lifecycle:
+          preStop:
+            exec:
+              command: ["cni-node-uninstall", "plugins"]
+        volumeMounts:
+        - name: kubectl
+          mountPath: /bin/kubectl
+        - name: cnibin
+          mountPath: /host/opt/cni/bin
+        - name: scripts
+          mountPath: /usr/local/bin
+      - name: configs
+        image: quay.io/openvnf/cni-node:0.5.0
+        imagePullPolicy: Always
+        command: ["kube-watch-configmap-multus-cni", "configs"]
+        lifecycle:
+          preStop:
+            exec:
+              command: ["cni-node-uninstall", "configs"]
+        volumeMounts:
+        - name: kubectl
+          mountPath: /bin/kubectl
+        - name: cnicfg
+          mountPath: /host/etc/cni/net.d
+        - name: configs
+          mountPath: /etc/cni/net.d
+        - name: scripts
+          mountPath: /usr/local/bin
+      - name: manifests
+        image: quay.io/openvnf/cni-node:0.5.0
+        imagePullPolicy: Always
+        command: ["kube-watch-configmap-multus-cni", "manifests"]
+        lifecycle:
+          preStop:
+            exec:
+              command: ["cni-node-uninstall", "manifests"]
+        volumeMounts:
+        - name: kubectl
+          mountPath: /bin/kubectl
+        - name: manifests
+          mountPath: /etc/kubernetes/manifests
+        - name: scripts
+          mountPath: /usr/local/bin
+        env:
+        - name: NODE_HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      - name: calico
+        image: quay.io/openvnf/cni-node:0.5.0
+        imagePullPolicy: Always
+        command: ["kube-watch-10-calico"]
+        volumeMounts:
+        - name: cnicfg
+          mountPath: /host/etc/cni/net.d
+        - name: configs
+          mountPath: /etc/cni/net.d
+        - name: scripts
+          mountPath: /usr/local/bin
+      volumes:
+      - name: kubectl
+        hostPath:
+          path: /opt/bin/kubectl
+      - name: cnibin
+        hostPath:
+          path: /opt/cni/bin
+      - name: cnicfg
+        hostPath:
+          path: /etc/cni/net.d
+      - name: configs
+        configMap:
+          name: multus-cni-configs
+      - name: manifests
+        configMap:
+          name: multus-cni-manifests
+      - name: scripts
+        configMap:
+          name: multus-cni-scripts
+          defaultMode: 0744
+      serviceAccount: multus-cni
+      serviceAccountName: multus-cni
