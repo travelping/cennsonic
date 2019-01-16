@@ -127,15 +127,15 @@ function cni_plugins_archive {
               "cni-plugins-${ARCH}-${VERSION}.tgz"
 }
 function kubeadm_template {
-    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/kubeadm.yaml"
+    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/config/kubeadm.yaml"
 }
 function calico_template {
-    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/calico.yaml"
-    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/calico-rbac-kdd.yaml"
+    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/calico.yaml"
+    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/calico-rbac-kdd.yaml"
 }
 function multus_cni_template {
-    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/multus-cni.yaml"
-    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/multus-cni-rbac.yaml"
+    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/manifests/multus-cni.yaml"
+    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/manifests/multus-cni-rbac.yaml"
 }
 function kubealived_template {
     local VERSION="$1"
@@ -143,7 +143,7 @@ function kubealived_template {
               "${VERSION}/manifests/kubealived.yaml"
 }
 function user_admin_crb_template {
-    echo "https://s3.eu-central-1.amazonaws.com/cennsonic/manifests/user-admin-crb.yaml"
+    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/users/user-admin-crb.yaml"
 }
 function master_images {
     local KUBERNETES_VERSION="$1"
