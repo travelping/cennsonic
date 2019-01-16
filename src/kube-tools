@@ -130,8 +130,8 @@ function kubeadm_template {
     echo "https://raw.githubusercontent.com/travelping/cennsonic/master/config/kubeadm.yaml"
 }
 function calico_template {
-    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/calico.yaml"
-    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/calico-rbac-kdd.yaml"
+    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/calico-kdd.yaml"
+    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/calico-kdd-rbac.yaml"
 }
 function multus_cni_template {
     echo "https://raw.githubusercontent.com/travelping/cennsonic/master/manifests/multus-cni.yaml"

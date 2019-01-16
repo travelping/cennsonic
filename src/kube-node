@@ -560,8 +560,8 @@ function install_calico {
     local NODE_IP="$1"
 
     log "Installing Calico..."
-    kubectl create --filename "$(templates)/calico-rbac-kdd.yaml"
-    kubectl create --filename "$(templates)/calico.yaml"
+    kubectl create --filename "$(templates)/calico-kdd-rbac.yaml"
+    kubectl create --filename "$(templates)/calico-kdd.yaml"
 }
 function calico_etcd_secrets_create {
     local PKI; PKI="$(pki)/calico"
