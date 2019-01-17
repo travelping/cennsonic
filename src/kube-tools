@@ -27,20 +27,12 @@ Targets
     template-user-admin-crb
 
 Options
-    --calico=<Version>
-    --cni-node=<Version>
-    --kubealived=<Version>
     --arch=<Architecture>
 EOF
 )
 
 function main {
-    #local KUBERNETES_VERSION=v1.12.1
-    local CALICO_VERSION=v3.3.2
-    local CNI_NODE_VERSION=0.5.0
     local KUBEALIVED_VERSION=1.1.1
-    #local CNI_PLUGINS_VERSION=v0.7.4
-    #local CRICTL_VERSION=v1.12.0
     local ARCH=amd64
 
     local COMMAND="$1"
@@ -54,9 +46,6 @@ function main {
     for ARG in "$@"; do
         case "${ARG}" in
             --arch=*) ARCH="${ARG#*=}" ;;
-            --calico=*) CALICO_VERSION="${ARG#*=}" ;;
-            --cni-node=*) CNI_NODE_VERSION="${ARG#*=}" ;;
-            --kubealived=*) KUBEALIVED_VERSION="${ARG#*=}" ;;
             *) unknown_option "${ARG}" ;;
         esac
     done
@@ -66,15 +55,11 @@ function main {
         "install master"|\
         "install images-master")
             install_"${TARGET//-/_}" "${VERSION}" \
-                                     "${CALICO_VERSION}" \
-                                     "${CNI_NODE_VERSION}" \
                                      "${KUBEALIVED_VERSION}" \
                                      "${ARCH}" ;;
         "install worker"|\
         "install images-worker")
             install_"${TARGET//-/_}" "${VERSION}" \
-                                     "${CALICO_VERSION}" \
-                                     "${CNI_NODE_VERSION}" \
                                      "${ARCH}" ;;
         "install kubeadm"|\
         "install kubelet"|\
@@ -152,44 +137,45 @@ function user_admin_crb_template {
 }
 function master_images {
     local KUBERNETES_VERSION="$1"
-    local CALICO_VERSION="$2"
-    local CNI_NODE_VERSION="$3"
-    local KUBEALIVED_VERSION="$4"
+    local KUBEALIVED_VERSION="$2"
 
     /opt/bin/kubeadm config images list \
         --kubernetes-version "${KUBERNETES_VERSION}"
 
-    echo "quay.io/calico/kube-controllers:${CALICO_VERSION}"
-    echo "quay.io/calico/cni:${CALICO_VERSION}"
-    echo "quay.io/calico/node:${CALICO_VERSION}"
-    echo "quay.io/openvnf/cni-node:${CNI_NODE_VERSION}"
-    echo "quay.io/openvnf/kubealived:${KUBEALIVED_VERSION}"
+    template_images calico
+    template_images multus-cni
+    template_images kubealived "${KUBEALIVED_VERSION}"
 }
 function worker_images {
     local KUBERNETES_VERSION="$1"
-    local CALICO_VERSION="$2"
-    local CNI_NODE_VERSION="$3"
 
     /opt/bin/kubeadm config images list \
-        --kubernetes-version "${KUBERNETES_VERSION}" | grep "kube-proxy\\|pause"
+                     --kubernetes-version "${KUBERNETES_VERSION}" \
+        |
+        grep -E "kube-proxy|pause|coredns"
 
-    echo "quay.io/calico/node:${CALICO_VERSION}"
-    echo "quay.io/openvnf/cni-node:${CNI_NODE_VERSION}"
+    template_images calico | grep -v calico/kube-controllers
+    template_images multus-cni
+}
+function template_images {
+    local TEMPLATE="${1//-/_}"
+    local VERSION="$2"
+
+    local URL
+    for URL in $("${TEMPLATE}_template" "${VERSION}"); do
+        curl -sL "${URL#*=}"
+    done | grep image: | sort -u | sed "s/.*: //"
 }
 
 function install_master {
     local KUBERNETES_VERSION="$1"
-    local CALICO_VERSION="$2"
-    local CNI_NODE_VERSION="$3"
-    local KUBEALIVED_VERSION="$4"
-    local ARCH="$5"
+    local KUBEALIVED_VERSION="$2"
+    local ARCH="$3"
 
     install_kubeadm "${KUBERNETES_VERSION}" "${ARCH}" 
     install_kubelet "${KUBERNETES_VERSION}" "${ARCH}"
     install_kubectl "${KUBERNETES_VERSION}" "${ARCH}"
     install_images master "${KUBERNETES_VERSION}" \
-                          "${CALICO_VERSION}" \
-                          "${CNI_NODE_VERSION}" \
                           "${KUBEALIVED_VERSION}"
     install_template "$(kubeadm_template)" \
                      "$(calico_template)" \
@@ -201,16 +187,12 @@ function install_master {
 }
 function install_worker {
     local KUBERNETES_VERSION="$1"
-    local CALICO_VERSION="$2"
-    local CNI_NODE_VERSION="$3"
-    local ARCH="$4"
+    local ARCH="$2"
 
     install_kubeadm "${KUBERNETES_VERSION}" "${ARCH}"
     install_kubelet "${KUBERNETES_VERSION}" "${ARCH}"
     install_kubectl "${KUBERNETES_VERSION}" "${ARCH}"
-    install_images worker "${KUBERNETES_VERSION}" \
-                          "${CALICO_VERSION}" \
-                          "${CNI_NODE_VERSION}"
+    install_images worker "${KUBERNETES_VERSION}"
 
     enable_service docker kubelet
 }
