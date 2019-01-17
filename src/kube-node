@@ -171,6 +171,7 @@ function master_join {
     wait_for_core_pods
     resolve_kubernetes_to "${NODE_IP}"
 
+    calico_etcd_endpoints_add "${NODE_IP}"
     ensure_dns_ha
 }
 function master_prepare {
@@ -216,6 +217,7 @@ function master_delete {
 
     if [ -n "${API_IP}" ]; then
         resolve_kubernetes_to "${API_IP}"
+        calico_etcd_endpoints_delete "${ETCD_IP}"
 
         log "Retrieving ${NODE_NAME} Etcd ID..."
         local ETCD_ID; ETCD_ID=$(etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" \
@@ -561,8 +563,14 @@ function install_calico {
     local NODE_IP="$1"
 
     log "Installing Calico..."
-    kubectl create --filename "$(templates)/calico-kdd-rbac.yaml"
-    kubectl create --filename "$(templates)/calico-kdd.yaml"
+#   kubectl create --filename "$(templates)/calico-kdd-rbac.yaml"
+#   kubectl create --filename "$(templates)/calico-kdd.yaml"
+    kubectl create --filename "$(templates)/calico-etcd-config.yaml"
+    kubectl create --filename "$(templates)/calico-etcd-sync.yaml"
+    calico_etcd_secrets_create
+    calico_etcd_endpoints_add "${NODE_IP}"
+    kubectl create --filename "$(templates)/calico-etcd-rbac.yaml"
+    kubectl create --filename "$(templates)/calico-etcd.yaml"
 }
 function calico_etcd_secrets_create {
     local PKI; PKI="$(pki)/calico"
