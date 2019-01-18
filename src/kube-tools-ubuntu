@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 USAGE=$(cat <<EOF
 Usage: kube-tools-ubuntu install [User]
