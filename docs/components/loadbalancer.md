@@ -29,7 +29,7 @@ and change the [MetalLB IP range] according to your needs. When the change
 is ready, create the configuration:
 
 ```
-$ kubectl create -f components/loadbalancer/metallb-config.yaml
+$ kubectl apply -f components/loadbalancer/metallb-config.yaml
 ```
 
 See also:
@@ -70,7 +70,7 @@ Using the [Example manifest] we create two load balancers with use of the
 same IP address:
 
 ```
-$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/loadbalancer/example.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/loadbalancer/example.yaml
 ```
 
 Iperf3 client is needed to verify the server works as expected. Please refer the

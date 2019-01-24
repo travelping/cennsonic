@@ -17,13 +17,13 @@ We create them using the manifests:
 
 ```
 # Rook operator
-$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/rook-operator.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/rook-operator.yaml
 
 # Rook cluster
-$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/rook-cluster.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/rook-cluster.yaml
 
 # Rook storage class
-$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/rook-storageclass.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/rook-storageclass.yaml
 ```
 
 See also:
@@ -39,7 +39,7 @@ name for [PVC]. We create a [StatefulSet] defined in the [Usage Example] to
 demonstrate that:
 
 ```
-$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
 ```
 
 Now we can store something in the mounted directory, remove the StatefulSet,
@@ -57,7 +57,7 @@ service "rook-usage-example" deleted
 statefulset.apps "rook-usage-example" deleted
 
 # Create StatefulSet again
-$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
 service "rook-usage-example" created
 statefulset.apps "rook-usage-example" created
 
@@ -84,7 +84,7 @@ Now after creation the workload again, our data is gone:
 
 ```
 # Create StatefulSet again
-$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/storage/example.yaml
 service "rook-usage-example" created
 statefulset.apps "rook-usage-example" created
 

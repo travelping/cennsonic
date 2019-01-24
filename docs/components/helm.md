@@ -14,7 +14,7 @@ we use the [RBAC Tiller Manifest] to create an appropriate service account and
 the corresponding role binding:
 
 ```
-$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/helm/tiller-rbac.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/helm/tiller-rbac.yaml
 ```
 
 After that we can install Helm in a way to use that service account:

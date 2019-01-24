@@ -108,7 +108,7 @@ the pods.
 Install controller from the [Kube Vxlan Controller Manifest]:
 
 ```
-$ kubectl create -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/kube-vxlan-controller.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/kube-vxlan-controller.yaml
 ```
 
 ### Usage
