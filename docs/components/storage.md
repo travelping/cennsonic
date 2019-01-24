@@ -110,11 +110,11 @@ $ kubectl delete pvc rook-usage-example-rook-usage-example-0
 [Usage Example]: ../../components/storage/example.yaml
 
 [Ceph]: https://ceph.com
-[Rook]: https://rook.io/docs/rook/v0.8
+[Rook]: https://rook.io/docs/rook/v0.9
 [Rook Cluster]: ../../components/storage/rook-cluster.yaml
 [Rook Operator]: ../../components/storage/rook-operator.yaml
 [Rook Storage Class]: ../../components/storage/rook-storageclass.yaml
 
 [Storage Resize →]: resize.md
 [Storage Backup and Restore →]: backup_and_restore.md
-[Rook Quick Start (Ceph Storage) →]: https://rook.io/docs/rook/v0.8/ceph-quickstart.html
+[Rook Quick Start (Ceph Storage) →]: https://rook.io/docs/rook/v0.9/ceph-quickstart.html
