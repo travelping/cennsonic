@@ -663,7 +663,7 @@ EOF
 }
 
 function join_token {
-    sudo /opt/bin/kubeadm token list | sed -n "2s/ .*//p"
+    sudo /opt/bin/kubeadm token list | grep -v "<invalid>" | sed -n "2s/ .*//p"
 }
 function join_token_create {
     sudo /opt/bin/kubeadm token create
