@@ -1,0 +1,91 @@
+#!/bin/bash
+
+set -e
+
+Usage=$(cat <<EOF
+Usage: kube-make <Action> [Options]
+
+Actions:
+    download
+    install
+
+Options:
+    --masters=<Masters>
+    --workers=<Workers>
+EOF
+)
+
+function main {
+    local Action="$1"
+
+    case "${Action}" in
+        download|install) shift ;;
+        *) usage ;;
+    esac
+
+    local Arg
+    for Arg in "$@"; do
+        case "${Arg}" in
+            --masters=*) Masters="${Arg##*=}" ;;
+            --workers=*) Workers="${Arg##*=}" ;;
+            *) unknown_option "${Arg}" ;;
+        esac
+    done
+
+    "kube_make_${Action}" "${Masters//,/ }" "${Workers//,/ }"
+
+    wait
+}
+
+function kube_make_download {
+    local Masters; read -r -a Masters <<< "$1"
+    local Workers; read -r -a Workers <<< "$2"
+
+    local Master
+    for Master in "${Masters[@]}"; do
+        ./src/kube tools "${Master%%/*}" install master v1.12.3 &
+    done
+    local Worker
+    for Worker in "${Workers[@]}"; do
+        ./src/kube tools "${Worker%%/*}" install worker v1.12.3 &
+    done
+}
+
+function kube_make_install {
+    local Masters; read -r -a Masters <<< "$1"
+    local Workers; read -r -a Workers <<< "$2"
+
+    ./src/kube node "${Masters[0]%%/*}" \
+        master init "${Masters[0]##*/}" "${Masters[0]##*/}"
+
+    ./src/kube user "${Masters[0]%%/*}" create aa -a
+    scp "${Masters[0]%%/*}:aa.conf" ./
+    ssh "${Masters[0]%%/*}" rm aa.conf
+
+    local JI; JI=$(./src/kube node "${Masters[0]%%/*}" master join-info)
+
+    local Master
+    for Master in "${Masters[@]:1}"; do
+        ./src/kube-pki "${Masters[0]%%/*}" "${Master%%/*}"
+        ./src/kube node "${Master%%/*}" \
+            master join "${Master##*/}" "${Masters[0]##*/}"
+    done &
+
+    local Worker
+    for Worker in "${Workers[@]}"; do
+        ./src/kube node "${Worker%%/*}" \
+            worker join "${Worker##*/}" "${Masters[0]##*/}" "$JI" &
+    done
+}
+
+function usage {
+    >&2 echo "${Usage}"
+    exit 2
+}
+function unknown_option {
+    local Option="$1"
+    >&2 echo "Unknown option: ${Option%%=*}"
+    exit 2
+}
+
+main "$@"
