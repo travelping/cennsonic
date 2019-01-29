@@ -2,80 +2,139 @@
 
 set -e
 
+KUBE_VERSION="v1.12.5"
+
 Usage=$(cat <<EOF
 Usage: kube-make <Action> [Options]
 
 Actions:
+    prepare
     download
     install
 
 Options:
-    --masters=<Masters>
-    --workers=<Workers>
+    --masters=<Nodes>
+    --workers=<Nodes>
+
+Options (prepare):
+    --os=<coreos|centos|ubuntu>  # (default: coreos)
+    --ssh-user=<UserName>        # (default: $(whoami))
+
+Options (download):
+    --kube-version=<Version>     # (default: ${KUBE_VERSION})
+
+Options (install):
+    --kube-user=<UserName>       # (default: $(whoami))
+
+Nodes:
+    <User@Host[/KubeIpAddr][,...]>
 EOF
 )
 
 function main {
     local Action="$1"
 
-    case "${Action}" in
-        download|install) shift ;;
-        *) usage ;;
-    esac
+    if [ -z "${Action}" ]; then usage; fi
 
+    shift
     local Arg
     for Arg in "$@"; do
         case "${Arg}" in
-            --masters=*) Masters="${Arg##*=}" ;;
-            --workers=*) Workers="${Arg##*=}" ;;
-            *) unknown_option "${Arg}" ;;
+            --masters=*) local Masters="${Arg##*=}"; Masters="${Masters//,/ }";;
+            --workers=*) local Workers="${Arg##*=}"; Workers="${Workers//,/ }";;
+            --os=*) local Os="${Arg##*=}";;
+            --ssh-user=*) local SshUser="${Arg##*=}";;
+            --kube-user=*) local KubeUser="${Arg##*=}";;
+            --kube-version=*) local KubeVersion="${Arg##*=}";;
+            *) unknown_option "${Arg}";;
         esac
     done
 
-    "kube_make_${Action}" "${Masters//,/ }" "${Workers//,/ }"
+    Os="${Os:-coreos}"
+    SshUser="${SshUser:-$(whoami)}"
+    KubeUser="${KubeUser:-$(whoami)}"
+    KubeVersion="${KubeVersion:-${KUBE_VERSION}}"
+
+    case "${Action}" in
+        prepare) make_prepare "${Masters}" "${Workers}" "${Os}" "${SshUser}";;
+        download) make_download "${Masters}" "${Workers}" "${KubeVersion}";;
+        install) make_install "${Masters}" "${Workers}" "${KubeUser}" ;;
+        *) usage ;;
+    esac
 
     wait
 }
 
-function kube_make_download {
+function make_prepare {
     local Masters; read -r -a Masters <<< "$1"
     local Workers; read -r -a Workers <<< "$2"
+    local Os="$3"
+    local SshUser="$4"
 
-    local Master
-    for Master in "${Masters[@]}"; do
-        ./src/kube tools "${Master%%/*}" install master v1.12.3 &
-    done
-    local Worker
-    for Worker in "${Workers[@]}"; do
-        ./src/kube tools "${Worker%%/*}" install worker v1.12.3 &
+    case "${Os}" in
+        centos|ubuntu) ;;
+        *) exit 0 ;;
+    esac
+
+    local Node
+    for Node in "${Masters[@]}" "${Workers[@]}"; do
+        ./src/kube "tools-${Os}" "$(node_ssh "${Node}")" install "${SshUser}" &
     done
 }
 
-function kube_make_install {
+function make_download {
     local Masters; read -r -a Masters <<< "$1"
     local Workers; read -r -a Workers <<< "$2"
+    local KubeVersion="$3"
 
-    ./src/kube node "${Masters[0]%%/*}" \
-        master init "${Masters[0]##*/}" "${Masters[0]##*/}"
+    local Master
+    for Master in "${Masters[@]}"; do
+        ./src/kube tools "$(node_ssh "${Master}")" \
+                   install master "${KubeVersion}" &
+    done
+    local Worker
+    for Worker in "${Workers[@]}"; do
+        ./src/kube tools "$(node_ssh "${Worker}")" \
+                   install worker "${KubeVersion}" &
+    done
+}
 
-    ./src/kube user "${Masters[0]%%/*}" create aa -a
-    scp "${Masters[0]%%/*}:aa.conf" ./
-    ssh "${Masters[0]%%/*}" rm aa.conf
+function make_install {
+    local Masters; read -r -a Masters <<< "$1"
+    local Workers; read -r -a Workers <<< "$2"
+    local KubeUser="$3"
 
-    local JI; JI=$(./src/kube node "${Masters[0]%%/*}" master join-info)
+    local Master0Ssh; Master0Ssh="$(node_ssh "${Masters[0]}")"
+    local Master0Ip; Master0Ip="$(node_ip "${Masters[0]}")"
+
+    ./src/kube node "${Master0Ssh}" master init "${Master0Ip}" "${Master0Ip}"
+    ./src/kube user "${Master0Ssh}" create "${KubeUser}" -a
+
+    scp "${Master0Ssh}:${KubeUser}.conf" ./
+    ssh "${Master0Ssh}" rm \\"${KubeUser}.conf\\"
 
     local Master
     for Master in "${Masters[@]:1}"; do
-        ./src/kube-pki "${Masters[0]%%/*}" "${Master%%/*}"
-        ./src/kube node "${Master%%/*}" \
-            master join "${Master##*/}" "${Masters[0]##*/}"
+        ./src/kube-pki "${Master0Ssh}" "$(node_ssh "${Master}")"
+        ./src/kube node "$(node_ssh "${Master}")" \
+                   master join "$(node_ip "${Master}")" "${Master0Ip}"
     done &
+
+    local JI; JI=$(./src/kube node "${Master0Ssh}" master join-info)
 
     local Worker
     for Worker in "${Workers[@]}"; do
-        ./src/kube node "${Worker%%/*}" \
-            worker join "${Worker##*/}" "${Masters[0]##*/}" "$JI" &
+        ./src/kube node "$(node_ssh "${Worker}")" \
+                   worker join "$(node_ip "${Worker}")" "${Master0Ip}" "$JI" &
     done
+}
+
+function node_ssh {
+    echo "${1%%/*}"
+}
+function node_ip {
+    local Ip="${1##*@}"
+    echo "${Ip##*/}"
 }
 
 function usage {
