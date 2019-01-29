@@ -35,7 +35,7 @@ function centos_install {
     
     sudo ln -sf /opt/bin/kube{adm,ctl,let} /usr/bin
     
-    sudo adduser -p "$(openssl rand -base64 8)" "${USER}"
+    sudo adduser -p "$(openssl rand -base64 8)" "${USER}" || true
     sudo usermod -aG wheel "${USER}"
     sudo usermod -aG docker "${USER}"
     
