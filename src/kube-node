@@ -689,7 +689,7 @@ function kubeadm_config {
     echo "/etc/kubernetes/kubeadm.conf"
 }
 function kubectl {
-    sudo /opt/bin/kubectl --kubeconfig "$(kubeconfig)" "$@"
+    sudo -H /opt/bin/kubectl --kubeconfig "$(kubeconfig)" "$@"
 }
 function kubeconfig {
     echo "/etc/kubernetes/kubeconfig"
