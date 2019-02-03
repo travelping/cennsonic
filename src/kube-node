@@ -212,6 +212,8 @@ function master_delete {
     log "Deleting ${NODE_NAME} from $(cluster_name)..."
     node_role unset master "${NODE_NAME}"
 
+    kubectl drain "${NODE}" --delete-local-data --ignore-daemonsets --force
+
     log "Waiting for Kubealived is terminated on ${NODE_NAME}..."
     wait_for kubealived_terminated "${NODE_NAME}"
 
@@ -278,6 +280,11 @@ function worker_join {
 }
 function worker_delete {
     local NODE_NAME="$1"
+    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
+
+    echo "Deleting ${NODE_NAME} from $(cluster_name)..."
+
+    kubectl drain "${NODE}" --delete-local-data --ignore-daemonsets --force
     kubectl delete node "${NODE_NAME}.$(cluster_name)"
 }
 
