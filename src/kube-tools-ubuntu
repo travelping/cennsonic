@@ -43,7 +43,7 @@ function ubuntu_install {
     
     sudo ln -sf /opt/bin/kube{adm,ctl,let} /usr/bin
     
-    adduser --disabled-password --gecos "" "${USER}"
+    adduser --disabled-password --gecos "" "${USER}" || true
     sudo usermod -aG sudo "${USER}"
     sudo usermod -aG docker "${USER}"
     
