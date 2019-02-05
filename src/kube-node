@@ -724,7 +724,6 @@ function resolve_kubernetes_to {
     ensure_in_hosts "${IP}" "kubernetes"
 }
 function resolve_reset {
-    delete_from_hosts "$(node_hostname)"
     delete_from_hosts "kubernetes"
 }
 function ensure_in_hosts {
