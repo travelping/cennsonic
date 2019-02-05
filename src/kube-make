@@ -111,7 +111,7 @@ function make_install {
     ./src/kube user "${Master0Ssh}" create "${KubeUser}" -a
 
     scp "${Master0Ssh}:${KubeUser}.conf" ./
-    ssh "${Master0Ssh}" rm \\"${KubeUser}.conf\\"
+    ssh "${Master0Ssh}" rm \\"${KubeUser}.conf"
 
     local Master
     for Master in "${Masters[@]:1}"; do
