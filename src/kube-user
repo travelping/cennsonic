@@ -187,10 +187,10 @@ function server_endpoint {
 }
 
 function node_name {
-    cat /etc/hostname | sed "s/\\..*//"
+    sed "s/\\..*//" /etc/hostname
 }
 function cluster_name {
-    cat /etc/hostname | sed "s/[^\\.]*\\.//"
+    sed "s/[^\\.]*\\.//" /etc/hostname
 }
 
 function log {
