@@ -46,7 +46,7 @@ function templates {
     echo "/etc/kubernetes/templates"
 }
 function kubectl {
-    sudo /opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf "$@"
+    sudo -H /opt/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf "$@"
 }
 
 function create_user {
@@ -100,24 +100,20 @@ function delete_user {
 
 function create_cert_key {
     local USERNAME="$1"
-    openssl genrsa -out "${USERNAME}-key.pem" 2048
+    openssl genrsa -out "${USERNAME}.key" 2048
 }
 function delete_cert_key {
     local USERNAME="$1"
-    rm "${USERNAME}-key.pem" 
+    rm "${USERNAME}.key"
 }
 function create_cert {
     local USERNAME="$1"
     local COMPANY="$2"
 
     openssl req -new \
-                -key "${USERNAME}-key.pem" \
-                -out "${USERNAME}.pem" \
+                -key "${USERNAME}.key" \
+                -out "${USERNAME}.crt" \
                 -subj "/CN=${USERNAME}/O=${COMPANY}"
-}
-function delete_cert {
-    local USERNAME="$1"
-    rm "${USERNAME}.pem"
 }
 function sign_cert {
     local USERNAME="$1"
@@ -126,12 +122,17 @@ function sign_cert {
     local CA_CERT_KEY="$4"
 
     sudo openssl x509 -req \
-                      -in "${USERNAME}.pem" \
+                      -in "${USERNAME}.crt" \
                       -CA "${CA_CERT}" \
                       -CAkey "${CA_CERT_KEY}" \
                       -CAcreateserial \
                       -out "${USERNAME}.pem" \
                       -days "${DAYS}"
+}
+function delete_cert {
+    local USERNAME="$1"
+    rm "${USERNAME}.crt"
+    rm "${USERNAME}.pem"
 }
 
 function create_kubeconfig {
@@ -152,7 +153,7 @@ function create_kubeconfig {
     /opt/bin/kubectl config set-credentials "${USERNAME}-${CLUSTER}" \
         --kubeconfig="${KUBECONFIG}" \
         --client-certificate="${USERNAME}.pem" \
-        --client-key="${USERNAME}-key.pem" \
+        --client-key="${USERNAME}.key" \
         --embed-certs=true
     
     /opt/bin/kubectl config set-context "${USERNAME}-${CLUSTER}" \
