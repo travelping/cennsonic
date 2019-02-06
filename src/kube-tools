@@ -2,8 +2,6 @@
 
 set -e
 
-#CALICO=https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
-
 USAGE=$(cat <<EOF
 Usage: kube-tools install <Target> <Version> [Options]
 
@@ -32,13 +30,11 @@ EOF
 )
 
 function main {
-    local KUBEALIVED_VERSION=1.1.1
-    local ARCH=amd64
-
     local COMMAND="$1"
     local TARGET="$2"
     local VERSION="$3"
     local TEMPLATE_NAME="${TARGET#template-}"
+    local ARCH=amd64
 
     if [ -z "${VERSION}" ]; then usage; fi
 
@@ -55,7 +51,6 @@ function main {
         "install master"|\
         "install images-master")
             install_"${TARGET//-/_}" "${VERSION}" \
-                                     "${KUBEALIVED_VERSION}" \
                                      "${ARCH}" ;;
         "install worker"|\
         "install images-worker")
@@ -128,23 +123,20 @@ function multus_cni_template {
     echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/multus-cni-config.yaml"
 }
 function kubealived_template {
-    local VERSION="$1"
-    printf %b "https://raw.githubusercontent.com/openvnf/kubealived/"\
-              "${VERSION}/manifests/kubealived.yaml"
+    echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/network/kubealived.yaml"
 }
 function user_admin_crb_template {
     echo "https://raw.githubusercontent.com/travelping/cennsonic/master/components/users/user-admin-crb.yaml"
 }
 function master_images {
     local KUBERNETES_VERSION="$1"
-    local KUBEALIVED_VERSION="$2"
 
     /opt/bin/kubeadm config images list \
         --kubernetes-version "${KUBERNETES_VERSION}"
 
     template_images calico
     template_images multus-cni
-    template_images kubealived "${KUBEALIVED_VERSION}"
+    template_images kubealived
 }
 function worker_images {
     local KUBERNETES_VERSION="$1"
@@ -169,18 +161,17 @@ function template_images {
 
 function install_master {
     local KUBERNETES_VERSION="$1"
-    local KUBEALIVED_VERSION="$2"
-    local ARCH="$3"
+    local ARCH="$2"
 
     install_kubeadm "${KUBERNETES_VERSION}" "${ARCH}" 
     install_kubelet "${KUBERNETES_VERSION}" "${ARCH}"
     install_kubectl "${KUBERNETES_VERSION}" "${ARCH}"
-    install_images master "${KUBERNETES_VERSION}" \
-                          "${KUBEALIVED_VERSION}"
+    install_images master "${KUBERNETES_VERSION}"
+
     install_template "$(kubeadm_template)" \
                      "$(calico_template)" \
                      "$(multus_cni_template)" \
-                     "$(kubealived_template "${KUBEALIVED_VERSION}")" \
+                     "$(kubealived_template)" \
                      "$(user_admin_crb_template)"
 
     enable_service docker kubelet
