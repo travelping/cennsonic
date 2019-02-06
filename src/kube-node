@@ -119,6 +119,8 @@ function master_init {
 
     resolve_node_hostname_to "${NODE_IP}"
     resolve_kubernetes_to "${NODE_IP}"
+
+    kubelet_extra_set "$(kubelet_extra_master "${NODE_IP}")"
     master_prepare new "${NODE_IP}"
 
     kubeadm init --skip-token-print
@@ -145,6 +147,8 @@ function master_join {
 
     resolve_node_hostname_to "${NODE_IP}"
     resolve_kubernetes_to "${API_IP}"
+
+    kubelet_extra_set "$(kubelet_extra_master "${NODE_IP}")"
     master_prepare existing "${NODE_IP}"
 
     kubeadm_alpha certs all
@@ -270,7 +274,7 @@ function worker_join {
     resolve_node_hostname_to "${NODE_IP}"
     resolve_kubernetes_to "${API_IP}"
 
-    kubelet_extra_set
+    kubelet_extra_set "$(kubelet_extra_worker "${NODE_IP}")"
 
     sudo mkdir -m 700 -p /etc/kubernetes/manifests
     sudo /opt/bin/kubeadm join ${JOIN_INFO}
@@ -517,15 +521,20 @@ function cni_reset {
     sudo rmdir -p /etc/cni/net.d 2>/dev/null || true
 }
 
-function kubelet_extra_set {
-    log "Setting Kubelet extra flags..."
-
-    printf %b "KUBELET_EXTRA_ARGS=" \
+function kubelet_extra_master {
+    local NODE_IP="$1"
+    printf %b "--node-ip=${NODE_IP} "
+}
+function kubelet_extra_worker {
+    printf %b "--node-ip=${NODE_IP} " \
               "--allowed-unsafe-sysctls=net.* " \
-              "--volume-plugin-dir=/var/lib/kubelet/volume-plugins " \
-        |
-        sudo tee /etc/default/kubelet
+              "--volume-plugin-dir=/var/lib/kubelet/volume-plugins "
+}
+function kubelet_extra_set {
+    local ARGS="$1"
+    log "Setting Kubelet extra flags ${ARGS}..."; echo
 
+    printf %b "KUBELET_EXTRA_ARGS=${ARGS}" | sudo tee /etc/default/kubelet
     sudo chmod 600 /etc/default/kubelet
 }
 function kubelet_extra_reset {
