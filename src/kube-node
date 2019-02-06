@@ -333,7 +333,7 @@ function node_role_label {
 
     case "${ACTION}" in
           set) if ! node_has_role_label "${ROLE}" "${NODE_NAME}"; then
-                   kubectl label node "${NODE}" "${LABEL}=true" --overwrite
+                   kubectl label node "${NODE}" "${LABEL}=" --overwrite
                fi ;;
         unset) if node_has_role_label "${ROLE}" "${NODE_NAME}"; then
                    kubectl label node "${NODE}" "${LABEL}-"
@@ -364,8 +364,8 @@ function node_has_role_label {
     local NODE; NODE="${NODE_NAME}.$(cluster_name)"
     local LABEL="node-role\\.kubernetes\\.io/${ROLE}"
 
-    local JP="jsonpath={.metadata.labels.${LABEL}}"
-    [ "$(kubectl get node "${NODE}" -o "${JP}")" = "true" ]
+    local JP="{.items[?(@.metadata.labels.${LABEL}=='')].metadata.name}"
+    [ "$(kubectl get nodes -o "jsonpath=${JP}")" = "${NODE}" ]
 }
 function node_has_role_taint {
     local ROLE="$1"

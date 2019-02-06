@@ -90,7 +90,7 @@ spec:
         app: multus-cni-node
     spec:
       nodeSelector:
-        node-role.kubernetes.io/worker: "true"
+        node-role.kubernetes.io/worker: ""
       tolerations:
       - key: node.kubernetes.io/not-ready
         effect: NoSchedule
