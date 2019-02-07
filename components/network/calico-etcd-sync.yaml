@@ -58,6 +58,7 @@ data:
             -e "s~__ETCD_CERT_FILE__~${EtcdCertFile}~" \
             -e "s~__ETCD_CA_CERT_FILE__~${EtcdCaCertFile}~" \
             -e "s~__KUBECONFIG_FILEPATH__~${KubeconfigFilePath}~" \
+            -e "s~__CNI_MTU__~${CNI_MTU}~" \
             |
             tee /tmp/10-calico.conflist
 
@@ -89,6 +90,12 @@ spec:
         imagePullPolicy: Always
         command:
         - calico-etcd-sync-watch
+        env:
+        - name: CNI_MTU
+          valueFrom:
+            configMapKeyRef:
+              name: calico-config
+              key: veth_mtu
         volumeMounts:
         - name: kubectl
           mountPath: /bin/kubectl
