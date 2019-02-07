@@ -18,7 +18,7 @@ Options:
 
 Options (prepare):
     --os=<coreos|centos|ubuntu>  # (default: coreos)
-    --ssh-user=<UserName>        # (default: $(whoami))
+    --create-user=<UserName>     # (default: $(whoami))
 
 Options (download):
     --kube-version=<Version>     # (default: ${KUBE_VERSION})
@@ -27,7 +27,7 @@ Options (install):
     --init
     --api-ip=<ApiIp>
     --api-iface=<Iface>
-    --kube-user=<UserName>       # (default: $(whoami))
+    --admin-user=<UserName>      # (default: $(whoami))
     --master-ssh=<User@Host>
 
 Nodes:
@@ -50,9 +50,9 @@ function main {
             --init) local Init=true ;;
             --api-ip=*) local ApiIp="${Arg##*=}";;
             --api-iface=*) local ApiIface="${Arg##*=}";;
-            --ssh-user=*) local SshUser="${Arg##*=}";;
+            --create-user=*) local CreateUser="${Arg##*=}";;
             --master-ssh=*) local MasterSsh="${Arg##*=}";;
-            --kube-user=*) local KubeUser="${Arg##*=}";;
+            --admin-user=*) local AdminUser="${Arg##*=}";;
             --kube-version=*) local KubeVersion="${Arg##*=}";;
             *) unknown_option "${Arg}";;
         esac
@@ -60,16 +60,19 @@ function main {
 
     Os="${Os:-coreos}"
     Init="${Init:-false}"
-    SshUser="${SshUser:-$(whoami)}"
-    KubeUser="${KubeUser:-$(whoami)}"
+    CreateUser="${CreateUser:-$(whoami)}"
+    AdminUser="${AdminUser:-$(whoami)}"
     KubeVersion="${KubeVersion:-${KUBE_VERSION}}"
 
     case "${Action}" in
-        prepare) make_prepare "${Masters}" "${Workers}" "${Os}" "${SshUser}";;
+        prepare) make_prepare "${Masters}" "${Workers}" \
+                              "${Os}" "${CreateUser}";;
+
         download) make_download "${Masters}" "${Workers}" "${KubeVersion}";;
+
         install) make_install "${Masters}" "${Workers}" \
                               "${ApiIp}" "${ApiIface}" \
-                              "${Init}" "${MasterSsh}" "${KubeUser}" ;;
+                              "${Init}" "${MasterSsh}" "${AdminUser}" ;;
         *) usage ;;
     esac
 
@@ -80,7 +83,7 @@ function make_prepare {
     local Masters; read -r -a Masters <<< "$1"
     local Workers; read -r -a Workers <<< "$2"
     local Os="$3"
-    local SshUser="$4"
+    local CreateUser="$4"
 
     case "${Os}" in
         centos|ubuntu) ;;
@@ -89,7 +92,8 @@ function make_prepare {
 
     local Node
     for Node in "${Masters[@]}" "${Workers[@]}"; do
-        ./src/kube "tools-${Os}" "$(node_ssh "${Node}")" install "${SshUser}" &
+        ./src/kube "tools-${Os}" "$(node_ssh "${Node}")" \
+                   install "${CreateUser}" &
     done
 }
 
@@ -117,7 +121,7 @@ function make_install {
     local ApiIface="$4"
     local Init="$5"
     local MasterSsh="$6"
-    local KubeUser="$7"
+    local AdminUser="$7"
 
     if "${Init}"; then
         local Master0Ssh; Master0Ssh="$(node_ssh "${Masters[0]}")"
@@ -129,10 +133,10 @@ function make_install {
         ./src/kube node "${Master0Ssh}" master init \
                         "${Master0Ip}" "${ApiIp}" "${ApiIface}"
 
-        ./src/kube user "${Master0Ssh}" create "${KubeUser}" -a
+        ./src/kube user "${Master0Ssh}" create "${AdminUser}" -a
 
-        scp "${Master0Ssh}:${KubeUser}.conf" ./
-        ssh "${Master0Ssh}" rm \\"${KubeUser}.conf"
+        scp "${Master0Ssh}:${AdminUser}.conf" ./
+        ssh "${Master0Ssh}" rm \\"${AdminUser}.conf"
 
         Masters=("${Masters[@]:1}")
     fi
