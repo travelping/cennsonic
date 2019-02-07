@@ -24,7 +24,11 @@ Options (download):
     --kube-version=<Version>     # (default: ${KUBE_VERSION})
 
 Options (install):
+    --init
+    --api-ip=<ApiIp>
+    --api-iface=<Iface>
     --kube-user=<UserName>       # (default: $(whoami))
+    --master-ssh=<User@Host>
 
 Nodes:
     <User@Host[/KubeIpAddr][,...]>
@@ -43,7 +47,11 @@ function main {
             --masters=*) local Masters="${Arg##*=}"; Masters="${Masters//,/ }";;
             --workers=*) local Workers="${Arg##*=}"; Workers="${Workers//,/ }";;
             --os=*) local Os="${Arg##*=}";;
+            --init) local Init=true ;;
+            --api-ip=*) local ApiIp="${Arg##*=}";;
+            --api-iface=*) local ApiIface="${Arg##*=}";;
             --ssh-user=*) local SshUser="${Arg##*=}";;
+            --master-ssh=*) local MasterSsh="${Arg##*=}";;
             --kube-user=*) local KubeUser="${Arg##*=}";;
             --kube-version=*) local KubeVersion="${Arg##*=}";;
             *) unknown_option "${Arg}";;
@@ -51,6 +59,7 @@ function main {
     done
 
     Os="${Os:-coreos}"
+    Init="${Init:-false}"
     SshUser="${SshUser:-$(whoami)}"
     KubeUser="${KubeUser:-$(whoami)}"
     KubeVersion="${KubeVersion:-${KUBE_VERSION}}"
@@ -58,7 +67,9 @@ function main {
     case "${Action}" in
         prepare) make_prepare "${Masters}" "${Workers}" "${Os}" "${SshUser}";;
         download) make_download "${Masters}" "${Workers}" "${KubeVersion}";;
-        install) make_install "${Masters}" "${Workers}" "${KubeUser}" ;;
+        install) make_install "${Masters}" "${Workers}" \
+                              "${ApiIp}" "${ApiIface}" \
+                              "${Init}" "${MasterSsh}" "${KubeUser}" ;;
         *) usage ;;
     esac
 
@@ -102,30 +113,45 @@ function make_download {
 function make_install {
     local Masters; read -r -a Masters <<< "$1"
     local Workers; read -r -a Workers <<< "$2"
-    local KubeUser="$3"
+    local ApiIp="$3"
+    local ApiIface="$4"
+    local Init="$5"
+    local MasterSsh="$6"
+    local KubeUser="$7"
 
-    local Master0Ssh; Master0Ssh="$(node_ssh "${Masters[0]}")"
-    local Master0Ip; Master0Ip="$(node_ip "${Masters[0]}")"
+    if "${Init}"; then
+        local Master0Ssh; Master0Ssh="$(node_ssh "${Masters[0]}")"
+        local Master0Ip; Master0Ip="$(node_ip "${Masters[0]}")"
 
-    ./src/kube node "${Master0Ssh}" master init "${Master0Ip}" "${Master0Ip}"
-    ./src/kube user "${Master0Ssh}" create "${KubeUser}" -a
+        if [ -z "${ApiIp}" ]; then ApiIp="${Master0Ip}"; fi
+        if [ -z "${MasterSsh}" ]; then MasterSsh="${Master0Ssh}"; fi
 
-    scp "${Master0Ssh}:${KubeUser}.conf" ./
-    ssh "${Master0Ssh}" rm \\"${KubeUser}.conf"
+        ./src/kube node "${Master0Ssh}" master init \
+                        "${Master0Ip}" "${ApiIp}" "${ApiIface}"
+
+        ./src/kube user "${Master0Ssh}" create "${KubeUser}" -a
+
+        scp "${Master0Ssh}:${KubeUser}.conf" ./
+        ssh "${Master0Ssh}" rm \\"${KubeUser}.conf"
+
+        Masters=("${Masters[@]:1}")
+    fi
 
     local Master
-    for Master in "${Masters[@]:1}"; do
-        ./src/kube-pki "${Master0Ssh}" "$(node_ssh "${Master}")"
+    for Master in "${Masters[@]}"; do
+        ./src/kube-pki "${MasterSsh}" "$(node_ssh "${Master}")"
         ./src/kube node "$(node_ssh "${Master}")" \
-                   master join "$(node_ip "${Master}")" "${Master0Ip}"
+                   master join "$(node_ip "${Master}")" "${ApiIp}"
     done &
 
-    local JI; JI=$(./src/kube node "${Master0Ssh}" master join-info)
+    if [ "${#Workers[@]}" -gt 0 ]; then
+        local JI; JI=$(./src/kube node "${MasterSsh}" master join-info)
+    fi
 
     local Worker
     for Worker in "${Workers[@]}"; do
         ./src/kube node "$(node_ssh "${Worker}")" \
-                   worker join "$(node_ip "${Worker}")" "${Master0Ip}" "$JI" &
+                   worker join "$(node_ip "${Worker}")" "${ApiIp}" "$JI" &
     done
 }
 
