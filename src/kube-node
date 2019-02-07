@@ -365,7 +365,7 @@ function node_has_role_label {
     local LABEL="node-role\\.kubernetes\\.io/${ROLE}"
 
     local JP="{.items[?(@.metadata.labels.${LABEL}=='')].metadata.name}"
-    [ "$(kubectl get nodes -o "jsonpath=${JP}")" = "${NODE}" ]
+    [[ "$(kubectl get nodes -o "jsonpath=${JP}")" =~ "${NODE}" ]]
 }
 function node_has_role_taint {
     local ROLE="$1"
