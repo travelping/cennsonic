@@ -10,13 +10,13 @@ spec:
       run: multus-macvlan-test
   template:
     metadata:
+      labels:
+        run: multus-macvlan-test
       annotations:
         k8s.v1.cni.cncf.io/networks: '[
           {"name": "macvlan0",
            "interfaceRequest": "macvi0"}
         ]'
-      labels:
-        run: multus-macvlan-test
     spec:
       containers:
       - image: aialferov/pause
