@@ -741,7 +741,7 @@ function ensure_in_hosts {
 
     log "Ensuring ${IP} ${HOSTNAME} is in /etc/hosts..."
     if grep -q "${HOSTNAME}" /etc/hosts; then
-        sudo sed -i "s/.* \\(${HOSTNAME}\\)/${IP}    \\1/" /etc/hosts
+        sudo sed -i "s/.*\\(${HOSTNAME}\\).*/${IP}    \\1/" /etc/hosts
     else
         sudo sed -i "$ a ${IP}    ${HOSTNAME}" /etc/hosts
     fi
