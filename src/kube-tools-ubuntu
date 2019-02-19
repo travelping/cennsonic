@@ -25,6 +25,7 @@ function ubuntu_install {
 
     sudo apt-get update
     sudo apt-get install curl \
+                         socat \
                          ca-certificates \
                          apt-transport-https \
                          software-properties-common -y
