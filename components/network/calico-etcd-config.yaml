@@ -1,5 +1,5 @@
-# Calico Version v3.3.2
-# https://docs.projectcalico.org/v3.3/releases#v3.3.2
+# Calico Version v3.5.1
+# https://docs.projectcalico.org/v3.5/releases#v3.5.1
 
 # This ConfigMap is used to configure a self-hosted Calico installation.
 kind: ConfigMap
@@ -16,7 +16,8 @@ data:
   etcd_ca: "/calico-secrets/etcd-ca"
   etcd_cert: "/calico-secrets/etcd-cert"
   etcd_key: "/calico-secrets/etcd-key"
-
+  # Typha is disabled.
+  typha_service_name: "none"
   # Configure the Calico backend to use.
   calico_backend: "bird"
 
