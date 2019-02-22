@@ -148,6 +148,7 @@ $ kubectl apply -f components/network/kube-vxlan-controller-networks.yaml
 [Multus CNI CRD]: https://github.com/intel/multus-cni#usage-with-kubernetes-crd-based-network-objects
 [Multus CNI Example]: https://github.com/intel/multus-cni/tree/master/examples
 [Kube VXLAN Controller]: http://github.com/openvnf/kube-vxlan-controller
+[Kube Vxlan Controller Usage Example]: https://github.com/openvnf/kube-vxlan-controller#example
 
 [Bridge vs Macvlan →]: https://hicu.be/bridge-vs-macvlan
 [Macvlan vs Ipvlan →]: https://hicu.be/macvlan-vs-ipvlan
