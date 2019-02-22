@@ -50,7 +50,7 @@ metadata:
 spec:
   config: '{
     "type": "macvlan",
-    "master": "eth0", # use actual interface of the node
+    "master": "eth0",
     "ipam": {
       "type": "host-local",
       "subnet": "172.16.10.0/24"
