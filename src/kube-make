@@ -13,8 +13,8 @@ Actions:
     install
 
 Options:
-    --masters=<Nodes>
-    --workers=<Nodes>
+    --master=<[User@]PublicIp[/PrivateIp]>
+    --worker=<[User@]PublicIp[/PrivateIp]>
 
 Options (prepare):
     --os=<coreos|centos|ubuntu>  # (default: coreos)
@@ -28,15 +28,14 @@ Options (install):
     --api-ip=<ApiIp>
     --api-iface=<Iface>
     --admin-user=<UserName>      # (default: $(whoami))
-    --master-ssh=<User@Host>
-
-Nodes:
-    <[User@]Host[/KubeIpAddr][,...]>
+    --master-ssh=<[User@]Host>
 EOF
 )
 
 function main {
     local Action="$1"
+    local Masters
+    local Workers
 
     if [ -z "${Action}" ]; then usage; fi
 
@@ -44,8 +43,8 @@ function main {
     local Arg
     for Arg in "$@"; do
         case "${Arg}" in
-            --masters=*) local Masters="${Arg##*=}"; Masters="${Masters//,/ }";;
-            --workers=*) local Workers="${Arg##*=}"; Workers="${Workers//,/ }";;
+            --master=*) local Masters="${Masters} ${Arg##*=}";;
+            --worker=*) local Workers="${Workers} ${Arg##*=}";;
             --os=*) local Os="${Arg##*=}";;
             --init) local Init=true ;;
             --api-ip=*) local ApiIp="${Arg##*=}";;
@@ -58,6 +57,8 @@ function main {
         esac
     done
 
+    Masters="${Masters//,/ }"
+    Workers="${Workers//,/ }"
     Os="${Os:-coreos}"
     Init="${Init:-false}"
     CreateUser="${CreateUser:-$(whoami)}"
