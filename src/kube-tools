@@ -163,8 +163,8 @@ function template {
 }
 function master_images {
     local KUBERNETES_VERSION="$1"
-    local ARCH="$2"
-    local TEMPLATES="$3"
+    local TEMPLATES="$2"
+    local ARCH="$3"
 
     /opt/bin/kubeadm config images list \
         --kubernetes-version "${KUBERNETES_VERSION}"
@@ -175,8 +175,8 @@ function master_images {
 }
 function worker_images {
     local KUBERNETES_VERSION="$1"
-    local ARCH="$2"
-    local TEMPLATES="$3"
+    local TEMPLATES="$2"
+    local ARCH="$3"
 
     /opt/bin/kubeadm config images list \
                      --kubernetes-version "${KUBERNETES_VERSION}" \
