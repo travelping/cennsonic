@@ -115,6 +115,8 @@ function master_init {
     local API_IFACE="$3"
 
     log "Initialising first master of $(cluster_name)..."
+    if node_is_active; then show_node_is_active; return; fi
+
     sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
 
     resolve_node_hostname_to "${NODE_IP}"
@@ -143,6 +145,8 @@ function master_join {
     local API_IP="$2"
 
     log "Joining master to $(cluster_name)..."
+    if node_is_active; then show_node_is_active; return; fi
+
     sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
 
     resolve_node_hostname_to "${NODE_IP}"
@@ -270,6 +274,7 @@ function worker_join {
     local JOIN_INFO=$*
 
     log "Joining worker to $(cluster_name)..."
+    if node_is_active; then show_node_is_active; return; fi
 
     resolve_node_hostname_to "${NODE_IP}"
     resolve_kubernetes_to "${API_IP}"
@@ -290,6 +295,13 @@ function worker_delete {
 
     kubectl drain "${NODE}" --delete-local-data --ignore-daemonsets --force
     kubectl delete node "${NODE_NAME}.$(cluster_name)"
+}
+
+function node_is_active {
+    systemctl is-active kubelet --quiet
+}
+function show_node_is_active {
+    log "Kubelet is active. The node might have been already provisioned."
 }
 
 function node_reset {
