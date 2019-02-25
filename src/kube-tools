@@ -20,7 +20,7 @@ Targets
     images-master
     images-worker
 
-    template-<Component>
+    templates-<Component>
 
 Options
     --arch=<Architecture>
@@ -39,7 +39,7 @@ function main {
     local COMMAND="$1"
     local TARGET="$2"
     local VERSION="$3"
-    local TEMPLATE_NAME="${TARGET#template-}"
+    local TEMPLATE_NAME="${TARGET#templates-}"
     local ARCH=amd64
     local TEMPLATES
 
@@ -74,8 +74,8 @@ function main {
         "install cni-plugins")
             install_"${TARGET//-/_}" "${VERSION}" "${ARCH}"
         ;;
-        "install template-${TEMPLATE_NAME}")
-            install_template "$(templates "${TEMPLATE_NAME}" "${TEMPLATES}")"
+        "install templates-${TEMPLATE_NAME}")
+            install_templates "$(templates "${TEMPLATE_NAME}" "${TEMPLATES}")"
         ;;
         *) usage ;;
     esac
@@ -206,11 +206,11 @@ function install_master {
     install_kubectl "${KUBERNETES_VERSION}" "${ARCH}"
     install_images master "${KUBERNETES_VERSION}" "${TEMPLATES}" "${ARCH}"
 
-    install_template "$(templates kubeadm "${TEMPLATES}")" \
-                     "$(templates calico "${TEMPLATES}")" \
-                     "$(templates multus-cni "${TEMPLATES}")" \
-                     "$(templates kubealived "${TEMPLATES}")" \
-                     "$(templates user-admin-crb "${TEMPLATES}")"
+    install_templates "$(templates kubeadm "${TEMPLATES}")" \
+                      "$(templates calico "${TEMPLATES}")" \
+                      "$(templates multus-cni "${TEMPLATES}")" \
+                      "$(templates kubealived "${TEMPLATES}")" \
+                      "$(templates user-admin-crb "${TEMPLATES}")"
 
     enable_service docker kubelet
 }
@@ -338,7 +338,7 @@ function install_config {
                         sudo tee "${DEST}/${CONFIG}" > /dev/null
     sudo chmod "${MODE}" "${DEST}/${CONFIG}"
 }
-function install_template {
+function install_templates {
     local FILE_NAMES=$*
     local FILE_NAME
     local TEMPLATES_DIR="/etc/kubernetes/templates"
