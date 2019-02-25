@@ -26,7 +26,7 @@ function centos_install {
     sudo yum-config-manager --add-repo \
              https://download.docker.com/linux/centos/docker-ce.repo
     
-    sudo yum install docker-ce-18.06.1.ce-3.el7 ebtables ethtool -y
+    sudo yum install docker-ce-18.06.3.ce-3.el7 ebtables ethtool -y
     sudo systemctl start docker
     sudo systemctl enable docker
     

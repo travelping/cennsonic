@@ -28,7 +28,7 @@ networking:
 ---
 kind: InitConfiguration
 apiVersion: kubeadm.k8s.io/v1beta1
-apiEndpoint:
+localAPIEndpoint:
   advertiseAddress: "_NODE_IP_"
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
