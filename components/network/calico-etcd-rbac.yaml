@@ -1,5 +1,5 @@
-# Calico Version v3.5.1
-# https://docs.projectcalico.org/v3.5/releases#v3.5.1
+# Calico Version v3.5.2
+# https://docs.projectcalico.org/v3.5/releases#v3.5.2
 
 ---
 # Include a clusterrole for the kube-controllers component,
