@@ -177,10 +177,11 @@ function master_join {
     node_role set master
 
     wait_for_core_pods
-    resolve_kubernetes_to "${NODE_IP}"
 
     calico_etcd_endpoints_add "${NODE_IP}"
     ensure_dns_ha
+
+    resolve_kubernetes_to "${NODE_IP}"
 }
 function master_prepare {
     local CLUSTER_STATE="$1"
