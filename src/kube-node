@@ -16,6 +16,7 @@ Commands:
     worker join <Node IP> <API IP> <Join Info>
     worker delete <Node Name>
 
+    restart
     reset
 
     role set <Role> [Node Name]
@@ -83,6 +84,10 @@ function main {
             if [ -z "${NODE_NAME}" ]; then usage; fi
 
             worker_delete "${NODE_NAME}"
+            show_completion_time "${START_TIME}"
+        ;;
+        "restart    ")
+            node_restart
             show_completion_time "${START_TIME}"
         ;;
         "reset    ")
@@ -303,6 +308,11 @@ function node_is_active {
 }
 function show_node_is_active {
     log "Kubelet is active. The node might have been already provisioned."
+}
+
+function node_restart {
+    log "Restarting node of $(cluster_name)..."
+    sudo systemctl restart kubelet
 }
 
 function node_reset {
