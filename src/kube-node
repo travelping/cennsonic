@@ -10,6 +10,7 @@ Commands:
     master join <Node IP> <API IP>
     master join-info
     master delete [Node Name]
+    master upgrade
     master pki make <PKI Archive>
     master pki install <PKI Archive>
 
@@ -54,6 +55,10 @@ function main {
             local NODE_NAME="$3"
 
             master_delete "${NODE_NAME}"
+            show_completion_time "${START_TIME}"
+        ;;
+        "master upgrade   ")
+            master_upgrade
             show_completion_time "${START_TIME}"
         ;;
         "master pki make $4 "|\
@@ -248,6 +253,14 @@ function master_delete {
     if [ "${NODE_NAME}" = "$(node_name)" ]; then
         node_reset
     fi
+}
+function master_upgrade {
+    local K8S_VERSION; K8S_VERSION="$(k8s_version)"
+
+    log "Upgrading master of $(cluster_name) to ${K8S_VERSION}..."
+    sudo kubeadm upgrade apply "${K8S_VERSION}" -y
+
+    node_restart
 }
 function master_pki_make {
     local ARCHIVE="$1"
