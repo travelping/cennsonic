@@ -1,8 +1,11 @@
-apiVersion: kubeadm.k8s.io/v1alpha3
+apiVersion: kubeadm.k8s.io/v1beta1
 kind: ClusterConfiguration
 kubernetesVersion: _K8S_VERSION_
-apiServerCertSANs:
-- "_API_HOSTNAME_"
+apiServer:
+  certSANs:
+    - "_API_HOSTNAME_"
+  extraArgs:
+    feature-gates: SCTPSupport=true
 controlPlaneEndpoint: "kubernetes:6443"
 etcd:
   local:
@@ -24,11 +27,15 @@ networking:
     serviceSubnet: "10.233.0.0/18"
 ---
 kind: InitConfiguration
-apiVersion: kubeadm.k8s.io/v1alpha3
-apiEndpoint:
+apiVersion: kubeadm.k8s.io/v1beta1
+localAPIEndpoint:
   advertiseAddress: "_NODE_IP_"
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 clusterDNS:
 - "10.233.0.10"
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+mode: ipvs

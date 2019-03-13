@@ -34,7 +34,7 @@ function ubuntu_install {
     sudo apt-key fingerprint 0EBFCD88
     sudo add-apt-repository "$(ubuntu_docker_repo)"
     sudo apt-get update
-    sudo apt-get install ebtables ethtool docker-ce=18.06.1~ce~3-0~ubuntu -y
+    sudo apt-get install ebtables ethtool docker-ce=18.06.3~ce~3-0~ubuntu -y
     
     sudo systemctl start docker
     sudo systemctl enable docker
