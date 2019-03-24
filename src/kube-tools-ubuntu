@@ -44,13 +44,13 @@ function ubuntu_install {
     
     sudo ln -sf /opt/bin/kube{adm,ctl,let} /usr/bin
     
-    adduser --disabled-password --gecos "" "${USER}" || true
+    sudo adduser --disabled-password --gecos "" "${USER}" || true
     sudo usermod -aG sudo "${USER}"
     sudo usermod -aG docker "${USER}"
     
     sudo mkdir -p "/home/${USER}/.ssh"
     sudo -E cp "${HOME}/.ssh/authorized_keys" \
-               "/home/${USER}/.ssh/authorized_keys"
+               "/home/${USER}/.ssh/authorized_keys" || true
     sudo chown -R "${USER}:${USER}" "/home/${USER}/.ssh"
     
     echo "${USER} ALL=(ALL) NOPASSWD: ALL" | \
