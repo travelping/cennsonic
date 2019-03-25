@@ -30,6 +30,7 @@ Components
     kubeadm
     calico
     multus-cni
+    vxlan-controller
     kubealived
     user-admin-crb
 EOF
@@ -138,6 +139,9 @@ function templates {
                          " ${Manifests}/network/multus-cni-rbac.yaml" \
                          " ${Manifests}/network/multus-cni-config.yaml")"
         ;;
+        vxlan-controller) template "${Name}" "${Templates}" \
+            "$(printf %b " ${Manifests}/network/kube-vxlan-controller.yaml")"
+        ;;
         kubealived) template "${Name}" "${Templates}" \
             "$(printf %b "${Manifests}/network/kubealived.yaml")"
         ;;
@@ -174,6 +178,7 @@ function master_images {
 
     template_images calico "${TEMPLATES}"
     template_images multus-cni "${TEMPLATES}"
+    template_images vxlan-controller "${TEMPLATES}"
     template_images kubealived "${TEMPLATES}"
 }
 function worker_images {
@@ -188,6 +193,7 @@ function worker_images {
 
     template_images calico "${TEMPLATES}" | grep -v calico/kube-controllers
     template_images multus-cni "${TEMPLATES}"
+    template_images vxlan-controller "${TEMPLATES}"
 }
 function template_images {
     local NAME="$1"
