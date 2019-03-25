@@ -54,6 +54,8 @@ spec:
       labels:
         run: kube-vxlan-controller
     spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: ""
       containers:
       - name: kube-vxlan-controller
         image: openvnf/kube-vxlan-controller:0.10.3
