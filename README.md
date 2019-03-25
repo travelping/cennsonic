@@ -7,6 +7,12 @@
 Cennso stands for Cloud ENabled Network Service Operations. Cennsonic is a
 [Kubernetes] based Cennso Network Integration Cluster.
 
+**Note**. This page describes Kubespray based automation way to deploy Cennsonic
+and is currently **obsolete** and is **not recommended** to use due to number of
+operational limitations. It is about to be replaced with a [Kubeadm] based
+automation way and is currently being developed as [Kube] subproject of
+Cennsonic.
+
 * [Setup](#setup)
   * [Infrastructure](#infrastructure)
   * [Configuration](#configuration)
@@ -198,6 +204,8 @@ limitations under the License.
 
 <!-- Links -->
 
+[Kube]: kube
+[Kubeadm]: https://kubernetes.io/docs/setup/independent/high-availability
 [Apache 2.0]: https://opensource.org/licenses/Apache-2.0
 [GitHub Releases]: https://github.com/travelping/cennsonic/releases
 [NFV]: https://en.wikipedia.org/wiki/Network_function_virtualization

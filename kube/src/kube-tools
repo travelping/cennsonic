@@ -116,30 +116,33 @@ function templates {
     local Name="$1"
     local Templates="$2"
 
-    local Url="https://raw.githubusercontent.com/travelping/cennsonic/master"
+    local Manifests; Manifests="$(printf %b \
+        "https://raw.githubusercontent.com/travelping/cennsonic" \
+        "/master/kube/manifests" \
+    )"
 
     case "${Name}" in
         kubeadm) template "${Name}" "${Templates}" \
-            "$(printf %b "${Url}/config/kubeadm.yaml")"
+            "$(printf %b "${Manifests}/config/kubeadm.yaml")"
         ;;
         calico) template "${Name}" "${Templates}" \
-            "$(printf %b " ${Url}/components/network/calico-etcd.yaml" \
-                         " ${Url}/components/network/calico-etcd-rbac.yaml" \
-                         " ${Url}/components/network/calico-etcd-config.yaml" \
-                         " ${Url}/components/network/calico-etcd-sync.yaml")" \
-#                        " ${Url}/components/network/calico-kdd.yaml" \
-#                        " ${Url}/components/network/calico-kdd-rbac.yaml")"
+            "$(printf %b " ${Manifests}/network/calico-etcd.yaml" \
+                         " ${Manifests}/network/calico-etcd-rbac.yaml" \
+                         " ${Manifests}/network/calico-etcd-config.yaml" \
+                         " ${Manifests}/network/calico-etcd-sync.yaml")" \
+#                        " ${Manifests}/network/calico-kdd.yaml" \
+#                        " ${Manifests}/network/calico-kdd-rbac.yaml")"
         ;;
         multus-cni) template "${Name}" "${Templates}" \
-            "$(printf %b " ${Url}/components/network/multus-cni.yaml" \
-                         " ${Url}/components/network/multus-cni-rbac.yaml" \
-                         " ${Url}/components/network/multus-cni-config.yaml")"
+            "$(printf %b " ${Manifests}/network/multus-cni.yaml" \
+                         " ${Manifests}/network/multus-cni-rbac.yaml" \
+                         " ${Manifests}/network/multus-cni-config.yaml")"
         ;;
         kubealived) template "${Name}" "${Templates}" \
-            "$(printf %b "${Url}/components/network/kubealived.yaml")"
+            "$(printf %b "${Manifests}/network/kubealived.yaml")"
         ;;
         user-admin-crb) template "${Name}" "${Templates}" \
-            "$(printf %b "${Url}/components/users/user-admin-crb.yaml")"
+            "$(printf %b "${Manifests}/users/user-admin-crb.yaml")"
         ;;
     esac
 }
