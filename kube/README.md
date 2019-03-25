@@ -24,6 +24,7 @@ Contents:
     * [Node IP](#node-ip)
     * [API IP](#api-ip)
     * [Master Init](#master-init)
+    * [Create User](#create-user)
     * [Single Node](#single-node)
     * [Master Join](#master-join)
     * [Worker Join](#worker-join)
@@ -161,6 +162,45 @@ $ kube node core@192.168.10.11 master init 172.18.10.11 172.18.1.10 eth0
 
 Make sure to specify correct network interface for VRRP.
 
+#### Create User
+
+The cluster could be accessed from any of its master nodes directly using admin
+kubeconfig:
+
+```
+$ ssh <Host SSH>
+$ sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf get nodes
+```
+
+This kubeconfig could have been copied and used from anywhere, but revoking it
+could be not trivial. To avoid using the general admin kubeconfig we can create
+a personalized one using an existing master node:
+
+```
+$ kube user <Host SSH> create <Username> --admin
+```
+
+Example:
+
+```
+$ kube user core@192.168.10.11 create jsmith --admin
+```
+
+This will generate jsmith.conf kubeconfig file and create a cluster-admin
+[ClusterRoleBinding] of this User name. The kubeconfig now can be copied over
+from the master node:
+
+```
+$ scp core@192.168.10.11:jsmith.conf .
+$ ssh core@192.168.10.11 rm jsmith.conf
+```
+
+To see more options:
+
+```
+$ kube user help
+```
+
 #### Single Node 
 
 If you plan to use a single node cluster, you should assign your the only master
@@ -273,6 +313,7 @@ limitations under the License.
 [Cennsonic]: https://github.com/travelping/cennsonic
 [Kubernetes]: https://kubernetes.io
 [Keepalived]: http://keepalived.org
+[ClusterRoleBinding]: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#rolebinding-and-clusterrolebinding
 
 [CNI Node]: https://github.com/openvnf/cni-node
 [Calico CNI]: https://docs.projectcalico.org/v3.5/introduction
