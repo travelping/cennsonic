@@ -15,7 +15,7 @@ function main {
     case "$1 $2" in
         "$1 help")
             local UNIT="$1"
-            "./src/kube-${UNIT}"
+            "$(workdir)/kube-${UNIT}"
         ;;
         "$1 $2")
             local UNIT="$1"
@@ -25,10 +25,14 @@ function main {
             if [ -z "${UNIT}" ] || \
                [ -z "${TARGET}" ]; then usage; fi
 
-            ssh "${TARGET}" bash -s "$@" < "./src/kube-${UNIT}"
+            ssh "${TARGET}" bash -s "$@" < "$(workdir)/kube-${UNIT}"
         ;;
         *) usage ;;
     esac
+}
+
+function workdir {
+    dirname "$0"
 }
 
 function usage {

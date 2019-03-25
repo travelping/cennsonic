@@ -93,8 +93,8 @@ function make_prepare {
 
     local Node
     for Node in "${Masters[@]}" "${Workers[@]}"; do
-        ./src/kube "tools-${Os}" "$(node_ssh "${Node}")" \
-                   install "${CreateUser}" &
+        "$(workdir)/kube" "tools-${Os}" "$(node_ssh "${Node}")" \
+                          install "${CreateUser}" &
     done
 }
 
@@ -105,13 +105,13 @@ function make_download {
 
     local Master
     for Master in "${Masters[@]}"; do
-        ./src/kube tools "$(node_ssh "${Master}")" \
-                   install master "${KubeVersion}" &
+        "$(workdir)/kube" tools "$(node_ssh "${Master}")" \
+                          install master "${KubeVersion}" &
     done
     local Worker
     for Worker in "${Workers[@]}"; do
-        ./src/kube tools "$(node_ssh "${Worker}")" \
-                   install worker "${KubeVersion}" &
+        "$(workdir)/kube" tools "$(node_ssh "${Worker}")" \
+                          install worker "${KubeVersion}" &
     done
 }
 
@@ -131,10 +131,10 @@ function make_install {
         if [ -z "${ApiIp}" ]; then ApiIp="${Master0Ip}"; fi
         if [ -z "${MasterSsh}" ]; then MasterSsh="${Master0Ssh}"; fi
 
-        ./src/kube node "${Master0Ssh}" master init \
-                        "${Master0Ip}" "${ApiIp}" "${ApiIface}"
+        "$(workdir)/kube" node "${Master0Ssh}" master init \
+                               "${Master0Ip}" "${ApiIp}" "${ApiIface}"
 
-        ./src/kube user "${Master0Ssh}" create "${AdminUser}" -a
+        "$(workdir)/kube" user "${Master0Ssh}" create "${AdminUser}" -a
 
         scp "${Master0Ssh}:${AdminUser}.conf" ./
         ssh "${Master0Ssh}" rm \\"${AdminUser}.conf"
@@ -144,19 +144,19 @@ function make_install {
 
     local Master
     for Master in "${Masters[@]}"; do
-        ./src/kube-pki "${MasterSsh}" "$(node_ssh "${Master}")"
-        ./src/kube node "$(node_ssh "${Master}")" \
-                   master join "$(node_ip "${Master}")" "${ApiIp}"
+        "$(workdir)/kube-pki" "${MasterSsh}" "$(node_ssh "${Master}")"
+        "$(workdir)/kube" node "$(node_ssh "${Master}")" \
+                          master join "$(node_ip "${Master}")" "${ApiIp}"
     done &
 
     if [ "${#Workers[@]}" -gt 0 ]; then
-        local JI; JI=$(./src/kube node "${MasterSsh}" master join-info)
+        local JI; JI=$("$(workdir)/kube" node "${MasterSsh}" master join-info)
     fi
 
     local Worker
     for Worker in "${Workers[@]}"; do
-        ./src/kube node "$(node_ssh "${Worker}")" \
-                   worker join "$(node_ip "${Worker}")" "${ApiIp}" "$JI" &
+        "$(workdir)/kube" node "$(node_ssh "${Worker}")" \
+                          worker join "$(node_ip "${Worker}")" "${ApiIp}" "$JI" &
     done
 }
 
@@ -166,6 +166,10 @@ function node_ssh {
 function node_ip {
     local Ip="${1##*@}"
     echo "${Ip##*/}"
+}
+
+function workdir {
+    dirname "$0"
 }
 
 function usage {

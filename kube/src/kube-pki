@@ -11,10 +11,14 @@ function main {
 
     if [ -z "${FROM}" ] || [ -z "${TO}" ]; then usage; fi
 
-    ssh "${FROM}" bash -s < ./src/kube-node master pki make "${ARCHIVE}"
+    ssh "${FROM}" bash -s < "$(workdir)/kube-node" master pki make "${ARCHIVE}"
     scp -3 "${FROM}:${ARCHIVE}" "${TO}:${ARCHIVE}"
     ssh "${FROM}" rm \\"${ARCHIVE}"
-    ssh "${TO}" bash -s < ./src/kube-node master pki install "${ARCHIVE}"
+    ssh "${TO}" bash -s < "$(workdir)/kube-node" master pki install "${ARCHIVE}"
+}
+
+function workdir {
+    dirname "$0"
 }
 
 function usage {
