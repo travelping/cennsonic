@@ -6,12 +6,12 @@
 
 A [Kubeadm] based automation for deploying and operating [Cennsonic] core
 components. The core components include vanilla [Kubernetes] cluster with the
-following components:
+following add-ons:
 
-* [Calico CNI]
+* [Calico]
 * [CNI Node]
+* [Kubealived]
 * [Kube VXLAN Controller]
-* [Kubealived] (optionally)
 
 Contents:
 
@@ -110,8 +110,8 @@ $ kube tools core@192.168.10.11 install master v1.12.7
 $ kube tools core@192.168.10.21 install worker v1.12.7
 ```
 
-You can download any version of Kubernetes, but further operations are fully
-supported with the v1.12.x branch only.
+**Note:** you can download any version of Kubernetes, but further operations are
+fully supported with the v1.12.x branch only.
 
 ### Install
 
@@ -316,9 +316,9 @@ limitations under the License.
 [ClusterRoleBinding]: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#rolebinding-and-clusterrolebinding
 
 [CNI Node]: https://github.com/openvnf/cni-node
-[Calico CNI]: https://docs.projectcalico.org/v3.5/introduction
-[Kube VXLAN Controller]: https://github.com/openvnf/kube-vxlan-controller
+[Calico]: https://docs.projectcalico.org/v3.5/introduction
 [Kubealived]: https://github.com/openvnf/kubealived
+[Kube VXLAN Controller]: https://github.com/openvnf/kube-vxlan-controller
 
 [CoreOS Container Linux]: https://coreos.com/os/docs/latest
 [Ubuntu 18.04]: https://ubuntu.com
