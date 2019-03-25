@@ -149,6 +149,9 @@ function master_init {
     kubectl create --filename "$(templates)/multus-cni-config.yaml"
     kubectl create --filename "$(templates)/multus-cni-rbac.yaml"
     kubectl create --filename "$(templates)/multus-cni.yaml"
+
+    log "Installing VXLAN Controller..."
+    kubectl create --filename "$(templates)/kube-vxlan-controller.yaml"
 }
 function master_join {
     local NODE_IP="$1"
