@@ -6,7 +6,7 @@ USAGE=$(cat <<EOF
 Usage: kube-node <Command>
 
 Commands:
-    master init <Node IP> <API IP> [API Interface]
+    master init <Node IP> <API IP> [VRRP Interface]
     master join <Node IP> <API IP>
     master join-info
     master delete [Node Name]
@@ -32,11 +32,11 @@ function main {
         "master init $3 $4 $5")
             local NODE_IP="$3"
             local API_IP="$4"
-            local API_IFACE="$5"
+            local VRRP_IFACE="$5"
 
             if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ]; then usage; fi
 
-            master_init "${NODE_IP}" "${API_IP}" "${API_IFACE}"
+            master_init "${NODE_IP}" "${API_IP}" "${VRRP_IFACE}"
             show_completion_time "${START_TIME}"
         ;;
         "master join $3 $4 $5")
@@ -122,7 +122,7 @@ function main {
 function master_init {
     local NODE_IP="$1"
     local API_IP="$2"
-    local API_IFACE="$3"
+    local VRRP_IFACE="$3"
 
     log "Initialising first master of $(cluster_name)..."
     if node_is_active; then show_node_is_active; return; fi
@@ -141,8 +141,8 @@ function master_init {
 
     wait_for_core_pods
 
-    if [ -n "${API_IFACE}" ]; then
-        install_kubealived "${API_IP}" "${API_IFACE}"
+    if [ -n "${VRRP_IFACE}" ]; then
+        install_kubealived "${API_IP}" "${VRRP_IFACE}"
     fi
 
     log "Installing Multus CNI..."
@@ -423,13 +423,13 @@ function ip_ready {
 }
 
 function install_kubealived {
-    local API_IP="$1"
-    local API_IFACE="$2"
+    local VRRP_IP="$1"
+    local VRRP_IFACE="$2"
 
     log "Installing Kubealived..."
     sudo sed -e "s/_VRID_/$((1 + RANDOM % 255))/" \
-             -e "s/_IFACE_/${API_IFACE}/" \
-             -e "s/_IP_/${API_IP}/" \
+             -e "s/_IFACE_/${VRRP_IFACE}/" \
+             -e "s/_IP_/${VRRP_IP}/" \
              -e "s~_PASSWORD_~$(openssl rand -base64 8)~" \
              "$(templates)/kubealived.yaml" | \
          kubectl create --filename -
@@ -437,8 +437,8 @@ function install_kubealived {
     log "Waiting for Kubealived..."
     wait_for kubealived_ready
 
-    log "Waiting for API IP..."
-    wait_for ip_ready "${API_IP}"
+    log "Waiting for VRRP IP..."
+    wait_for ip_ready "${VRRP_IP}"
 }
 function kubealived_ready {
     [ "$(pods "" kubealived-system app=kubealived \
