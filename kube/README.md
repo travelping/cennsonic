@@ -85,19 +85,18 @@ For example with an Ubuntu machine:
 $ kube tools-ubuntu root@192.168.10.11 install ubuntu
 ```
 
-The specified username ("ubuntu" in this case) will be created on the host if
-does not exist. This user will later be used to install the cluster components
-from (to avoid doing it from root). If you have an existing preferable user on
-the machine, for example "vagrant" specify it.
+The specified user ("ubuntu" in this case) will be created on the host if does
+not exist. This user will later be used to install the cluster components from
+(to avoid doing it from root). If you have an existing preferable user on the
+machine, for example "vagrant" specify it.
 
-The are known issues with "admin" user, so it should be avoided.
+The are known issues with "admin" user, so better to avoid.
 
 ### Download
 
 The download stage installs required binaries, [Docker] images and initial
 manifests to run Cennsonic core components. The master and worker node
-components are a bit different therefore we specify type of a node during
-download:
+components are different therefore we specify type of a node during download:
 
 ```
 $ kube tools <Host SSH> install <master|worker> <Kubernetes Version>
@@ -115,8 +114,7 @@ fully supported with the v1.12.x branch only.
 
 ### Install
 
-Before installation it is better to get familiar with the IP addresses terms
-used.
+Before installation it is better to get familiar with IP addresses terms used.
 
 #### Node IP
 
@@ -154,7 +152,7 @@ Example:
 $ kube node core@192.168.10.11 master init 172.18.10.11 172.18.10.11
 ```
 
-To install Keepalived (as Kubealived) and use 172.18.1.10 as VRRP IP:
+To install Keepalived (as [Kubealived]) and use 172.18.1.10 as VRRP IP:
 
 ```
 $ kube node core@192.168.10.11 master init 172.18.10.11 172.18.1.10 eth0
@@ -186,9 +184,10 @@ Example:
 $ kube user core@192.168.10.11 create jsmith --admin
 ```
 
-This will generate jsmith.conf kubeconfig file and create a cluster-admin
-[ClusterRoleBinding] of this User name. The kubeconfig now can be copied over
-from the master node:
+This will generate "jsmith.conf" kubeconfig file and bind this user to the
+"cluster-admin" with a [ClusterRoleBinding]. Without the "--admin" switch the
+binding will not be made. The kubeconfig now can be copied over from the master
+node:
 
 ```
 $ scp core@192.168.10.11:jsmith.conf .
@@ -207,7 +206,7 @@ If you plan to use a single node cluster, you should assign your the only master
 node a "worker" role:
 
 ```
-$ kube node core@192.168.10.11 set role worker
+$ kube node core@192.168.10.11 role set worker
 ```
 
 Otherwise the workloads will not be scheduled due to the master nodes related
@@ -216,7 +215,7 @@ taints.
 To unset the worker role:
 
 ```
-$ kube node core@192.168.10.11 unset role worker
+$ kube node core@192.168.10.11 role unset worker
 ```
 
 #### Master Join
@@ -287,8 +286,8 @@ and you are not really not sure what happened. You can always wipe out it with
 $ kube node <Host SSH> reset
 ```
 
-This will cancel the "init" or "join" actions (including the "PKI step" on
-master join) only and will not erase any downloaded binaries or images.
+This will cancel the "init" or "join" actions only (including the "PKI step" on
+master join) and will not erase any downloaded binaries or images.
 
 ## License
 
