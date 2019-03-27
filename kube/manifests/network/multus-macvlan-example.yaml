@@ -1,0 +1,38 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: macvlan0
+spec:
+  config: '{
+    "type": "macvlan",
+    "master": "ens192",
+    "ipam": {
+      "type": "host-local",
+      "subnet": "172.72.0.0/24"
+    }
+  }'
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: multus-macvlan-example
+  labels:
+    app: multus-macvlan-example
+spec:
+  template:
+    metadata:
+      labels:
+        app: multus-macvlan-example
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[
+          {"name": "macvlan0",
+           "interfaceRequest": "macvi0"}
+        ]'
+    spec:
+      containers:
+      - image: aialferov/pause
+        imagePullPolicy: Always
+        name: multus-macvlan-test
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
