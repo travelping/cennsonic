@@ -9,6 +9,7 @@ components. The core components include vanilla [Kubernetes] cluster with the
 following add-ons:
 
 * [Calico]
+* [Calico Sync]
 * [CNI Node]
 * [Kubealived]
 * [Kube VXLAN Controller]
@@ -316,6 +317,7 @@ limitations under the License.
 
 [CNI Node]: https://github.com/openvnf/cni-node
 [Calico]: https://docs.projectcalico.org/v3.5/introduction
+[Calico Sync]: https://github.com/openvnf/calico-sync
 [Kubealived]: https://github.com/openvnf/kubealived
 [Kube VXLAN Controller]: https://github.com/openvnf/kube-vxlan-controller
 
