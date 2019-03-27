@@ -16,7 +16,7 @@ operating system additional preparation might be required (described below).
   * [Single Node](#single-node)
   * [Master Join](#master-join)
   * [Worker Join](#worker-join)
-  * [Reset Node](#reset-node)
+  * [Node Reset](#node-reset)
 
 ## Prerequisites
 
@@ -258,7 +258,7 @@ Example:
 $ kube node core@192.168.10.21 worker join 172.18.10.21 172.18.10.11 "$JI"
 ```
 
-### Reset Node
+### Node Reset
 
 If something went wrong with a particular node during the installation process
 and you are not sure what happened and not willing to debug, you can start from
