@@ -36,6 +36,8 @@ spec:
   selector:
     matchLabels:
       app: kubealived
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -50,7 +52,7 @@ spec:
       hostNetwork: true
       containers:
       - name: kubealived
-        image: quay.io/openvnf/kubealived:1.1.1
+        image: quay.io/openvnf/kubealived:1.2.0
         args: ["-nl"]
         securityContext:
           capabilities:
