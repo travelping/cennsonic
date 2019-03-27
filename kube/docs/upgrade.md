@@ -1,8 +1,9 @@
 # Upgrade
 
 Technically a cluster can be upgraded from v1.12.x to v1.13.x and then further
-to v1.14.x. But at the moment [Operations] are supported for the v1.12.x branch
-only. Therefore currently upgrade is recommended within this branch.
+to v1.14.x. But at the moment master node add/delete operations are supported
+for the v1.12.x branch only. Therefore currently upgrade is recommended within
+this branch.
 
 ## Preparation
 
@@ -17,24 +18,24 @@ For example if the section looks like this:
 
 ```
 apiEndpoints:
-   master-01.example.org:
-     advertiseAddress: 172.18.10.11
-     bindPort: 6443
+  master-01.example.org:
+    advertiseAddress: 172.18.10.11
+    bindPort: 6443
 ```
 
 but there are three master nodes actually, then the section should be extended:
 
 ```
 apiEndpoints:
-   master-01.example.org:
-     advertiseAddress: 172.18.10.11
-     bindPort: 6443
-   master-02.example.org:
-     advertiseAddress: 172.18.10.12
-     bindPort: 6443
-   master-03.example.org:
-     advertiseAddress: 172.18.10.13
-     bindPort: 6443
+  master-01.example.org:
+    advertiseAddress: 172.18.10.11
+    bindPort: 6443
+  master-02.example.org:
+    advertiseAddress: 172.18.10.12
+    bindPort: 6443
+  master-03.example.org:
+    advertiseAddress: 172.18.10.13
+    bindPort: 6443
 ```
 
 **Note:** if you upgrade to v1.13.x or v1.14.x, remove the "etcd" section
@@ -73,4 +74,3 @@ On each worker node:
 <!-- Links -->
 
 [Download]: setup.md#download
-[Operations]: operations.md
