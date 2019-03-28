@@ -174,10 +174,10 @@ function master_join {
     kubeadm_alpha kubeconfig kubelet
     sudo systemctl start kubelet
 
-    local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname)"
-    local ETCD_IP; ETCD_IP="$(etcd_ip)"
+    local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname not "$(node_name)")"
+    local ETCD_IP; ETCD_IP="$(etcd_ip not "$(node_name)")"
 
-    log "Joining Etcd ${ETCD_HOSTNAME} (${ETCD_IP})..."
+    log "Joining etcd ${ETCD_HOSTNAME} (${ETCD_IP})..."
     etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" \
               member add "$(node_hostname)" "https://${NODE_IP}:2380"
 
@@ -227,27 +227,29 @@ function master_join_info {
 function master_delete {
     local NODE_NAME; NODE_NAME="${1:-$(node_name)}"
     local NODE; NODE="${NODE_NAME}.$(cluster_name)"
-    local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname_this)"
-    local ETCD_IP; ETCD_IP="$(etcd_ip_this)"
-    local API_IP; API_IP="$(api_server_ip not-this)"
+    local API_IP; API_IP="$(api_server_ip not "${NODE_NAME}")"
 
     log "Deleting ${NODE_NAME} from $(cluster_name)..."
     node_role unset master "${NODE_NAME}"
 
     kubectl drain "${NODE}" --delete-local-data --ignore-daemonsets --force
 
-    log "Waiting for Kubealived is terminated on ${NODE_NAME}..."
-    wait_for kubealived_terminated "${NODE_NAME}"
-
     if [ -n "${API_IP}" ]; then
-        resolve_kubernetes_to "${API_IP}"
-        calico_etcd_endpoints_delete "${ETCD_IP}"
+        if [ "${NODE_NAME}" = "$(node_name)" ]; then
+            resolve_kubernetes_to "$(api_server_ip not "${NODE_NAME}")"
+        fi
 
-        log "Retrieving ${NODE_NAME} Etcd ID..."
+        calico_etcd_endpoints_delete "$(etcd_ip "${NODE_NAME}")"
+
+        log "Retrieving ${NODE_NAME} etcd ID..."
+
+        local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname not "${NODE_NAME}")"
+        local ETCD_IP; ETCD_IP="$(etcd_ip not "${NODE_NAME}")"
+
         local ETCD_ID; ETCD_ID=$(etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" \
                                  member list | grep "${NODE}" | sed s/:.*//)
 
-        log "Removing Etcd member ${NODE_NAME} (id: ${ETCD_ID})..."
+        log "Removing etcd member ${NODE_NAME} (id: ${ETCD_ID})..."
         etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" member remove "${ETCD_ID}"
 
         kubectl delete node "${NODE}"
@@ -445,14 +447,14 @@ function kubealived_ready {
               "{.items[0].status.containerStatuses[0].ready}" \
               2>/dev/null)" = "true" ]
 }
-function kubealived_terminated {
-    local NODE_NAME="$1"
-    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
-    local JP="{.items[?(@.spec.nodeName==\"${NODE}\")].status.phase}"
-    local PHASE
-
-    PHASE="$(pods "" kubealived-system "" "$JP")" && [ -z "${PHASE}" ]
-}
+#function kubealived_terminated {
+#    local NODE_NAME="$1"
+#    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
+#    local JP="{.items[?(@.spec.nodeName==\"${NODE}\")].status.phase}"
+#    local PHASE
+#
+#    PHASE="$(pods "" kubealived-system "" "$JP")" && [ -z "${PHASE}" ]
+#}
 
 function etcd_exec {
     local ETCD_HOSTNAME="$1"
@@ -475,39 +477,28 @@ function etcd_cluster {
     pods "" kube-system component=etcd "${JSONPATH}"
 }
 function etcd_hostname {
-    pods "" kube-system component=etcd "{.items[0].spec.nodeName}"
-}
-function etcd_hostname_this {
     pods "" kube-system component=etcd \
-         "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].spec.nodeName}"
+         "{.items["$(node_index "$@")"].spec.nodeName}" | sed "s/ .*//"
 }
 function etcd_ip {
-    pods "" kube-system component=etcd "{.items[0].status.podIP}"
-}
-function etcd_ip_this {
     pods "" kube-system component=etcd \
-         "{.items[?(@.spec.nodeName==\"$(node_hostname)\")].status.podIP}"
+         "{.items["$(node_index "$@")"].status.podIP}" | sed "s/ .*//"
 }
 
-function api_server_command {
-    local MODIFIER="${1:+_${1//-/_}}"
-
-    pods "" kube-system component=kube-apiserver \
-         "$(api_server_command_jp"${MODIFIER}")"
-}
-function api_server_command_jp {
-    printf "%b" "{range.items[0].spec.containers[*].command[*]}" \
-                "{@}{\"\\\\n\"}{end}"
-}
-function api_server_command_jp_not_this {
-    printf "%b" "{range.items[?(@.spec.nodeName!=\"$(node_hostname)\")]" \
-                ".spec.containers[*].command[*]}{@}{\"\\\\n\"}{end}"
-}
 function api_server_ip {
     api_server_command "$@" | sed -n "s/--advertise-address=//p" | head -n1
 }
 function api_server_port {
-    api_server_command | sed -n "s/--secure-port=//p"
+    api_server_command "$@" | sed -n "s/--secure-port=//p" | head -n1
+}
+function api_server_command {
+    pods "" kube-system component=kube-apiserver \
+         "$(api_server_command_jp "$@")"
+}
+function api_server_command_jp {
+    printf "%b" "{range.items["$(node_index "$@")"]" \
+                    ".spec.containers[*].command[*]}" \
+                "{@}{\"\\\\n\"}{end}"
 }
 
 function wait_for_core_pods {
@@ -632,7 +623,7 @@ function install_calico {
 function calico_etcd_secrets_create {
     local PKI; PKI="$(pki)/calico"
 
-    log "Creating certificates for Calico to access Etcd..."
+    log "Creating certificates for Calico to access etcd..."
 
     sudo mkdir -p "${PKI}"
     sudo cp "$(pki)/etcd/ca.crt" "${PKI}/etcd-ca"
@@ -683,7 +674,7 @@ function calico_etcd_endpoints_add {
         *) ENDPOINTS="${ENDPOINTS},${ENDPOINT}" ;;
     esac
 
-    log "Adding Calico Etcd endpoint ${ENDPOINT}..."
+    log "Adding Calico etcd endpoint ${ENDPOINT}..."
     calico_etcd_endpoints_set "${ENDPOINTS}"
 }
 function calico_etcd_endpoints_delete {
@@ -694,7 +685,7 @@ function calico_etcd_endpoints_delete {
                      sed -e "s~${ENDPOINT}~~" \
                          -e "s/^,//" -e "s/,,/,/" -e "s/,$//")"
 
-    log "Deleting Calico Etcd endpoint ${ENDPOINT}..."
+    log "Deleting Calico etcd endpoint ${ENDPOINT}..."
     calico_etcd_endpoints_set "${ENDPOINTS}"
 }
 function calico_etcd_endpoints_list {
@@ -705,7 +696,7 @@ function calico_etcd_endpoints_list {
 function calico_etcd_endpoints_set {
     local ENDPOINTS="$1"
 
-    log "Setting Calico Etcd endpoints to ${ENDPOINTS}..."
+    log "Setting Calico etcd endpoints to ${ENDPOINTS}..."
     kubectl patch configmap calico-config \
             --namespace kube-system \
             --patch "$(calico_etcd_endpoints_patch "${ENDPOINTS}")"
@@ -792,6 +783,13 @@ function delete_from_hosts {
     sudo sed -i "/${HOSTNAME}/d" /etc/hosts
 }
 
+function node_index {
+    case "$1 $2" in
+        " ") echo "?(@.spec.nodeName==\"$(node_hostname)\")" ;;
+        "not $2") echo "?(@.spec.nodeName!=\"$2.$(cluster_name)\")" ;;
+        "$1 ") echo "?(@.spec.nodeName==\"$1.$(cluster_name)\")" ;;
+    esac
+}
 function node_name {
     node_hostname | sed "s/\\..*//"
 }
