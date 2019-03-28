@@ -58,13 +58,13 @@ function ubuntu_install {
 }
 
 function ubuntu_docker_repo {
-    printf "%b" "deb [arch=amd64] https://download.docker.com/linux/ubuntu\n" \
-                "$(lsb_release -cs)\n" \
-                "stable"
+    printf "%b" "deb [arch=amd64] https://download.docker.com/linux/ubuntu\\n" \
+                "$(lsb_release -cs)\\n" \
+                "stable\\n"
 }
 
 function node_name {
-    cat /etc/hostname | sed "s/\\..*//"
+    sed "s/\\..*//" /etc/hostname
 }
 function start_time {
     date +%s

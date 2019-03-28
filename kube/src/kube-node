@@ -75,12 +75,11 @@ function main {
             local NODE_IP="$3"
             local API_IP="$4"
             shift 4
-            local JOIN_INFO=$*
 
             if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
-               [ -z "${JOIN_INFO}" ]; then usage; fi
+               [ "$#" -ne 5 ]; then usage; fi
 
-            worker_join "${NODE_IP}" "${API_IP}" "${JOIN_INFO}"
+            worker_join "${NODE_IP}" "${API_IP}" "$@"
             show_completion_time "${START_TIME}"
         ;;
         "worker delete $3  ")
@@ -263,7 +262,7 @@ function master_upgrade {
     local K8S_VERSION; K8S_VERSION="$(k8s_version)"
 
     log "Upgrading master of $(cluster_name) to ${K8S_VERSION}..."
-    sudo kubeadm upgrade apply "${K8S_VERSION}" -y
+    sudo /opt/bin/kubeadm upgrade apply "${K8S_VERSION}" -y
 
     node_restart
 }
@@ -295,7 +294,6 @@ function worker_join {
     local NODE_IP="$1"
     local API_IP="$2"
     shift 2
-    local JOIN_INFO=$*
 
     log "Joining worker to $(cluster_name)..."
     if node_is_active; then show_node_is_active; return; fi
@@ -306,7 +304,7 @@ function worker_join {
     kubelet_extra_set "$(kubelet_extra_worker "${NODE_IP}")"
 
     sudo mkdir -m 700 -p /etc/kubernetes/manifests
-    sudo /opt/bin/kubeadm join ${JOIN_INFO}
+    sudo /opt/bin/kubeadm join "$@"
 
     sudo ln -s "$(kubeconfig_worker)" "$(kubeconfig)"
     node_role set worker
@@ -406,7 +404,7 @@ function node_has_role_label {
     local LABEL="node-role\\.kubernetes\\.io/${ROLE}"
 
     local JP="{.items[?(@.metadata.labels.${LABEL}=='')].metadata.name}"
-    [[ "$(kubectl get nodes -o "jsonpath=${JP}")" =~ "${NODE}" ]]
+    [[ "$(kubectl get nodes -o "jsonpath=${JP}")" =~ ${NODE} ]]
 }
 function node_has_role_taint {
     local ROLE="$1"
@@ -478,25 +476,25 @@ function etcd_cluster {
 }
 function etcd_hostname {
     pods "" kube-system component=etcd \
-         "{.items["$(node_index "$@")"].spec.nodeName}" | sed "s/ .*//"
+         "{.items[$(node_index "$@")].spec.nodeName}" | sed "s/ .*//"
 }
 function etcd_ip {
     pods "" kube-system component=etcd \
-         "{.items["$(node_index "$@")"].status.podIP}" | sed "s/ .*//"
+         "{.items[$(node_index "$@")].status.podIP}" | sed "s/ .*//"
 }
 
 function api_server_ip {
     api_server_command "$@" | sed -n "s/--advertise-address=//p" | head -n1
 }
 function api_server_port {
-    api_server_command "$@" | sed -n "s/--secure-port=//p" | head -n1
+    api_server_command | sed -n "s/--secure-port=//p" | head -n1
 }
 function api_server_command {
     pods "" kube-system component=kube-apiserver \
          "$(api_server_command_jp "$@")"
 }
 function api_server_command_jp {
-    printf "%b" "{range.items["$(node_index "$@")"]" \
+    printf "%b" "{range.items[$(node_index "$@")]" \
                     ".spec.containers[*].command[*]}" \
                 "{@}{\"\\\\n\"}{end}"
 }

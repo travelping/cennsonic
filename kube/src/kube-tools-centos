@@ -49,7 +49,7 @@ function centos_install {
 }
 
 function node_name {
-    cat /etc/hostname | sed "s/\\..*//"
+    sed "s/\\..*//" /etc/hostname
 }
 function start_time {
     date +%s
