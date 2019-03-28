@@ -30,10 +30,18 @@ Kube supports the following operating systems (in the preference order):
 * [Ubuntu 18.04]
 * [CentOS 7]
 
+Each host name should consist of two parts: node name and cluster name. The
+cluster name should be the same on all nodes whereas the node names should
+be different. If a cluster is named "cluster.example.org" and there are nodes
+"master-01" and "worker-01", then the hosts should be named:
+
+* master-01.cluster.example.org
+* worker-01.cluster.example.org
+
 Fully qualified domain name should be both output of the "hostname" command and
 content of the "/etc/hostname" file. For example if you setup a host named
-"master-01.example.org" this should be the value. Especially on Ubuntu it is
-often the case when the value is just "master-01", then it should be fixed.
+"master-01.cluster.example.org" this should be the value. Especially on Ubuntu
+it is often the case when the value is just "master-01". Should be fixed then.
 
 The hosts should be accessibe via SSH. The SSH port should either be default
 (22) or configured in [SSH Config] file as there will be no way to specify a

@@ -45,7 +45,7 @@ completely.
 
 On each master node:
 
-* [Download] the master node components of the desired version
+* [download] the master node components of the desired version
 * perform the upgrade operation:
 
   ```
@@ -64,7 +64,7 @@ On each master node:
 
 On each worker node:
 
-* [Download] the worker node components of the desired version
+* [download] the worker node components of the desired version
 * restart Kubelet on each worker node:
 
   ```
@@ -73,4 +73,4 @@ On each worker node:
 
 <!-- Links -->
 
-[Download]: setup.md#download
+[download]: setup.md#download
