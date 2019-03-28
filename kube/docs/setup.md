@@ -237,7 +237,7 @@ $ kube node core@192.168.10.12 master delete master-03
 ```
 
 As node reset in this case is not performed it is recommended to do it if
-possible:
+possible (**double check you reset the correct node**):
 
 ```
 $ kube node core@192.168.10.13 reset
@@ -292,7 +292,8 @@ To delete the worker:
 $ kube node core@192.168.10.11 worker delete worker-01
 ```
 
-Reset of the deleted worker node is recommended if possible:
+Reset of the deleted worker node is recommended if possible (**double check you
+reset the correct node**):
 
 ```
 $ kube node core@192.168.10.21 reset
@@ -351,6 +352,12 @@ $ kube node <Host SSH> reset
 This will cancel the "init" or "join" actions (including the "PKI step" for
 master join) but will not erase the [Download] and [Prepare] steps.
 
+If a node has already joined a cluster it is recommended to delete it before
+reset:
+
+* [Master Delete]
+* [Worker Delete]
+
 <!-- Links -->
 
 [CoreOS Container Linux]: https://coreos.com/os/docs/latest
@@ -370,3 +377,6 @@ master join) but will not erase the [Download] and [Prepare] steps.
 [Cluster Access]: #cluster-access
 [Control Plane]: #control-plane
 [Data Plane]: #data-plane
+
+[Master Delete]: #master-delete
+[Worker Delete]: #worker-delete
