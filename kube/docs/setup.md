@@ -11,11 +11,15 @@ operating system additional preparation might be required (described below).
 * [Install](#install)
   * [Node IP](#node-ip)
   * [API IP](#api-ip)
-  * [Master Init](#master-init)
-  * [Create User](#create-user)
-  * [Single Node](#single-node)
-  * [Master Join](#master-join)
-  * [Worker Join](#worker-join)
+  * [Control Plane](#control-plane)
+    * [Master Init](#master-init)
+    * [Single Node](#single-node)
+    * [Master Join](#master-join)
+    * [Master Delete](#master-delete)
+  * [Data Plane](#data-plane)
+    * [Worker Join](#worker-join)
+    * [Worker Delete](#worker-delete)
+  * [Cluster Access](#cluster-access)
   * [Node Reset](#node-reset)
 
 ## Prerequisites
@@ -114,13 +118,15 @@ with [Keepalived] you specify the VRRP IP. In this case you should also specify
 the VRRP interface. If you do not have anything, specify one of the existing
 master nodes IP (the "Node IP" in case of the very first master).
 
-### Master Init
+### Control Plane
+
+The installation always starts with the control plane or master nodes. We init
+the first master node and then the other nodes can join the cluster. The nodes
+always join a cluster using the available master node(s).
+
+#### Master Init
 
 Note the [Prepare] and [Download] steps.
-
-The installation always starts with the first master node init and then the
-other master or worker nodes are getting joined the cluster using the available
-master node(s).
 
 To init the first master:
 
@@ -134,7 +140,9 @@ Example:
 $ kube node core@192.168.10.11 master init 172.18.10.11 172.18.10.11
 ```
 
-To install Keepalived (as [Kubealived]) and use 172.18.1.10 as VRRP IP:
+To install control plane with Keepalived (as [Kubealived]) for HA and use
+172.18.1.10 as a VRRP IP, the first master should be initialized slightly
+differently:
 
 ```
 $ kube node core@192.168.10.11 master init 172.18.10.11 172.18.1.10 eth0
@@ -142,7 +150,103 @@ $ kube node core@192.168.10.11 master init 172.18.10.11 172.18.1.10 eth0
 
 Make sure to specify correct network interface for VRRP.
 
-### Create User
+See also:
+
+* [Cluster Access]
+* [Data Plane]
+
+#### Single Node
+
+If you plan to use a single node cluster, you should assign your the only master
+node a "worker" role:
+
+```
+$ kube node core@192.168.10.11 role set worker
+```
+
+Otherwise the workloads will not be scheduled due to the master nodes related
+taints.
+
+If you changed your mind and plan to join workers to the single node cluster you
+can get the hybrid node back to be master only:
+
+```
+$ kube node core@192.168.10.11 role unset worker
+```
+
+#### Master Join
+
+Note the [Prepare] and [Download] steps.
+
+To join another master node you should copy the PKI related files from the
+existing one:
+
+```
+$ kube-pki <Host1 SSH> <Host2 SSH>
+```
+
+Example:
+
+```
+$ kube-pki core@192.168.10.11 core@192.168.10.12
+```
+
+When the PKI is ready the node can be joined:
+
+```
+$ kube node <Host SSH> master join <Node IP> <API IP>
+```
+
+Example:
+
+```
+$ kube node core@192.168.10.12 master join 172.18.10.12 172.18.10.11
+```
+
+#### Master Delete
+
+Work in progress.
+
+### Data Plane
+
+All operations with data plane nodes or worker nodes will require a [Control
+Plane] node. This includes joining to and also deleting a worker node from a
+cluster.
+
+#### Worker Join
+
+Note the [Prepare] and [Download] steps.
+
+To join a worker node you need a "join information". It can be get from any of
+the existing master nodes:
+
+```
+$ kube node <Host SSH> master join-info
+```
+
+For example it could be kept in a variable and used aftewards:
+
+```
+$ JI=$(kube node core@192.168.10.11 master join-info)
+```
+
+Now we can join a worker:
+
+```
+$ kube node <Host SSH> worker join <Node IP> <API IP> <Join Info>
+```
+
+Example:
+
+```
+$ kube node core@192.168.10.21 worker join 172.18.10.21 172.18.10.11 "$JI"
+```
+
+#### Worker Delete
+
+Work in progress.
+
+### Cluster Access
 
 The cluster could be accessed from any of its master nodes directly using admin
 kubeconfig:
@@ -182,82 +286,6 @@ To see more options:
 $ kube user help
 ```
 
-### Single Node 
-
-If you plan to use a single node cluster, you should assign your the only master
-node a "worker" role:
-
-```
-$ kube node core@192.168.10.11 role set worker
-```
-
-Otherwise the workloads will not be scheduled due to the master nodes related
-taints.
-
-To unset the worker role:
-
-```
-$ kube node core@192.168.10.11 role unset worker
-```
-
-### Master Join
-
-Note the [Prepare] and [Download] steps.
-
-To join another master node you should copy the PKI related files from the
-existing one:
-
-```
-$ kube-pki <Host1 SSH> <Host2 SSH>
-```
-
-Example:
-
-```
-$ kube-pki core@192.168.10.11 core@192.168.10.12
-```
-
-When the PKI is ready the node can be joined:
-
-```
-$ kube node <Host SSH> master join <Node IP> <API IP>
-```
-
-Example:
-
-```
-$ kube node core@192.168.10.12 master join 172.18.10.12 172.18.10.11
-```
-
-### Worker Join
-
-Note the [Prepare] and [Download] steps.
-
-To join a worker node you need a "join information". It can be get from any of
-the existing master nodes:
-
-```
-$ kube node <Host SSH> master join-info
-```
-
-For example it could be kept in a variable and used aftewards:
-
-```
-$ JI=$(kube node core@192.168.10.11 master join-info)
-```
-
-Now we can join a worker:
-
-```
-$ kube node <Host SSH> worker join <Node IP> <API IP> <Join Info>
-```
-
-Example:
-
-```
-$ kube node core@192.168.10.21 worker join 172.18.10.21 172.18.10.11 "$JI"
-```
-
 ### Node Reset
 
 If something went wrong with a particular node during the installation process
@@ -286,3 +314,7 @@ master join) but will not erase the [Download] and [Prepare] steps.
 [Prepare]: #prepare
 [Download]: #download
 [Install]: #install
+
+[Cluster Access]: #cluster-access
+[Control Plane]: #control-plane
+[Data Plane]: #data-plane
