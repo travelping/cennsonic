@@ -213,7 +213,35 @@ $ kube node core@192.168.10.12 master join 172.18.10.12 172.18.10.11
 
 #### Master Delete
 
-Work in progress.
+A master node can be deleted from itself or from another master node.
+Consider an example with two master nodes involved where we want to delete
+"master-03":
+
+* master-02.cluster.example.com (ssh: core@192.168.10.12)
+* master-03.cluster.example.com (ssh: core@192.168.10.13)
+
+Deleting from itself can be performed when the node is available and its API
+server is operational:
+
+```
+$ kube node core@192.168.10.13 master delete
+```
+
+The "from itself" delete also includes node reset.
+
+Deleting from the other available master might be helpful when the being deleted
+node or its API server is not available:
+
+```
+$ kube node core@192.168.10.12 master delete master-03
+```
+
+As node reset in this case is not performed it is recommended to do it if
+possible:
+
+```
+$ kube node core@192.168.10.13 reset
+```
 
 ### Data Plane
 
@@ -252,7 +280,23 @@ $ kube node core@192.168.10.21 worker join 172.18.10.21 172.18.10.11 "$JI"
 
 #### Worker Delete
 
-Work in progress.
+A worker node is always deleted from an available master node. Consider an
+example with a master and a worker nodes:
+
+* master-01.cluster.example.org (ssh: core@192.168.10.11)
+* worker-01.cluster.example.org (ssh: core@192.168.10.21)
+
+To delete the worker:
+
+```
+$ kube node core@192.168.10.11 worker delete worker-01
+```
+
+Reset of the deleted worker node is recommended if possible:
+
+```
+$ kube node core@192.168.10.21 reset
+```
 
 ### Cluster Access
 
