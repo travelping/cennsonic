@@ -26,7 +26,7 @@ function centos_install {
     sudo yum-config-manager --add-repo \
              https://download.docker.com/linux/centos/docker-ce.repo
     
-    sudo yum install docker-ce-18.06.1.ce-3.el7 ebtables ethtool -y
+    sudo yum install docker-ce-18.06.1.ce-3.el7 ebtables ethtool socat -y
     sudo systemctl start docker
     sudo systemctl enable docker
     
@@ -41,7 +41,7 @@ function centos_install {
     
     sudo mkdir -p "/home/${USER}/.ssh"
     sudo -E cp "${HOME}/.ssh/authorized_keys" \
-               "/home/${USER}/.ssh/authorized_keys"
+               "/home/${USER}/.ssh/authorized_keys" || true
     sudo chown -R "${USER}:${USER}" "/home/${USER}/.ssh"
     
     echo "${USER} ALL=(ALL) NOPASSWD: ALL" | \
