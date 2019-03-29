@@ -23,6 +23,10 @@ function main {
             local TO="$3"
             "$(workdir)/kube-pki" "${FROM}" "${TO}"
         ;;
+        "make $2")
+            shift
+            "$(workdir)/kube-make" "$@"
+        ;;
         "$1 $2")
             local UNIT="$1"
             local TARGET="$2"
