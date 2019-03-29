@@ -5,9 +5,10 @@ Usage: kube <Command> <[User@]Hostname> [Args]
        kube <Command> help
 
 Commands
-    tools
+    tools[-<ubuntu|centos>]
     node
     user
+    pki
 EOF
 )
 
@@ -16,6 +17,11 @@ function main {
         "$1 help")
             local UNIT="$1"
             "$(workdir)/kube-${UNIT}"
+        ;;
+        "pki $2")
+            local FROM="$2"
+            local TO="$3"
+            "$(workdir)/kube-pki" "${FROM}" "${TO}"
         ;;
         "$1 $2")
             local UNIT="$1"

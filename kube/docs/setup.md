@@ -190,13 +190,13 @@ To join another master node you should copy the PKI related files from the
 existing one:
 
 ```
-$ kube-pki <Host1 SSH> <Host2 SSH>
+$ kube pki <Host1 SSH> <Host2 SSH>
 ```
 
 Example:
 
 ```
-$ kube-pki core@192.168.10.11 core@192.168.10.12
+$ kube pki core@192.168.10.11 core@192.168.10.12
 ```
 
 When the PKI is ready the node can be joined:
