@@ -55,8 +55,6 @@ function main {
             master_join_info
         ;;
         "master delete $3  ")
-            if [ "$#" -ne 3 ]; then stop "${Usage}"; fi
-
             local NodeName="$3"
 
             master_delete "${NodeName}"
