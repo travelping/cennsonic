@@ -16,8 +16,8 @@ Actions:
     install
 
 Options:
-    --master=<[User@]PublicIp[/PrivateIp]>
-    --worker=<[User@]PublicIp[/PrivateIp]>
+    --master=<[SshUser@]SshAddress[/NodeIp]>  # if Node Ip is not provided
+    --worker=<[SshUser@]SshAddress[/NodeIp]>  # SSH Address will be used as one
 
 Options (prepare):
     --os=<coreos|centos|ubuntu>  # (default: coreos)
@@ -31,7 +31,7 @@ Options (install):
     --api-ip=<ApiIp>
     --api-iface=<Iface>
     --admin-user=<UserName>      # (default: $(whoami))
-    --master-ssh=<[User@]Host>
+    --master-ssh=<[SshUser@]SshAddress>
 EOF
 )
 
