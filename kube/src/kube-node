@@ -9,7 +9,7 @@ Usage=$(cat <<EOF
 Usage: kube-node <Command>
 
 Commands:
-    master init <Node IP> <API IP> [VRRP Interface]
+    master init <Node IP> <API IP> [Options]
     master join <Node IP> <API IP>
     master join-info
     master delete [Node Name]
@@ -25,6 +25,9 @@ Commands:
 
     role set <Role> [Node Name]
     role unset <Role> [Node Name]
+
+Options (master init):
+    --vrrp-iface=<Interface>  Network interface to use by Keepalived
 EOF
 )
 
@@ -37,9 +40,9 @@ function main {
 
             local NodeIp="$3"
             local ApiIp="$4"
-            local VrrpIface="$5"
 
-            master_init "${NodeIp}" "${ApiIp}" "${VrrpIface}"
+            shift 4
+            master_init "${NodeIp}" "${ApiIp}" "$@"
             show_completion_time "${StartTime}"
         ;;
         "master join $3 $4 $5")
@@ -123,7 +126,16 @@ function main {
 function master_init {
     local NodeIp="$1"
     local ApiIp="$2"
-    local VrrpIface="$3"
+    local VrrpIface=""
+
+    shift 2
+    local Arg
+    for Arg in "$@"; do
+        case "${Arg}" in
+            --vrrp-iface=*) VrrpIface="${Arg#*=}"; shift ;;
+            *) stop unknown-option "${Arg}" ;;
+        esac
+    done
 
     log "Initialising first master of $(cluster_name)..."
     if node_is_active; then show_node_is_active; return; fi

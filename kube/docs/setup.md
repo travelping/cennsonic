@@ -139,7 +139,7 @@ Note the [Prepare] and [Download] steps.
 To init the first master:
 
 ```
-$ kube node <Node SSH> master init <Node IP> <API IP> [VRRP Interface]
+$ kube node <Node SSH> master init <Node IP> <API IP> [Options]
 ```
 
 Example:
@@ -153,7 +153,8 @@ To install control plane with Keepalived (as [Kubealived]) for HA and use
 differently:
 
 ```
-$ kube node core@192.168.10.11 master init 172.18.10.11 172.18.1.10 eth0
+$ kube node core@192.168.10.11 \
+       master init 172.18.10.11 172.18.1.10 --vrrp-iface=eth0
 ```
 
 Make sure to specify correct network interface for VRRP.
