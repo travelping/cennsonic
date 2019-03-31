@@ -2,6 +2,9 @@
 
 set -e
 
+# shellcheck source=src/kube-utils
+source "$(dirname "$0")/kube-utils"
+
 USAGE=$(cat <<EOF
 Usage: kube-node <Command>
 
@@ -34,7 +37,8 @@ function main {
             local API_IP="$4"
             local VRRP_IFACE="$5"
 
-            if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ]; then usage; fi
+            if [ -z "${NODE_IP}" ] || \
+               [ -z "${API_IP}" ]; then stop "${USAGE}"; fi
 
             master_init "${NODE_IP}" "${API_IP}" "${VRRP_IFACE}"
             show_completion_time "${START_TIME}"
@@ -43,7 +47,8 @@ function main {
             local NODE_IP="$3"
             local API_IP="$4"
 
-            if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ]; then usage; fi
+            if [ -z "${NODE_IP}" ] || \
+               [ -z "${API_IP}" ]; then stop "${USAGE}"; fi
 
             master_join "${NODE_IP}" "${API_IP}"
             show_completion_time "${START_TIME}"
@@ -66,7 +71,7 @@ function main {
             local PKI_ACTION="$3"
             local PKI_ARCHIVE="$4"
 
-            if [ -z "${PKI_ARCHIVE}" ]; then usage; fi
+            if [ -z "${PKI_ARCHIVE}" ]; then stop "${USAGE}"; fi
 
             "master_pki_${PKI_ACTION}" "${PKI_ARCHIVE}"
             show_completion_time "${START_TIME}"
@@ -77,7 +82,7 @@ function main {
             shift 4
 
             if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
-               [ "$#" -ne 5 ]; then usage; fi
+               [ "$#" -ne 5 ]; then stop "${USAGE}"; fi
 
             worker_join "${NODE_IP}" "${API_IP}" "$@"
             show_completion_time "${START_TIME}"
@@ -85,7 +90,7 @@ function main {
         "worker delete $3  ")
             local NODE_NAME="$3"
 
-            if [ -z "${NODE_NAME}" ]; then usage; fi
+            if [ -z "${NODE_NAME}" ]; then stop "${USAGE}"; fi
 
             worker_delete "${NODE_NAME}"
             show_completion_time "${START_TIME}"
@@ -102,7 +107,7 @@ function main {
             local ROLE="$3"
             local NODE_NAME="$4"
 
-            if [ -z "${ROLE}" ]; then usage; fi
+            if [ -z "${ROLE}" ]; then stop "${USAGE}"; fi
 
             node_role set "${ROLE}" "${NODE_NAME}"
         ;;
@@ -110,11 +115,11 @@ function main {
             local ROLE="$3"
             local NODE_NAME="$4"
 
-            if [ -z "${ROLE}" ]; then usage; fi
+            if [ -z "${ROLE}" ]; then stop "${USAGE}"; fi
 
             node_role unset "${ROLE}" "${NODE_NAME}"
         ;;
-        *) usage ;;
+        *) stop "${USAGE}" ;;
     esac
 }
 
@@ -779,59 +784,6 @@ function delete_from_hosts {
 
     log "Deleting ${HOSTNAME} from /etc/hosts..."
     sudo sed -i "/${HOSTNAME}/d" /etc/hosts
-}
-
-function node_index {
-    case "$1 $2" in
-        " ") echo "?(@.spec.nodeName==\"$(node_hostname)\")" ;;
-        "not $2") echo "?(@.spec.nodeName!=\"$2.$(cluster_name)\")" ;;
-        "$1 ") echo "?(@.spec.nodeName==\"$1.$(cluster_name)\")" ;;
-    esac
-}
-function node_name {
-    node_hostname | sed "s/\\..*//"
-}
-function cluster_name {
-    node_hostname | sed "s/[^\\.]*\\.//"
-}
-function node_hostname {
-    cat /etc/hostname
-}
-function api_hostname {
-    echo "k8s.$(cluster_name)"
-}
-
-function wait_for {
-    local CONDITION="$1"
-    local START_TIME; START_TIME="$(start_time)"
-    shift
-
-    echo -n "[>"
-    while ! "${CONDITION}" "$@"; do
-        sleep 2
-        echo -en "\\b=>"
-    done
-    echo -e "\\b] $(completion_time "${START_TIME}")"
-}
-
-function start_time {
-    date +%s
-}
-function completion_time {
-    local START_TIME="$1"
-    local END_TIME; END_TIME="$(date +%s)"
-    date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss
-}
-function show_completion_time {
-    log "Complete in $(completion_time "$@")."
-}
-
-function log {
-    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
-}
-function usage {
-    >&2 echo "${USAGE}"
-    exit 2
 }
 
 main "$@"

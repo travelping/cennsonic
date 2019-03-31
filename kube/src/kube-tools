@@ -2,6 +2,9 @@
 
 set -e
 
+# shellcheck source=src/kube-utils
+source "$(dirname "$0")/kube-utils"
+
 USAGE=$(cat <<EOF
 Usage: kube-tools install <Target> <Version> [Options]
 
@@ -44,14 +47,14 @@ function main {
     local ARCH=amd64
     local TEMPLATES
 
-    if [ -z "${VERSION}" ]; then usage; fi
+    if [ -z "${VERSION}" ]; then stop "${USAGE}"; fi
 
     shift 3
     for ARG in "$@"; do
         case "${ARG}" in
             --arch=*) ARCH="${ARG#*=}" ;;
             --templates-*=*) TEMPLATES="${TEMPLATES} ${ARG#--templates-}" ;;
-            *) unknown_option "${ARG}" ;;
+            *) stop unknown-option "${ARG}" ;;
         esac
     done
 
@@ -78,7 +81,7 @@ function main {
         "install templates-${TEMPLATE_NAME}")
             install_templates "$(templates "${TEMPLATE_NAME}" "${TEMPLATES}")"
         ;;
-        *) usage ;;
+        *) stop "${USAGE}" ;;
     esac
     show_completion_time "${START_TIME}"
 }
@@ -377,31 +380,6 @@ function enable_service {
         log "Enabling ${SERVICE}..."
         sudo systemctl enable "${SERVICE}"
     done
-}
-
-function node_name {
-    sed "s/\\..*//" /etc/hostname
-}
-
-function start_time {
-    date +%s
-}
-function show_completion_time {
-    local START_TIME="$1"
-    local END_TIME; END_TIME="$(date +%s)"
-    log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
-}
-function log {
-    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
-}
-function usage {
-    >&2 echo "${USAGE}"
-    exit 2
-}
-function unknown_option {
-    local OPTION="$1"
-    >&2 echo "Unknown option: ${OPTION%%=*}"
-    exit 2
 }
 
 main "$@"

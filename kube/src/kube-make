@@ -2,6 +2,9 @@
 
 set -e
 
+# shellcheck source=src/kube-utils
+source "$(dirname "$0")/kube-utils"
+
 KUBE_VERSION="v1.12.7"
 
 Usage=$(cat <<EOF
@@ -37,7 +40,7 @@ function main {
     local Masters
     local Workers
 
-    if [ -z "${Action}" ]; then usage; fi
+    if [ -z "${Action}" ]; then stop "${Usage}"; fi
 
     shift
     local Arg
@@ -53,7 +56,7 @@ function main {
             --master-ssh=*) local MasterSsh="${Arg##*=}";;
             --admin-user=*) local AdminUser="${Arg##*=}";;
             --kube-version=*) local KubeVersion="${Arg##*=}";;
-            *) unknown_option "${Arg}";;
+            *) stop unknown-option "${Arg}";;
         esac
     done
 
@@ -93,8 +96,7 @@ function make_prepare {
 
     local Node
     for Node in "${Masters[@]}" "${Workers[@]}"; do
-        "$(workdir)/kube" "tools-${Os}" "$(node_ssh "${Node}")" \
-                          install "${CreateUser}" &
+        run "tools-${Os}" "$(node_ssh "${Node}")" install "${CreateUser}" &
     done
 }
 
@@ -105,13 +107,11 @@ function make_download {
 
     local Master
     for Master in "${Masters[@]}"; do
-        "$(workdir)/kube" tools "$(node_ssh "${Master}")" \
-                          install master "${KubeVersion}" &
+        run tools "$(node_ssh "${Master}")" install master "${KubeVersion}" &
     done
     local Worker
     for Worker in "${Workers[@]}"; do
-        "$(workdir)/kube" tools "$(node_ssh "${Worker}")" \
-                          install worker "${KubeVersion}" &
+        run tools "$(node_ssh "${Worker}")" install worker "${KubeVersion}" &
     done
 }
 
@@ -131,10 +131,10 @@ function make_install {
         if [ -z "${ApiIp}" ]; then ApiIp="${Master0Ip}"; fi
         if [ -z "${MasterSsh}" ]; then MasterSsh="${Master0Ssh}"; fi
 
-        "$(workdir)/kube" node "${Master0Ssh}" master init \
-                               "${Master0Ip}" "${ApiIp}" "${ApiIface}"
+        run node "${Master0Ssh}" \
+                 master init "${Master0Ip}" "${ApiIp}" "${ApiIface}"
 
-        "$(workdir)/kube" user "${Master0Ssh}" create "${AdminUser}" -a
+        run user "${Master0Ssh}" create "${AdminUser}" -a
 
         scp "${Master0Ssh}:${AdminUser}.conf" ./
         ssh "${Master0Ssh}" rm \\"${AdminUser}.conf"
@@ -145,18 +145,18 @@ function make_install {
     local Master
     for Master in "${Masters[@]}"; do
         "$(workdir)/kube-pki" "${MasterSsh}" "$(node_ssh "${Master}")"
-        "$(workdir)/kube" node "$(node_ssh "${Master}")" \
-                          master join "$(node_ip "${Master}")" "${ApiIp}"
+        run node "$(node_ssh "${Master}")" \
+                 master join "$(node_ip "${Master}")" "${ApiIp}"
     done &
 
     if [ "${#Workers[@]}" -gt 0 ]; then
-        local JI; JI=$("$(workdir)/kube" node "${MasterSsh}" master join-info)
+        local JoinInfo; JoinInfo=$(run node "${MasterSsh}" master join-info)
     fi
 
     local Worker
     for Worker in "${Workers[@]}"; do
-        "$(workdir)/kube" node "$(node_ssh "${Worker}")" \
-                          worker join "$(node_ip "${Worker}")" "${ApiIp}" "$JI" &
+        run node "$(node_ssh "${Worker}")" \
+                 worker join "$(node_ip "${Worker}")" "${ApiIp}" "${JoinInfo}" &
     done
 }
 
@@ -166,20 +166,6 @@ function node_ssh {
 function node_ip {
     local Ip="${1##*@}"
     echo "${Ip##*/}"
-}
-
-function workdir {
-    dirname "$0"
-}
-
-function usage {
-    >&2 echo "${Usage}"
-    exit 2
-}
-function unknown_option {
-    local Option="$1"
-    >&2 echo "Unknown option: ${Option%%=*}"
-    exit 2
 }
 
 main "$@"

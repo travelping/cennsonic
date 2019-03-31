@@ -1,5 +1,10 @@
 #!/bin/bash
 
+set -e
+
+# shellcheck source=src/kube-utils
+source "$(dirname "$0")/kube-utils"
+
 USAGE=$(cat <<EOF
 Usage: kube <Command> <[User@]Hostname> [Args]
        kube <Command> help
@@ -33,21 +38,12 @@ function main {
             shift 2
 
             if [ -z "${UNIT}" ] || \
-               [ -z "${TARGET}" ]; then usage; fi
+               [ -z "${TARGET}" ]; then stop "${USAGE}"; fi
 
-            ssh "${TARGET}" bash -s "$@" < "$(workdir)/kube-${UNIT}"
+            run "${UNIT}" "${TARGET}" "$@"
         ;;
-        *) usage ;;
+        *) stop "${USAGE}" ;;
     esac
-}
-
-function workdir {
-    dirname "$0"
-}
-
-function usage {
-    >&2 echo "${USAGE}"
-    exit 2
 }
 
 main "$@"

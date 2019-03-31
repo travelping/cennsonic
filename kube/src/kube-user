@@ -2,6 +2,9 @@
 
 set -e
 
+# shellcheck source=src/kube-utils
+source "$(dirname "$0")/kube-utils"
+
 USAGE=$(cat <<EOF
 Usage: kube-user <Action> <Username> [Options]
 
@@ -29,10 +32,10 @@ function main {
             local USERNAME="$2"
             shift 2
 
-            if [ -z "${USERNAME}" ]; then usage; fi
+            if [ -z "${USERNAME}" ]; then stop "${USAGE}"; fi
             "${ACTION}_user" "${USERNAME}" "$@"
         ;;
-        *) usage ;;
+        *) stop "${USAGE}" ;;
     esac
 }
 
@@ -184,21 +187,6 @@ function server_endpoint {
     local SERVER="$1"
     local PORT="$2"
     echo "https://${SERVER}:${PORT}"
-}
-
-function node_name {
-    sed "s/\\..*//" /etc/hostname
-}
-function cluster_name {
-    sed "s/[^\\.]*\\.//" /etc/hostname
-}
-
-function log {
-    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
-}
-function usage {
-    >&2 echo "${USAGE}"
-    exit 2
 }
 
 main "$@"

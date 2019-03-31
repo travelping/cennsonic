@@ -1,0 +1,75 @@
+function api_hostname {
+    echo "k8s.$(cluster_name)"
+}
+
+function node_index {
+    case "$1 $2" in
+        " ") echo "?(@.spec.nodeName==\"$(node_hostname)\")" ;;
+        "$1 ") echo "?(@.spec.nodeName==\"$1.$(cluster_name)\")" ;;
+        "not $2") echo "?(@.spec.nodeName!=\"$2.$(cluster_name)\")" ;;
+    esac
+}
+function node_name {
+    node_hostname | sed "s/\\..*//"
+}
+function cluster_name {
+    node_hostname | sed "s/[^\\.]*\\.//"
+}
+function node_hostname {
+    cat /etc/hostname
+}
+
+function wait_for {
+    local Condition="$1"
+    local StartTime; StartTime="$(start_time)"
+    shift
+
+    echo -n "[>"
+    while ! "${Condition}" "$@"; do
+        sleep 2
+        echo -en "\\b=>"
+    done
+    echo -e "\\b] $(completion_time "${StartTime}")"
+}
+
+function start_time {
+    date +%s
+}
+function completion_time {
+    local StartTime="$1"
+    local EndTime; EndTime="$(date +%s)"
+    date -d@$((EndTime - StartTime)) -u +%Mm%Ss
+}
+function show_completion_time {
+    log "Complete in $(completion_time "$@")."
+}
+
+function log {
+    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
+}
+
+function run {
+    local Unit="$1"
+    local Target="$2"
+
+    shift 2
+
+    sed "s/^source.*//" "$(workdir)/kube-utils" \
+                        "$(workdir)/kube-${Unit}" \
+        |
+        ssh "${Target}" bash -s "$@"
+}
+function stop {
+    local Reason="$1"
+    local Option="$2"
+
+    case "${Reason}" in
+        "unknown-option") >&2 echo "Unknown option: ${Option%%=*}" ;;
+        "${Reason}") >&2 echo "${Reason}" ;;
+    esac
+    exit 2
+}
+
+function workdir {
+    dirname "$0"
+}

@@ -2,6 +2,9 @@
 
 set -e
 
+# shellcheck source=src/kube-utils
+source "$(dirname "$0")/kube-utils"
+
 USAGE=$(cat <<EOF
 Usage: kube-tools-centos install [User]
 EOF
@@ -12,7 +15,7 @@ function main {
 
     case "$1" in
         install) shift 1; centos_install "$@" ;;
-        *) usage ;;
+        *) stop "${USAGE}" ;;
     esac
 
     show_completion_time "${START_TIME}"
@@ -46,25 +49,6 @@ function centos_install {
     
     echo "${USER} ALL=(ALL) NOPASSWD: ALL" | \
         sudo tee "/etc/sudoers.d/${USER}" > /dev/null
-}
-
-function node_name {
-    sed "s/\\..*//" /etc/hostname
-}
-function start_time {
-    date +%s
-}
-function show_completion_time {
-    local START_TIME="$1"
-    local END_TIME; END_TIME="$(date +%s)"
-    log "Complete in $(date -d@$((END_TIME - START_TIME)) -u +%Mm%Ss)."
-}
-function log {
-    echo "$(date -uIseconds | sed s/\+.*//) [$(node_name)]" "$@"
-}
-function usage {
-    >&2 echo "${USAGE}"
-    exit 2
 }
 
 main "$@"
