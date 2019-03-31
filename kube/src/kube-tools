@@ -40,14 +40,14 @@ EOF
 )
 
 function main {
+    if [ "$#" -lt 3 ]; then stop "${Usage}"; fi
+
     local Command="$1"
     local Target="$2"
     local Version="$3"
     local TemplateName="${Target#templates-}"
     local Arch=amd64
     local Templates
-
-    if [ -z "${Version}" ]; then stop "${Usage}"; fi
 
     shift 3
     local Arg

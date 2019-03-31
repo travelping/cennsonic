@@ -33,22 +33,20 @@ function main {
 
     case "$1 $2 $3 $4 $5" in
         "master init $3 $4 $5")
+            if [ "$#" -lt 4 ]; then stop "${Usage}"; fi
+
             local NodeIp="$3"
             local ApiIp="$4"
             local VrrpIface="$5"
 
-            if [ -z "${NodeIp}" ] || \
-               [ -z "${ApiIp}" ]; then stop "${Usage}"; fi
-
             master_init "${NodeIp}" "${ApiIp}" "${VrrpIface}"
-            show_completion_time "${START_TIME}"
+            show_completion_time "${StartTime}"
         ;;
         "master join $3 $4 $5")
+            if [ "$#" -ne 4 ]; then stop "${Usage}"; fi
+
             local NodeIp="$3"
             local ApiIp="$4"
-
-            if [ -z "${NodeIp}" ] || \
-               [ -z "${ApiIp}" ]; then stop "${Usage}"; fi
 
             master_join "${NodeIp}" "${ApiIp}"
             show_completion_time "${StartTime}"
@@ -57,6 +55,8 @@ function main {
             master_join_info
         ;;
         "master delete $3  ")
+            if [ "$#" -ne 3 ]; then stop "${Usage}"; fi
+
             local NodeName="$3"
 
             master_delete "${NodeName}"
@@ -68,29 +68,28 @@ function main {
         ;;
         "master pki make $4 "|\
         "master pki install $4 ")
+            if [ "$#" -ne 4 ]; then stop "${Usage}"; fi
+
             local PkiAction="$3"
             local PkiArchive="$4"
-
-            if [ -z "${PkiArchive}" ]; then stop "${Usage}"; fi
 
             "master_pki_${PkiAction}" "${PkiArchive}"
             show_completion_time "${StartTime}"
         ;;
         "worker join $3 $4 $5")
+            if [ "$#" -ne 9 ]; then stop "${Usage}"; fi
+
             local NodeIp="$3"
             local ApiIp="$4"
+
             shift 4
-
-            if [ -z "${NodeIp}" ] || [ -z "${ApiIp}" ] || \
-               [ "$#" -ne 5 ]; then stop "${Usage}"; fi
-
             worker_join "${NodeIp}" "${ApiIp}" "$@"
             show_completion_time "${StartTime}"
         ;;
         "worker delete $3  ")
-            local NodeName="$3"
+            if [ "$#" -ne 3 ]; then stop "${Usage}"; fi
 
-            if [ -z "${NodeName}" ]; then stop "${Usage}"; fi
+            local NodeName="$3"
 
             worker_delete "${NodeName}"
             show_completion_time "${StartTime}"
@@ -104,18 +103,18 @@ function main {
             show_completion_time "${StartTime}"
         ;;
         "role set $3 $4 ")
+            if [ "$#" -ne 4 ]; then stop "${Usage}"; fi
+
             local Role="$3"
             local NodeName="$4"
-
-            if [ -z "${Role}" ]; then stop "${Usage}"; fi
 
             node_role set "${Role}" "${NodeName}"
         ;;
         "role unset $3 $4 ")
+            if [ "$#" -ne 4 ]; then stop "${Usage}"; fi
+
             local Role="$3"
             local NodeName="$4"
-
-            if [ -z "${Role}" ]; then stop "${Usage}"; fi
 
             node_role unset "${Role}" "${NodeName}"
         ;;

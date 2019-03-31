@@ -7,7 +7,6 @@ source "$(dirname "$0")/kube-utils"
 
 Usage=$(cat <<EOF
 Usage: kube <Command> <[SshUser@]SshAddress> [Args]
-       kube <Command> help
 
 Commands
     tools[-<ubuntu|centos>]
@@ -18,31 +17,20 @@ EOF
 )
 
 function main {
-    case "$1 $2" in
-        "$1 help")
-            local Unit="$1"
-            "$(workdir)/kube-${Unit}"
+    local Unit="$1"
+
+    case "${Unit}" in
+        pki|make)
+            shift 1
+            "$(workdir)/kube-${Unit}" "$@"
         ;;
-        "pki $2")
-            local From="$2"
-            local To="$3"
-            "$(workdir)/kube-pki" "${From}" "${To}"
-        ;;
-        "make $2")
-            shift
-            "$(workdir)/kube-make" "$@"
-        ;;
-        "$1 $2")
-            local Unit="$1"
+        *)
             local Target="$2"
+            if [ -z "${Target}" ]; then stop "${Usage}"; fi
+
             shift 2
-
-            if [ -z "${Unit}" ] || \
-               [ -z "${Target}" ]; then stop "${Usage}"; fi
-
             run "${Unit}" "${Target}" "$@"
         ;;
-        *) stop "${Usage}" ;;
     esac
 }
 

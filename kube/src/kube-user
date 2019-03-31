@@ -25,14 +25,15 @@ EOF
 )
 
 function main {
+    if [ "$#" -lt 2 ]; then stop "${Usage}"; fi
+
     case "$1 $2" in
         "create $2"|\
         "delete $2")
             local Action="$1"
             local UserName="$2"
-            shift 2
 
-            if [ -z "${UserName}" ]; then stop "${Usage}"; fi
+            shift 2
             "${Action}_user" "${UserName}" "$@"
         ;;
         *) stop "${Usage}" ;;
@@ -56,6 +57,7 @@ function create_user {
     local UserName="$1"
     shift
 
+    local Arg
     for Arg in "$@"; do
         case "${Arg}" in
             -a|--admin) local Admin=true; shift ;;
