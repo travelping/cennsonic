@@ -5,7 +5,7 @@ set -e
 # shellcheck source=src/kube-utils
 source "$(dirname "$0")/kube-utils"
 
-USAGE=$(cat <<EOF
+Usage=$(cat <<EOF
 Usage: kube-user <Action> <Username> [Options]
 
 Actions
@@ -28,14 +28,14 @@ function main {
     case "$1 $2" in
         "create $2"|\
         "delete $2")
-            local ACTION="$1"
-            local USERNAME="$2"
+            local Action="$1"
+            local UserName="$2"
             shift 2
 
-            if [ -z "${USERNAME}" ]; then stop "${USAGE}"; fi
-            "${ACTION}_user" "${USERNAME}" "$@"
+            if [ -z "${UserName}" ]; then stop "${Usage}"; fi
+            "${Action}_user" "${UserName}" "$@"
         ;;
-        *) stop "${USAGE}" ;;
+        *) stop "${Usage}" ;;
     esac
 }
 
@@ -53,120 +53,120 @@ function kubectl {
 }
 
 function create_user {
-    local USERNAME="$1"
+    local UserName="$1"
     shift
 
-    for ARG in "$@"; do
-        case "${ARG}" in
-            -a|--admin) local ADMIN=true; shift ;;
-            -c=*|--company=*) local COMPANY="${ARG#*=}"; shift ;;
-            -d=*|--days=*) local DAYS="${ARG#*=}"; shift ;;
-            -s=*|--server=*) local SERVER="${ARG#*=}"; shift ;;
-            -p=*|--port=*) local PORT="${ARG#*=}"; shift ;;
-            -C=*|--cluster=*) local CLUSTER="${ARG#*=}"; shift ;;
-                 --ca-cert=*) local CA_CERT="${ARG#*=}"; shift ;;
-                 --ca-cert-key=*) local CA_CERT_KEY="${ARG#*=}"; shift ;;
-            *=*) >&2 echo "Unknown argument: ${ARG%=*}"; exit 2 ;;
-            *) >&2 echo "Unknown argument: ${ARG}"; exit 2 ;;
+    for Arg in "$@"; do
+        case "${Arg}" in
+            -a|--admin) local Admin=true; shift ;;
+            -c=*|--company=*) local Company="${Arg#*=}"; shift ;;
+            -d=*|--days=*) local Days="${Arg#*=}"; shift ;;
+            -s=*|--server=*) local Server="${Arg#*=}"; shift ;;
+            -p=*|--port=*) local Port="${Arg#*=}"; shift ;;
+            -C=*|--cluster=*) local Cluster="${Arg#*=}"; shift ;;
+                 --ca-cert=*) local CaCert="${Arg#*=}"; shift ;;
+                 --ca-cert-key=*) local CaCertKey="${Arg#*=}"; shift ;;
+            *=*) >&2 echo "Unknown argument: ${Arg%=*}"; exit 2 ;;
+            *) >&2 echo "Unknown argument: ${Arg}"; exit 2 ;;
         esac
     done
 
-    log "Creating user ${USERNAME}..."
+    log "Creating user ${UserName}..."
 
-    ADMIN="${ADMIN:-false}"
-    COMPANY="${COMPANY:-Kubernetes}"
-    DAYS="${DAYS:-365}"
-    NAMESPACE="${NAMESPACE:-default}"
-    SERVER="${SERVER:-k8s.$(cluster_name)}"
-    PORT="${PORT:-6443}"
-    CLUSTER="${CLUSTER:-$(cluster_name)}"
-    CA_CERT="${CA_CERT:-$(ca_cert)}"
-    CA_CERT_KEY="${CA_CERT_KEY:-$(ca_cert_key)}"
+    Admin="${Admin:-false}"
+    Company="${Company:-Kubernetes}"
+    Days="${Days:-365}"
+    Namespace="${Namespace:-default}"
+    Server="${Server:-k8s.$(cluster_name)}"
+    Port="${Port:-6443}"
+    Cluster="${Cluster:-$(cluster_name)}"
+    CaCert="${CaCert:-$(ca_cert)}"
+    CaCertKey="${CaCertKey:-$(ca_cert_key)}"
 
-    create_cert_key "${USERNAME}"
-    create_cert "${USERNAME}" "${COMPANY}"
-    sign_cert "${USERNAME}" "${DAYS}" "${CA_CERT}" "${CA_CERT_KEY}"
-    create_kubeconfig "${USERNAME}" "${NAMESPACE}" \
-                      "${SERVER}" "${PORT}" "${CLUSTER}" "${CA_CERT}"
-    delete_cert "${USERNAME}"
-    delete_cert_key "${USERNAME}"
+    create_cert_key "${UserName}"
+    create_cert "${UserName}" "${Company}"
+    sign_cert "${UserName}" "${Days}" "${CaCert}" "${CaCertKey}"
+    create_kubeconfig "${UserName}" "${Namespace}" \
+                      "${Server}" "${Port}" "${Cluster}" "${CaCert}"
+    delete_cert "${UserName}"
+    delete_cert_key "${UserName}"
 
-    if "${ADMIN}"; then create_admin_binding "${USERNAME}"; fi
+    if "${Admin}"; then create_admin_binding "${UserName}"; fi
 }
 function delete_user {
-    local USERNAME="$1"
+    local UserName="$1"
     shift
 
-    log "Deleting user ${USERNAME}..."
-    delete_admin_binding "${USERNAME}"
+    log "Deleting user ${UserName}..."
+    delete_admin_binding "${UserName}"
 }
 
 function create_cert_key {
-    local USERNAME="$1"
-    openssl genrsa -out "${USERNAME}.key" 2048
+    local UserName="$1"
+    openssl genrsa -out "${UserName}.key" 2048
 }
 function delete_cert_key {
-    local USERNAME="$1"
-    rm "${USERNAME}.key"
+    local UserName="$1"
+    rm "${UserName}.key"
 }
 function create_cert {
-    local USERNAME="$1"
-    local COMPANY="$2"
+    local UserName="$1"
+    local Company="$2"
 
     openssl req -new \
-                -key "${USERNAME}.key" \
-                -out "${USERNAME}.crt" \
-                -subj "/CN=${USERNAME}/O=${COMPANY}"
+                -key "${UserName}.key" \
+                -out "${UserName}.crt" \
+                -subj "/CN=${UserName}/O=${Company}"
 }
 function sign_cert {
-    local USERNAME="$1"
-    local DAYS="$2"
-    local CA_CERT="$3"
-    local CA_CERT_KEY="$4"
+    local UserName="$1"
+    local Days="$2"
+    local CaCert="$3"
+    local CaCertKey="$4"
 
     sudo openssl x509 -req \
-                      -in "${USERNAME}.crt" \
-                      -CA "${CA_CERT}" \
-                      -CAkey "${CA_CERT_KEY}" \
+                      -in "${UserName}.crt" \
+                      -CA "${CaCert}" \
+                      -CAkey "${CaCertKey}" \
                       -CAcreateserial \
-                      -out "${USERNAME}.pem" \
-                      -days "${DAYS}"
+                      -out "${UserName}.pem" \
+                      -days "${Days}"
 }
 function delete_cert {
-    local USERNAME="$1"
-    rm "${USERNAME}.crt"
-    rm "${USERNAME}.pem"
+    local UserName="$1"
+    rm "${UserName}.crt"
+    rm "${UserName}.pem"
 }
 
 function create_kubeconfig {
-    local USERNAME="$1"
-    local NAMESPACE="$2"
-    local SERVER="$3"
-    local PORT="$4"
-    local CLUSTER="$5"
-    local CA_CERT="$6"
-    local KUBECONFIG="${USERNAME}.conf"
+    local UserName="$1"
+    local Namespace="$2"
+    local Server="$3"
+    local Port="$4"
+    local Cluster="$5"
+    local CaCert="$6"
+    local Kubeconfig="${UserName}.conf"
 
-    /opt/bin/kubectl config set-cluster "${CLUSTER}" \
-        --kubeconfig="${KUBECONFIG}" \
-        --server="$(server_endpoint "${SERVER}" "${PORT}")" \
-        --certificate-authority="${CA_CERT}" \
+    /opt/bin/kubectl config set-cluster "${Cluster}" \
+        --kubeconfig="${Kubeconfig}" \
+        --server="$(server_endpoint "${Server}" "${Port}")" \
+        --certificate-authority="${CaCert}" \
         --embed-certs=true
     
-    /opt/bin/kubectl config set-credentials "${USERNAME}-${CLUSTER}" \
-        --kubeconfig="${KUBECONFIG}" \
-        --client-certificate="${USERNAME}.pem" \
-        --client-key="${USERNAME}.key" \
+    /opt/bin/kubectl config set-credentials "${UserName}-${Cluster}" \
+        --kubeconfig="${Kubeconfig}" \
+        --client-certificate="${UserName}.pem" \
+        --client-key="${UserName}.key" \
         --embed-certs=true
     
-    /opt/bin/kubectl config set-context "${USERNAME}-${CLUSTER}" \
-        --kubeconfig="${KUBECONFIG}" \
-        --cluster="${CLUSTER}" \
-        --user="${USERNAME}-${CLUSTER}" \
-        --namespace="${NAMESPACE}"
+    /opt/bin/kubectl config set-context "${UserName}-${Cluster}" \
+        --kubeconfig="${Kubeconfig}" \
+        --cluster="${Cluster}" \
+        --user="${UserName}-${Cluster}" \
+        --namespace="${Namespace}"
     
-    /opt/bin/kubectl config use-context "${USERNAME}-${CLUSTER}" \
-        --kubeconfig="${KUBECONFIG}"
+    /opt/bin/kubectl config use-context "${UserName}-${Cluster}" \
+        --kubeconfig="${Kubeconfig}"
 }
 function create_admin_binding {
     admin_binding apply "$@"
@@ -175,18 +175,18 @@ function delete_admin_binding {
     admin_binding delete "$@"
 }
 function admin_binding {
-    local ACTION="$1"
-    local USERNAME="$2"
+    local Action="$1"
+    local UserName="$2"
 
-    sudo sed -e "s/_USERNAME_/${USERNAME}/g" \
+    sudo sed -e "s/_USERNAME_/${UserName}/g" \
              "$(templates)/user-admin-crb.yaml" | \
-         kubectl "${ACTION}" --filename -
+         kubectl "${Action}" --filename -
 }
 
 function server_endpoint {
-    local SERVER="$1"
-    local PORT="$2"
-    echo "https://${SERVER}:${PORT}"
+    local Server="$1"
+    local Port="$2"
+    echo "https://${Server}:${Port}"
 }
 
 main "$@"

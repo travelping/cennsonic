@@ -5,19 +5,19 @@ set -e
 # shellcheck source=src/kube-utils
 source "$(dirname "$0")/kube-utils"
 
-USAGE="Usage: kube-pki <[User@]From> <[User@]To>"
+Usage="Usage: kube-pki <[SshUser@]SshAddressFrom> <[SshUser@]SshAddressTo>"
 
 function main {
-    local FROM="$1"
-    local TO="$2"
-    local ARCHIVE="/tmp/pki.tgz"
+    local From="$1"
+    local To="$2"
+    local Archive="/tmp/pki.tgz"
 
-    if [ -z "${FROM}" ] || [ -z "${TO}" ]; then stop "${USAGE}"; fi
+    if [ -z "${From}" ] || [ -z "${To}" ]; then stop "${Usage}"; fi
 
-    run node "${FROM}" master pki make "${ARCHIVE}"
-    scp -3 "${FROM}:${ARCHIVE}" "${TO}:${ARCHIVE}"
-    ssh "${FROM}" rm \\"${ARCHIVE}"
-    run node "${TO}" master pki install "${ARCHIVE}"
+    run node "${From}" master pki make "${Archive}"
+    scp -3 "${From}:${Archive}" "${To}:${Archive}"
+    ssh "${From}" rm \\"${Archive}"
+    run node "${To}" master pki install "${Archive}"
 }
 
 main "$@"

@@ -5,8 +5,8 @@ set -e
 # shellcheck source=src/kube-utils
 source "$(dirname "$0")/kube-utils"
 
-USAGE=$(cat <<EOF
-Usage: kube <Command> <[User@]Hostname> [Args]
+Usage=$(cat <<EOF
+Usage: kube <Command> <[SshUser@]SshAddress> [Args]
        kube <Command> help
 
 Commands
@@ -20,29 +20,29 @@ EOF
 function main {
     case "$1 $2" in
         "$1 help")
-            local UNIT="$1"
-            "$(workdir)/kube-${UNIT}"
+            local Unit="$1"
+            "$(workdir)/kube-${Unit}"
         ;;
         "pki $2")
-            local FROM="$2"
-            local TO="$3"
-            "$(workdir)/kube-pki" "${FROM}" "${TO}"
+            local From="$2"
+            local To="$3"
+            "$(workdir)/kube-pki" "${From}" "${To}"
         ;;
         "make $2")
             shift
             "$(workdir)/kube-make" "$@"
         ;;
         "$1 $2")
-            local UNIT="$1"
-            local TARGET="$2"
+            local Unit="$1"
+            local Target="$2"
             shift 2
 
-            if [ -z "${UNIT}" ] || \
-               [ -z "${TARGET}" ]; then stop "${USAGE}"; fi
+            if [ -z "${Unit}" ] || \
+               [ -z "${Target}" ]; then stop "${Usage}"; fi
 
-            run "${UNIT}" "${TARGET}" "$@"
+            run "${Unit}" "${Target}" "$@"
         ;;
-        *) stop "${USAGE}" ;;
+        *) stop "${Usage}" ;;
     esac
 }
 

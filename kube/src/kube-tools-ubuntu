@@ -2,26 +2,26 @@
 
 set -e
 
-USAGE=$(cat <<EOF
+Usage=$(cat <<EOF
 Usage: kube-tools-ubuntu install [User]
 EOF
 )
 
 function main {
-    local START_TIME; START_TIME="$(start_time)"
+    local StartTime; StartTime="$(start_time)"
 
     case "$1" in
         install) shift 1; ubuntu_install "$@" ;;
-        *) stop "${USAGE}" ;;
+        *) stop "${Usage}" ;;
     esac
 
-    show_completion_time "${START_TIME}"
+    show_completion_time "${StartTime}"
 }
 
 function ubuntu_install {
-    local USER="${1:-ubuntu}"
+    local User="${1:-ubuntu}"
 
-    log "Preparing Ubuntu with user ${USER}..."
+    log "Preparing Ubuntu with user ${User}..."
 
     sudo apt-get update
     sudo apt-get install curl \
@@ -44,17 +44,17 @@ function ubuntu_install {
     
     sudo ln -sf /opt/bin/kube{adm,ctl,let} /usr/bin
     
-    sudo adduser --disabled-password --gecos "" "${USER}" || true
-    sudo usermod -aG sudo "${USER}"
-    sudo usermod -aG docker "${USER}"
+    sudo adduser --disabled-password --gecos "" "${User}" || true
+    sudo usermod -aG sudo "${User}"
+    sudo usermod -aG docker "${User}"
     
-    sudo mkdir -p "/home/${USER}/.ssh"
+    sudo mkdir -p "/home/${User}/.ssh"
     sudo -E cp "${HOME}/.ssh/authorized_keys" \
-               "/home/${USER}/.ssh/authorized_keys" || true
-    sudo chown -R "${USER}:${USER}" "/home/${USER}/.ssh"
+               "/home/${User}/.ssh/authorized_keys" || true
+    sudo chown -R "${User}:${User}" "/home/${User}/.ssh"
     
-    echo "${USER} ALL=(ALL) NOPASSWD: ALL" | \
-        sudo tee "/etc/sudoers.d/${USER}" > /dev/null
+    echo "${User} ALL=(ALL) NOPASSWD: ALL" | \
+        sudo tee "/etc/sudoers.d/${User}" > /dev/null
 }
 
 function ubuntu_docker_repo {

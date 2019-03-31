@@ -5,7 +5,7 @@ set -e
 # shellcheck source=src/kube-utils
 source "$(dirname "$0")/kube-utils"
 
-USAGE=$(cat <<EOF
+Usage=$(cat <<EOF
 Usage: kube-node <Command>
 
 Commands:
@@ -29,124 +29,124 @@ EOF
 )
 
 function main {
-    START_TIME="$(start_time)"
+    local StartTime; StartTime="$(start_time)"
 
     case "$1 $2 $3 $4 $5" in
         "master init $3 $4 $5")
-            local NODE_IP="$3"
-            local API_IP="$4"
-            local VRRP_IFACE="$5"
+            local NodeIp="$3"
+            local ApiIp="$4"
+            local VrrpIface="$5"
 
-            if [ -z "${NODE_IP}" ] || \
-               [ -z "${API_IP}" ]; then stop "${USAGE}"; fi
+            if [ -z "${NodeIp}" ] || \
+               [ -z "${ApiIp}" ]; then stop "${Usage}"; fi
 
-            master_init "${NODE_IP}" "${API_IP}" "${VRRP_IFACE}"
+            master_init "${NodeIp}" "${ApiIp}" "${VrrpIface}"
             show_completion_time "${START_TIME}"
         ;;
         "master join $3 $4 $5")
-            local NODE_IP="$3"
-            local API_IP="$4"
+            local NodeIp="$3"
+            local ApiIp="$4"
 
-            if [ -z "${NODE_IP}" ] || \
-               [ -z "${API_IP}" ]; then stop "${USAGE}"; fi
+            if [ -z "${NodeIp}" ] || \
+               [ -z "${ApiIp}" ]; then stop "${Usage}"; fi
 
-            master_join "${NODE_IP}" "${API_IP}"
-            show_completion_time "${START_TIME}"
+            master_join "${NodeIp}" "${ApiIp}"
+            show_completion_time "${StartTime}"
         ;;
         "master join-info   ")
             master_join_info
         ;;
         "master delete $3  ")
-            local NODE_NAME="$3"
+            local NodeName="$3"
 
-            master_delete "${NODE_NAME}"
-            show_completion_time "${START_TIME}"
+            master_delete "${NodeName}"
+            show_completion_time "${StartTime}"
         ;;
         "master upgrade   ")
             master_upgrade
-            show_completion_time "${START_TIME}"
+            show_completion_time "${StartTime}"
         ;;
         "master pki make $4 "|\
         "master pki install $4 ")
-            local PKI_ACTION="$3"
-            local PKI_ARCHIVE="$4"
+            local PkiAction="$3"
+            local PkiArchive="$4"
 
-            if [ -z "${PKI_ARCHIVE}" ]; then stop "${USAGE}"; fi
+            if [ -z "${PkiArchive}" ]; then stop "${Usage}"; fi
 
-            "master_pki_${PKI_ACTION}" "${PKI_ARCHIVE}"
-            show_completion_time "${START_TIME}"
+            "master_pki_${PkiAction}" "${PkiArchive}"
+            show_completion_time "${StartTime}"
         ;;
         "worker join $3 $4 $5")
-            local NODE_IP="$3"
-            local API_IP="$4"
+            local NodeIp="$3"
+            local ApiIp="$4"
             shift 4
 
-            if [ -z "${NODE_IP}" ] || [ -z "${API_IP}" ] || \
-               [ "$#" -ne 5 ]; then stop "${USAGE}"; fi
+            if [ -z "${NodeIp}" ] || [ -z "${ApiIp}" ] || \
+               [ "$#" -ne 5 ]; then stop "${Usage}"; fi
 
-            worker_join "${NODE_IP}" "${API_IP}" "$@"
-            show_completion_time "${START_TIME}"
+            worker_join "${NodeIp}" "${ApiIp}" "$@"
+            show_completion_time "${StartTime}"
         ;;
         "worker delete $3  ")
-            local NODE_NAME="$3"
+            local NodeName="$3"
 
-            if [ -z "${NODE_NAME}" ]; then stop "${USAGE}"; fi
+            if [ -z "${NodeName}" ]; then stop "${Usage}"; fi
 
-            worker_delete "${NODE_NAME}"
-            show_completion_time "${START_TIME}"
+            worker_delete "${NodeName}"
+            show_completion_time "${StartTime}"
         ;;
         "restart    ")
             node_restart
-            show_completion_time "${START_TIME}"
+            show_completion_time "${StartTime}"
         ;;
         "reset    ")
             node_reset
-            show_completion_time "${START_TIME}"
+            show_completion_time "${StartTime}"
         ;;
         "role set $3 $4 ")
-            local ROLE="$3"
-            local NODE_NAME="$4"
+            local Role="$3"
+            local NodeName="$4"
 
-            if [ -z "${ROLE}" ]; then stop "${USAGE}"; fi
+            if [ -z "${Role}" ]; then stop "${Usage}"; fi
 
-            node_role set "${ROLE}" "${NODE_NAME}"
+            node_role set "${Role}" "${NodeName}"
         ;;
         "role unset $3 $4 ")
-            local ROLE="$3"
-            local NODE_NAME="$4"
+            local Role="$3"
+            local NodeName="$4"
 
-            if [ -z "${ROLE}" ]; then stop "${USAGE}"; fi
+            if [ -z "${Role}" ]; then stop "${Usage}"; fi
 
-            node_role unset "${ROLE}" "${NODE_NAME}"
+            node_role unset "${Role}" "${NodeName}"
         ;;
-        *) stop "${USAGE}" ;;
+        *) stop "${Usage}" ;;
     esac
 }
 
 function master_init {
-    local NODE_IP="$1"
-    local API_IP="$2"
-    local VRRP_IFACE="$3"
+    local NodeIp="$1"
+    local ApiIp="$2"
+    local VrrpIface="$3"
 
     log "Initialising first master of $(cluster_name)..."
     if node_is_active; then show_node_is_active; return; fi
 
     sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
 
-    resolve_node_hostname_to "${NODE_IP}"
-    resolve_kubernetes_to "${NODE_IP}"
+    resolve_node_hostname_to "${NodeIp}"
+    resolve_kubernetes_to "${NodeIp}"
 
-    kubelet_extra_set "$(kubelet_extra_master "${NODE_IP}")"
-    master_prepare new "${NODE_IP}"
+    kubelet_extra_set "$(kubelet_extra_master "${NodeIp}")"
+    master_prepare new "${NodeIp}"
 
     kubeadm init --skip-token-print
     node_role set master
-    install_calico "${NODE_IP}"
+    install_calico "${NodeIp}"
 
     wait_for_core_pods
 
-    if [ -n "${VRRP_IFACE}" ]; then
-        install_kubealived "${API_IP}" "${VRRP_IFACE}"
+    if [ -n "${VrrpIface}" ]; then
+        install_kubealived "${ApiIp}" "${VrrpIface}"
     fi
 
     log "Installing Multus CNI..."
@@ -158,19 +158,19 @@ function master_init {
     kubectl create --filename "$(templates)/kube-vxlan-controller.yaml"
 }
 function master_join {
-    local NODE_IP="$1"
-    local API_IP="$2"
+    local NodeIp="$1"
+    local ApiIp="$2"
 
     log "Joining master to $(cluster_name)..."
     if node_is_active; then show_node_is_active; return; fi
 
     sudo ln -s "$(kubeconfig_master)" "$(kubeconfig)"
 
-    resolve_node_hostname_to "${NODE_IP}"
-    resolve_kubernetes_to "${API_IP}"
+    resolve_node_hostname_to "${NodeIp}"
+    resolve_kubernetes_to "${ApiIp}"
 
-    kubelet_extra_set "$(kubelet_extra_master "${NODE_IP}")"
-    master_prepare existing "${NODE_IP}"
+    kubelet_extra_set "$(kubelet_extra_master "${NodeIp}")"
+    master_prepare existing "${NodeIp}"
 
     kubeadm_alpha certs all
     kubeadm_alpha kubelet config write-to-disk
@@ -178,12 +178,12 @@ function master_join {
     kubeadm_alpha kubeconfig kubelet
     sudo systemctl start kubelet
 
-    local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname not "$(node_name)")"
-    local ETCD_IP; ETCD_IP="$(etcd_ip not "$(node_name)")"
+    local EtcdHostname; EtcdHostname="$(etcd_hostname not "$(node_name)")"
+    local EtcdIp; EtcdIp="$(etcd_ip not "$(node_name)")"
 
-    log "Joining etcd ${ETCD_HOSTNAME} (${ETCD_IP})..."
-    etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" \
-              member add "$(node_hostname)" "https://${NODE_IP}:2380"
+    log "Joining etcd ${EtcdHostname} (${EtcdIp})..."
+    etcd_exec "${EtcdHostname}" "${EtcdIp}" \
+              member add "$(node_hostname)" "https://${NodeIp}:2380"
 
     kubeadm_alpha etcd local
     kubeadm_alpha kubeconfig all
@@ -195,86 +195,86 @@ function master_join {
 
     wait_for_core_pods
 
-    calico_etcd_endpoints_add "${NODE_IP}"
+    calico_etcd_endpoints_add "${NodeIp}"
     ensure_dns_ha
 
-    resolve_kubernetes_to "${NODE_IP}"
+    resolve_kubernetes_to "${NodeIp}"
 }
 function master_prepare {
-    local CLUSTER_STATE="$1"
-    local NODE_IP="$2"
+    local ClusterState="$1"
+    local NodeIp="$2"
 
-    log "Preparing master for the ${CLUSTER_STATE} $(cluster_name)..."
+    log "Preparing master for the ${ClusterState} $(cluster_name)..."
 
-    local ETCD_STATE="${CLUSTER_STATE}"
-    [ "${CLUSTER_STATE}" = "existing" ] && ETCD_CLUSTER="$(etcd_cluster)"
+    local EtcdState="${ClusterState}"
+    [ "${ClusterState}" = "existing" ] && EtcdCluster="$(etcd_cluster)"
 
     sudo sed -e "s/_K8S_VERSION_/$(k8s_version)/g" \
              -e "s/_API_HOSTNAME_/$(api_hostname)/g" \
              -e "s/_NODE_HOSTNAME_/$(node_hostname)/g" \
-             -e "s/_NODE_IP_/${NODE_IP}/g" \
-             -e "s\\_ETCD_CLUSTER_\\${ETCD_CLUSTER}\\g" \
-             -e "s/_ETCD_STATE_/${ETCD_STATE}/g" \
+             -e "s/_NODE_IP_/${NodeIp}/g" \
+             -e "s\\_ETCD_CLUSTER_\\${EtcdCluster}\\g" \
+             -e "s/_ETCD_STATE_/${EtcdState}/g" \
              "$(templates)/kubeadm.yaml" | \
          sudo tee "$(kubeadm_config)" > /dev/null
     sudo chmod 600 "$(kubeadm_config)"
 }
 function master_join_info {
-    local TOKEN; TOKEN="$(join_token)"
-    TOKEN="${TOKEN:-$(join_token_create)}"
+    local Token; Token="$(join_token)"
+    Token="${Token:-$(join_token_create)}"
 
-    printf %b "--token ${TOKEN} " \
+    printf %b "--token ${Token} " \
               "$(api_server_ip):$(api_server_port) " \
               "--discovery-token-ca-cert-hash " \
                   "sha256:$(discovery_token_ca_cert_hash)"
 }
 function master_delete {
-    local NODE_NAME; NODE_NAME="${1:-$(node_name)}"
-    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
-    local API_IP; API_IP="$(api_server_ip not "${NODE_NAME}")"
+    local NodeName; NodeName="${1:-$(node_name)}"
+    local Node; Node="${NodeName}.$(cluster_name)"
+    local ApiIp; ApiIp="$(api_server_ip not "${NodeName}")"
 
-    log "Deleting ${NODE_NAME} from $(cluster_name)..."
-    node_role unset master "${NODE_NAME}"
+    log "Deleting ${NodeName} from $(cluster_name)..."
+    node_role unset master "${NodeName}"
 
-    kubectl drain "${NODE}" --delete-local-data --ignore-daemonsets --force
+    kubectl drain "${Node}" --delete-local-data --ignore-daemonsets --force
 
-    if [ -n "${API_IP}" ]; then
-        if [ "${NODE_NAME}" = "$(node_name)" ]; then
-            resolve_kubernetes_to "$(api_server_ip not "${NODE_NAME}")"
+    if [ -n "${ApiIp}" ]; then
+        if [ "${NodeName}" = "$(node_name)" ]; then
+            resolve_kubernetes_to "$(api_server_ip not "${NodeName}")"
         fi
 
-        calico_etcd_endpoints_delete "$(etcd_ip "${NODE_NAME}")"
+        calico_etcd_endpoints_delete "$(etcd_ip "${NodeName}")"
 
-        log "Retrieving ${NODE_NAME} etcd ID..."
+        log "Retrieving ${NodeName} etcd ID..."
 
-        local ETCD_HOSTNAME; ETCD_HOSTNAME="$(etcd_hostname not "${NODE_NAME}")"
-        local ETCD_IP; ETCD_IP="$(etcd_ip not "${NODE_NAME}")"
+        local EtcdHostname; EtcdHostname="$(etcd_hostname not "${NodeName}")"
+        local EtcdIp; EtcdIp="$(etcd_ip not "${NodeName}")"
 
-        local ETCD_ID; ETCD_ID=$(etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" \
-                                 member list | grep "${NODE}" | sed s/:.*//)
+        local EtcdId; EtcdId=$(etcd_exec "${EtcdHostname}" "${EtcdIp}" \
+                                 member list | grep "${Node}" | sed s/:.*//)
 
-        log "Removing etcd member ${NODE_NAME} (id: ${ETCD_ID})..."
-        etcd_exec "${ETCD_HOSTNAME}" "${ETCD_IP}" member remove "${ETCD_ID}"
+        log "Removing etcd member ${NodeName} (id: ${EtcdId})..."
+        etcd_exec "${EtcdHostname}" "${EtcdIp}" member remove "${EtcdId}"
 
-        kubectl delete node "${NODE}"
+        kubectl delete node "${Node}"
     fi
 
-    if [ "${NODE_NAME}" = "$(node_name)" ]; then
+    if [ "${NodeName}" = "$(node_name)" ]; then
         node_reset
     fi
 }
 function master_upgrade {
-    local K8S_VERSION; K8S_VERSION="$(k8s_version)"
+    local K8sVersion; K8sVersion="$(k8s_version)"
 
-    log "Upgrading master of $(cluster_name) to ${K8S_VERSION}..."
-    sudo /opt/bin/kubeadm upgrade apply "${K8S_VERSION}" -y
+    log "Upgrading master of $(cluster_name) to ${K8sVersion}..."
+    sudo /opt/bin/kubeadm upgrade apply "${K8sVersion}" -y
 
     node_restart
 }
 function master_pki_make {
-    local ARCHIVE="$1"
+    local Archive="$1"
 
-    log "Making PKI archive ${ARCHIVE}..."
+    log "Making PKI archive ${Archive}..."
 
     mkdir -p kubernetes/pki/etcd
     sudo cp "$(pki)"/{ca.{crt,key},sa.{key,pub}} kubernetes/pki
@@ -283,30 +283,30 @@ function master_pki_make {
     sudo cp /etc/kubernetes/admin.conf kubernetes
 
     sudo chown -R "${USER}:${USER}" kubernetes
-    tar zcf "${ARCHIVE}" kubernetes
+    tar zcf "${Archive}" kubernetes
     rm -rf kubernetes
 }
 function master_pki_install {
-    local ARCHIVE="$1"
+    local Archive="$1"
 
-    log "Installing PKI from ${ARCHIVE}..."
-    sudo tar xf "${ARCHIVE}" -C /etc
+    log "Installing PKI from ${Archive}..."
+    sudo tar xf "${Archive}" -C /etc
     sudo chown -R root:root /etc/kubernetes
-    rm "${ARCHIVE}"
+    rm "${Archive}"
 }
 
 function worker_join {
-    local NODE_IP="$1"
-    local API_IP="$2"
+    local NodeIp="$1"
+    local ApiIp="$2"
     shift 2
 
     log "Joining worker to $(cluster_name)..."
     if node_is_active; then show_node_is_active; return; fi
 
-    resolve_node_hostname_to "${NODE_IP}"
-    resolve_kubernetes_to "${API_IP}"
+    resolve_node_hostname_to "${NodeIp}"
+    resolve_kubernetes_to "${ApiIp}"
 
-    kubelet_extra_set "$(kubelet_extra_worker "${NODE_IP}")"
+    kubelet_extra_set "$(kubelet_extra_worker "${NodeIp}")"
 
     sudo mkdir -m 700 -p /etc/kubernetes/manifests
     sudo /opt/bin/kubeadm join "$@"
@@ -315,13 +315,13 @@ function worker_join {
     node_role set worker
 }
 function worker_delete {
-    local NODE_NAME="$1"
-    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
+    local NodeName="$1"
+    local Node; Node="${NodeName}.$(cluster_name)"
 
-    echo "Deleting ${NODE_NAME} from $(cluster_name)..."
+    echo "Deleting ${NodeName} from $(cluster_name)..."
 
-    kubectl drain "${NODE}" --delete-local-data --ignore-daemonsets --force
-    kubectl delete node "${NODE_NAME}.$(cluster_name)"
+    kubectl drain "${Node}" --delete-local-data --ignore-daemonsets --force
+    kubectl delete node "${NodeName}.$(cluster_name)"
 }
 
 function node_is_active {
@@ -350,91 +350,91 @@ function node_reset {
 }
 
 function node_role {
-    local ACTION="$1"
-    local ROLE="$2"
-    local NODE_NAME; NODE_NAME="${3:-$(node_name)}"
+    local Action="$1"
+    local Role="$2"
+    local NodeName; NodeName="${3:-$(node_name)}"
 
-    case "${ACTION} ${ROLE}" in
-        "set worker") node_role_taint unset master "${NODE_NAME}" ;;
-        "unset worker") if node_has_role_label master "${NODE_NAME}"; then
-                            node_role_taint set master "${NODE_NAME}"
+    case "${Action} ${Role}" in
+        "set worker") node_role_taint unset master "${NodeName}" ;;
+        "unset worker") if node_has_role_label master "${NodeName}"; then
+                            node_role_taint set master "${NodeName}"
                         fi ;;
-        "set master") if ! node_has_role_label worker "${NODE_NAME}"; then
-                          node_role_taint set master "${NODE_NAME}"
+        "set master") if ! node_has_role_label worker "${NodeName}"; then
+                          node_role_taint set master "${NodeName}"
                       fi ;;
-        *) node_role_taint "${ACTION}" "${ROLE}" "${NODE_NAME}" ;;
+        *) node_role_taint "${Action}" "${Role}" "${NodeName}" ;;
     esac
 
-    node_role_label "${ACTION}" "${ROLE}" "${NODE_NAME}"
+    node_role_label "${Action}" "${Role}" "${NodeName}"
 }
 function node_role_label {
-    local ACTION="$1"
-    local ROLE="$2"
-    local NODE_NAME="$3"
+    local Action="$1"
+    local Role="$2"
+    local NodeName="$3"
 
-    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
-    local LABEL="node-role.kubernetes.io/${ROLE}"
+    local Node; Node="${NodeName}.$(cluster_name)"
+    local Label="node-role.kubernetes.io/${Role}"
 
-    case "${ACTION}" in
-          set) if ! node_has_role_label "${ROLE}" "${NODE_NAME}"; then
-                   kubectl label node "${NODE}" "${LABEL}=" --overwrite
+    case "${Action}" in
+          set) if ! node_has_role_label "${Role}" "${NodeName}"; then
+                   kubectl label node "${Node}" "${Label}=" --overwrite
                fi ;;
-        unset) if node_has_role_label "${ROLE}" "${NODE_NAME}"; then
-                   kubectl label node "${NODE}" "${LABEL}-"
+        unset) if node_has_role_label "${Role}" "${NodeName}"; then
+                   kubectl label node "${Node}" "${Label}-"
                fi ;;
     esac
 }
 function node_role_taint {
-    local ACTION="$1"
-    local ROLE="$2"
-    local NODE_NAME="$3"
+    local Action="$1"
+    local Role="$2"
+    local NodeName="$3"
 
-    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
-    local TAINT="node-role.kubernetes.io/${ROLE}"
+    local Node; Node="${NodeName}.$(cluster_name)"
+    local Taint="node-role.kubernetes.io/${Role}"
 
-    case "${ACTION}" in
-          set) if ! node_has_role_taint "${ROLE}" "${NODE_NAME}"; then
-                   kubectl taint node "${NODE}" "${TAINT}=:NoSchedule"
+    case "${Action}" in
+          set) if ! node_has_role_taint "${Role}" "${NodeName}"; then
+                   kubectl taint node "${Node}" "${Taint}=:NoSchedule"
                fi ;;
-        unset) if node_has_role_taint "${ROLE}" "${NODE_NAME}"; then
-                   kubectl taint node "${NODE}" "${TAINT}:NoSchedule-"
+        unset) if node_has_role_taint "${Role}" "${NodeName}"; then
+                   kubectl taint node "${Node}" "${Taint}:NoSchedule-"
                fi ;;
     esac
 }
 function node_has_role_label {
-    local ROLE="$1"
-    local NODE_NAME="$2"
+    local Role="$1"
+    local NodeName="$2"
 
-    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
-    local LABEL="node-role\\.kubernetes\\.io/${ROLE}"
+    local Node; Node="${NodeName}.$(cluster_name)"
+    local Label="node-role\\.kubernetes\\.io/${Role}"
 
-    local JP="{.items[?(@.metadata.labels.${LABEL}=='')].metadata.name}"
-    [[ "$(kubectl get nodes -o "jsonpath=${JP}")" =~ ${NODE} ]]
+    local JsonPath="{.items[?(@.metadata.labels.${Label}=='')].metadata.name}"
+    [[ "$(kubectl get nodes -o "jsonpath=${JsonPath}")" =~ ${Node} ]]
 }
 function node_has_role_taint {
-    local ROLE="$1"
-    local NODE_NAME="$2"
+    local Role="$1"
+    local NodeName="$2"
 
-    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
-    local TAINT="node-role.kubernetes.io/${ROLE}"
+    local Node; Node="${NodeName}.$(cluster_name)"
+    local Taint="node-role.kubernetes.io/${Role}"
 
-    local JP="jsonpath={.spec.taints[?(@.key==\"${TAINT}\")].effect}"
-    [ "$(kubectl get node "${NODE}" -o "${JP}")" = "NoSchedule" ]
+    local JsonPath="jsonpath={.spec.taints[?(@.key==\"${Taint}\")].effect}"
+    [ "$(kubectl get node "${Node}" -o "${JsonPath}")" = "NoSchedule" ]
 }
 
 function ip_ready {
-    local IP="$1"
-    ping "${IP}" -c1 -W1 > /dev/null 2>&1
+    local Ip="$1"
+    ping "${Ip}" -c1 -W1 > /dev/null 2>&1
 }
 
 function install_kubealived {
-    local VRRP_IP="$1"
-    local VRRP_IFACE="$2"
+    local VrrpIp="$1"
+    local VrrpIface="$2"
 
     log "Installing Kubealived..."
     sudo sed -e "s/_VRID_/$((1 + RANDOM % 255))/" \
-             -e "s/_IFACE_/${VRRP_IFACE}/" \
-             -e "s/_IP_/${VRRP_IP}/" \
+             -e "s/_IFACE_/${VrrpIface}/" \
+             -e "s/_IP_/${VrrpIp}/" \
              -e "s~_PASSWORD_~$(openssl rand -base64 8)~" \
              "$(templates)/kubealived.yaml" | \
          kubectl create --filename -
@@ -443,7 +443,7 @@ function install_kubealived {
     wait_for kubealived_ready
 
     log "Waiting for VRRP IP..."
-    wait_for ip_ready "${VRRP_IP}"
+    wait_for ip_ready "${VrrpIp}"
 }
 function kubealived_ready {
     [ "$(pods "" kubealived-system app=kubealived \
@@ -451,33 +451,33 @@ function kubealived_ready {
               2>/dev/null)" = "true" ]
 }
 #function kubealived_terminated {
-#    local NODE_NAME="$1"
-#    local NODE; NODE="${NODE_NAME}.$(cluster_name)"
-#    local JP="{.items[?(@.spec.nodeName==\"${NODE}\")].status.phase}"
-#    local PHASE
+#    local NodeName="$1"
+#    local Node; Node="${NodeName}.$(cluster_name)"
+#    local JsonPath="{.items[?(@.spec.nodeName==\"${Node}\")].status.phase}"
+#    local Phase
 #
-#    PHASE="$(pods "" kubealived-system "" "$JP")" && [ -z "${PHASE}" ]
+#    Phase="$(pods "" kubealived-system "" "$JsonPath")" && [ -z "${Phase}" ]
 #}
 
 function etcd_exec {
-    local ETCD_HOSTNAME="$1"
-    local ETCD_IP="$2"
+    local EtcdHostname="$1"
+    local EtcdIp="$2"
 
     shift 2
     kubectl --namespace kube-system \
-            exec "etcd-${ETCD_HOSTNAME}" -- \
+            exec "etcd-${EtcdHostname}" -- \
         etcdctl --ca-file "$(pki)/etcd/ca.crt" \
                 --key-file "$(pki)/etcd/peer.key" \
                 --cert-file "$(pki)/etcd/peer.crt" \
-                --endpoints="https://${ETCD_IP}:2379" \
+                --endpoints="https://${EtcdIp}:2379" \
             "$@"
 }
 function etcd_cluster {
-    JSONPATH=$(printf %b \
+    local JsonPath; JsonPath=$(printf %b \
         '{range.items[*]}' \
             '{.spec.nodeName}{"=https://"}{.status.podIP}{":2380,"}' \
         '{end}')
-    pods "" kube-system component=etcd "${JSONPATH}"
+    pods "" kube-system component=etcd "${JsonPath}"
 }
 function etcd_hostname {
     pods "" kube-system component=etcd \
@@ -505,45 +505,46 @@ function api_server_command_jp {
 }
 
 function wait_for_core_pods {
-    local APP
-    declare -A LABELS; declare -a APPS
+    declare -A Labels; declare -a Apps
 
-    LABELS[kube-proxy]=k8s-app; APPS+=(kube-proxy)
-    LABELS[calico-node]=k8s-app; APPS+=(calico-node)
-    LABELS[kube-apiserver]=component; APPS+=(kube-apiserver)
-    LABELS[kube-scheduler]=component; APPS+=(kube-scheduler)
-    LABELS[kube-controller-manager]=component; APPS+=(kube-controller-manager)
-    LABELS[etcd]=component; APPS+=(etcd)
+    Labels[kube-proxy]=k8s-app; Apps+=(kube-proxy)
+    Labels[calico-node]=k8s-app; Apps+=(calico-node)
+    Labels[kube-apiserver]=component; Apps+=(kube-apiserver)
+    Labels[kube-scheduler]=component; Apps+=(kube-scheduler)
+    Labels[kube-controller-manager]=component; Apps+=(kube-controller-manager)
+    Labels[etcd]=component; Apps+=(etcd)
 
-    for APP in "${APPS[@]}"; do
-        echo "Waiting for ${APP}..."
-        wait_for core_pod_ready "${LABELS[${APP}]}" "${APP}"
+    local App
+    for App in "${Apps[@]}"; do
+        echo "Waiting for ${App}..."
+        wait_for core_pod_ready "${Labels[${App}]}" "${App}"
     done
 }
 function core_pod_ready {
-    local LABEL="$1"
-    local APP="$2"
-    local JP
+    local Label="$1"
+    local App="$2"
+    local JsonPath; JsonPath="$(printf "%b" \
+        "{.items[?(@.spec.nodeName==\"$(node_hostname)\")]" \
+         ".status.containerStatuses[0].ready}" \
+    )"
 
-    JP="$(printf "%b" "{.items[?(@.spec.nodeName==\"$(node_hostname)\")]" \
-                       ".status.containerStatuses[0].ready}")"
-
-    [ "$(pods "" kube-system "${LABEL}=${APP}" "$JP" 2>/dev/null)" = "true" ]
+    [ "$(pods "" kube-system "${Label}=${App}" "${JsonPath}" \
+         2>/dev/null)" = "true" ]
 }
 
 function pods {
-    local POD_NAME="$1"
-    local NAMESPACE="$2"
-    local SELECTOR="$3"
-    local JSONPATH="$4"
-    local COMMAND="kubectl get pods"
+    local PodName="$1"
+    local Namespace="$2"
+    local Selector="$3"
+    local JsonPath="$4"
+    local Command="kubectl get pods"
 
-    [ -n "${POD_NAME}" ] && COMMAND="${COMMAND} ${POD_NAME}"
-    [ -n "${NAMESPACE}" ] && COMMAND="${COMMAND} --namespace ${NAMESPACE}"
-    [ -n "${SELECTOR}" ] && COMMAND="${COMMAND} --selector ${SELECTOR}"
-    [ -n "${JSONPATH}" ] && COMMAND="${COMMAND} --output jsonpath=${JSONPATH}"
+    [ -n "${PodName}" ] && Command="${Command} ${PodName}"
+    [ -n "${Namespace}" ] && Command="${Command} --namespace ${Namespace}"
+    [ -n "${Selector}" ] && Command="${Command} --selector ${Selector}"
+    [ -n "${JsonPath}" ] && Command="${Command} --output jsonpath=${JsonPath}"
 
-    ${COMMAND}
+    ${Command}
 }
 
 function cni_reset {
@@ -555,19 +556,19 @@ function cni_reset {
 }
 
 function kubelet_extra_master {
-    local NODE_IP="$1"
-    printf %b "--node-ip=${NODE_IP} "
+    local NodeIp="$1"
+    printf %b "--node-ip=${NodeIp} "
 }
 function kubelet_extra_worker {
-    printf %b "--node-ip=${NODE_IP} " \
+    printf %b "--node-ip=${NodeIp} " \
               "--allowed-unsafe-sysctls=net.* " \
               "--volume-plugin-dir=/var/lib/kubelet/volume-plugins "
 }
 function kubelet_extra_set {
-    local ARGS="$1"
-    log "Setting Kubelet extra flags ${ARGS}..."; echo
+    local Args="$1"
+    log "Setting Kubelet extra flags ${Args}..."; echo
 
-    printf %b "KUBELET_EXTRA_ARGS=${ARGS}" | sudo tee /etc/default/kubelet
+    printf %b "KUBELET_EXTRA_ARGS=${Args}" | sudo tee /etc/default/kubelet
     sudo chmod 600 /etc/default/kubelet
 }
 function kubelet_extra_reset {
@@ -576,27 +577,27 @@ function kubelet_extra_reset {
 }
 
 function iptables_reset {
-    local TABLES=(raw nat mangle filter)
-    local TABLE
+    local Tables=(raw nat mangle filter)
 
     log "Resetting iptables..."
-    for TABLE in "${TABLES[@]}"; do
-        sudo iptables -t "${TABLE}" -F
-        sudo iptables -t "${TABLE}" -X
+
+    local Table
+    for Table in "${Tables[@]}"; do
+        sudo iptables -t "${Table}" -F
+        sudo iptables -t "${Table}" -X
     done
 }
 
 function ensure_dns_ha {
-    local POD
-    local NODES
-
     log "Ensuring DNS pods are on different nodes..."
-    NODES="$(pods "" kube-system k8s-app=kube-dns "{.items[*].spec.nodeName}")"
 
-    if [ "${NODES%% *}" == "${NODES##* }" ]; then
-        POD="$(pods "" kube-system k8s-app=kube-dns \
-                    "{.items[0].metadata.name}")"
-        kubectl delete pod "${POD}" --namespace kube-system
+    local Nodes
+    Nodes="$(pods "" kube-system k8s-app=kube-dns "{.items[*].spec.nodeName}")"
+
+    if [ "${Nodes%% *}" == "${Nodes##* }" ]; then
+        local Pod; Pod="$(pods "" kube-system k8s-app=kube-dns \
+                               "{.items[0].metadata.name}")"
+        kubectl delete pod "${Pod}" --namespace kube-system
     fi
     wait_for_dns
 }
@@ -607,11 +608,11 @@ function wait_for_dns {
 function dns_ready {
     [ "$(pods "" kube-system k8s-app=kube-dns \
               "{.items[*].status.containerStatuses[*].ready}" \
-              2>/dev/null)" = "true true" ]
+         2>/dev/null)" = "true true" ]
 }
 
 function install_calico {
-    local NODE_IP="$1"
+    local NodeIp="$1"
 
     log "Installing Calico..."
 #   kubectl create --filename "$(templates)/calico-kdd-rbac.yaml"
@@ -619,23 +620,23 @@ function install_calico {
     kubectl create --filename "$(templates)/calico-etcd-config.yaml"
     kubectl create --filename "$(templates)/calico-etcd-sync.yaml"
     calico_etcd_secrets_create
-    calico_etcd_endpoints_add "${NODE_IP}"
+    calico_etcd_endpoints_add "${NodeIp}"
     kubectl create --filename "$(templates)/calico-etcd-rbac.yaml"
     kubectl create --filename "$(templates)/calico-etcd.yaml"
 }
 function calico_etcd_secrets_create {
-    local PKI; PKI="$(pki)/calico"
+    local Pki; Pki="$(pki)/calico"
 
     log "Creating certificates for Calico to access etcd..."
 
-    sudo mkdir -p "${PKI}"
-    sudo cp "$(pki)/etcd/ca.crt" "${PKI}/etcd-ca"
+    sudo mkdir -p "${Pki}"
+    sudo cp "$(pki)/etcd/ca.crt" "${Pki}/etcd-ca"
 
-    sudo openssl genrsa -out "${PKI}/etcd-key" 2048
+    sudo openssl genrsa -out "${Pki}/etcd-key" 2048
 
     sudo openssl req -new \
-                     -key "${PKI}/etcd-key" \
-                     -out "${PKI}/etcd-csr" \
+                     -key "${Pki}/etcd-key" \
+                     -out "${Pki}/etcd-csr" \
                      -subj "/CN=calico.$(cluster_name)"
 
     printf "%b" \
@@ -645,51 +646,50 @@ function calico_etcd_secrets_create {
            "extendedKeyUsage = serverAuth,clientAuth\\n" \
            "subjectAltName = DNS:localhost,IP:127.0.0.1\\n" \
            "subjectKeyIdentifier = hash\\n" | \
-        sudo tee "${PKI}/etcd-cnf" > /dev/null
+        sudo tee "${Pki}/etcd-cnf" > /dev/null
 
     sudo openssl x509 -req \
-                      -in "${PKI}/etcd-csr" \
-                      -out "${PKI}/etcd-cert" \
+                      -in "${Pki}/etcd-csr" \
+                      -out "${Pki}/etcd-cert" \
                       -CA "$(pki)/etcd/ca.crt" \
                       -CAkey "$(pki)/etcd/ca.key" \
                       -CAcreateserial \
                       -days 3650 \
                       -extensions ext \
-                      -extfile "${PKI}/etcd-cnf"
+                      -extfile "${Pki}/etcd-cnf"
 
     kubectl create secret generic calico-etcd-secrets \
             --namespace kube-system \
-            --from-file="${PKI}/etcd-ca" \
-            --from-file="${PKI}/etcd-key" \
-            --from-file="${PKI}/etcd-cert"
+            --from-file="${Pki}/etcd-ca" \
+            --from-file="${Pki}/etcd-key" \
+            --from-file="${Pki}/etcd-cert"
 
-    sudo rm "${PKI}"/etcd-{ca,key,csr,cnf,cert}
-    sudo rmdir "${PKI}"
+    sudo rm "${Pki}"/etcd-{ca,key,csr,cnf,cert}
+    sudo rmdir "${Pki}"
 }
 function calico_etcd_endpoints_add {
-    local IP="$1"
-    local ENDPOINT="https://${IP}:2379"
-    local ENDPOINTS; ENDPOINTS="$(calico_etcd_endpoints_list)"
-    ENDPOINTS="${ENDPOINTS:-$ENDPOINT}"
+    local Ip="$1"
+    local Endpoint="https://${Ip}:2379"
+    local Endpoints; Endpoints="$(calico_etcd_endpoints_list)"
+    Endpoints="${Endpoints:-$Endpoint}"
 
-    case "${ENDPOINTS}" in
-        *"${IP}"*) ;;
-        *) ENDPOINTS="${ENDPOINTS},${ENDPOINT}" ;;
+    case "${Endpoints}" in
+        *"${Ip}"*) ;;
+        *) Endpoints="${Endpoints},${Endpoint}" ;;
     esac
 
-    log "Adding Calico etcd endpoint ${ENDPOINT}..."
-    calico_etcd_endpoints_set "${ENDPOINTS}"
+    log "Adding Calico etcd endpoint ${Endpoint}..."
+    calico_etcd_endpoints_set "${Endpoints}"
 }
 function calico_etcd_endpoints_delete {
-    local IP="$1"
-    local ENDPOINT="https://${IP}:2379"
-    local ENDPOINTS
-    ENDPOINTS="$(calico_etcd_endpoints_list | \
-                     sed -e "s~${ENDPOINT}~~" \
-                         -e "s/^,//" -e "s/,,/,/" -e "s/,$//")"
+    local Ip="$1"
+    local Endpoint="https://${Ip}:2379"
+    local Endpoints; Endpoints="$(calico_etcd_endpoints_list | \
+                                      sed -e "s~${Endpoint}~~" \
+                                          -e "s/^,//" -e "s/,,/,/" -e "s/,$//")"
 
-    log "Deleting Calico etcd endpoint ${ENDPOINT}..."
-    calico_etcd_endpoints_set "${ENDPOINTS}"
+    log "Deleting Calico etcd endpoint ${Endpoint}..."
+    calico_etcd_endpoints_set "${Endpoints}"
 }
 function calico_etcd_endpoints_list {
     kubectl get configmap calico-config \
@@ -697,19 +697,19 @@ function calico_etcd_endpoints_list {
             --output jsonpath="{.data.etcd_endpoints}"
 }
 function calico_etcd_endpoints_set {
-    local ENDPOINTS="$1"
+    local Endpoints="$1"
 
-    log "Setting Calico etcd endpoints to ${ENDPOINTS}..."
+    log "Setting Calico etcd endpoints to ${Endpoints}..."
     kubectl patch configmap calico-config \
             --namespace kube-system \
-            --patch "$(calico_etcd_endpoints_patch "${ENDPOINTS}")"
+            --patch "$(calico_etcd_endpoints_patch "${Endpoints}")"
 }
 function calico_etcd_endpoints_patch {
-    local ENDPOINTS="$1"
+    local Endpoints="$1"
     cat <<EOF
 data:
   etcd_endpoints:
-    ${ENDPOINTS}
+    ${Endpoints}
 EOF
 }
 
@@ -758,32 +758,32 @@ function templates {
 }
 
 function resolve_node_hostname_to {
-    local IP="$1"
-    ensure_in_hosts "${IP}" "$(node_hostname)"
+    local Ip="$1"
+    ensure_in_hosts "${Ip}" "$(node_hostname)"
 }
 function resolve_kubernetes_to {
-    local IP="$1"
-    ensure_in_hosts "${IP}" "kubernetes"
+    local Ip="$1"
+    ensure_in_hosts "${Ip}" "kubernetes"
 }
 function resolve_reset {
     delete_from_hosts "kubernetes"
 }
 function ensure_in_hosts {
-    local IP="$1"
-    local HOSTNAME="$2"
+    local Ip="$1"
+    local HostName="$2"
 
-    log "Ensuring ${IP} ${HOSTNAME} is in /etc/hosts..."
-    if grep -q "${HOSTNAME}" /etc/hosts; then
-        sudo sed -i "s/.*\\(${HOSTNAME}\\).*/${IP}    \\1/" /etc/hosts
+    log "Ensuring ${Ip} ${HostName} is in /etc/hosts..."
+    if grep -q "${HostName}" /etc/hosts; then
+        sudo sed -i "s/.*\\(${HostName}\\).*/${Ip}    \\1/" /etc/hosts
     else
-        sudo sed -i "$ a ${IP}    ${HOSTNAME}" /etc/hosts
+        sudo sed -i "$ a ${Ip}    ${HostName}" /etc/hosts
     fi
 }
 function delete_from_hosts {
-    local HOSTNAME="$1"
+    local HostName="$1"
 
-    log "Deleting ${HOSTNAME} from /etc/hosts..."
-    sudo sed -i "/${HOSTNAME}/d" /etc/hosts
+    log "Deleting ${HostName} from /etc/hosts..."
+    sudo sed -i "/${HostName}/d" /etc/hosts
 }
 
 main "$@"
