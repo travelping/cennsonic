@@ -104,7 +104,7 @@ function main {
             show_completion_time "${StartTime}"
         ;;
         "role set $3 $4 ")
-            if [ "$#" -ne 4 ]; then stop "${Usage}"; fi
+            if [ "$#" -lt 3 ]; then stop "${Usage}"; fi
 
             local Role="$3"
             local NodeName="$4"
@@ -112,7 +112,7 @@ function main {
             node_role set "${Role}" "${NodeName}"
         ;;
         "role unset $3 $4 ")
-            if [ "$#" -ne 4 ]; then stop "${Usage}"; fi
+            if [ "$#" -lt 3 ]; then stop "${Usage}"; fi
 
             local Role="$3"
             local NodeName="$4"
