@@ -148,9 +148,8 @@ Example:
 $ kube node core@192.168.10.11 master init 172.18.10.11 172.18.10.11
 ```
 
-To install control plane with Keepalived (as [Kubealived]) for HA and use
-172.18.1.10 as a VRRP IP, the first master should be initialized slightly
-differently:
+To install control plane with Keepalived (as [Kubealived]) for HA and use, for
+example, "eth0" as VRRP interface and "172.18.1.10" as VRRP IP:
 
 ```
 $ kube node core@192.168.10.11 \
@@ -158,6 +157,15 @@ $ kube node core@192.168.10.11 \
 ```
 
 Make sure to specify correct network interface for VRRP.
+
+To specify custom pod and service network subnets:
+
+```
+$ kube node core@192.168.10.11 \
+       master init 172.18.10.11 172.18.1.10 \
+              --pod-subnet=10.234.64.0/18 \
+              --service-subnet=10.234.0.0/18
+```
 
 See also:
 

@@ -5,6 +5,9 @@ set -e
 # shellcheck source=src/kube-utils
 source "$(dirname "$0")/kube-utils"
 
+POD_SUBNET="10.233.64.0/18"
+SERVICE_SUBNET="10.233.0.0/18"
+
 Usage=$(cat <<EOF
 Usage: kube-node <Command>
 
@@ -28,6 +31,8 @@ Commands:
 
 Options (master init):
     --vrrp-iface=<Interface>  Network interface to use by Keepalived
+    --pod-subnet=<CIDR>       Pod network CIDR (default: $POD_SUBNET)
+    --service-subnet=<CIDR>   Service network CIDR (default: $SERVICE_SUBNET)
 EOF
 )
 
@@ -127,12 +132,16 @@ function master_init {
     local NodeIp="$1"
     local ApiIp="$2"
     local VrrpIface=""
+    local PodSubnet="${POD_SUBNET}"
+    local ServiceSubnet="${SERVICE_SUBNET}"
 
     shift 2
     local Arg
     for Arg in "$@"; do
         case "${Arg}" in
             --vrrp-iface=*) VrrpIface="${Arg#*=}"; shift ;;
+            --pod-subnet=*) PodSubnet="${Arg#*=}"; shift ;;
+            --service-subnet=*) ServiceSubnet="${Arg#*=}"; shift ;;
             *) stop unknown-option "${Arg}" ;;
         esac
     done
@@ -146,11 +155,11 @@ function master_init {
     resolve_kubernetes_to "${NodeIp}"
 
     kubelet_extra_set "$(kubelet_extra_master "${NodeIp}")"
-    master_prepare new "${NodeIp}"
+    master_prepare new "${NodeIp}" "${PodSubnet}" "${ServiceSubnet}"
 
     kubeadm init --skip-token-print
     node_role set master
-    install_calico "${NodeIp}"
+    install_calico "${NodeIp}" "${PodSubnet}"
 
     wait_for_core_pods
 
@@ -212,6 +221,9 @@ function master_join {
 function master_prepare {
     local ClusterState="$1"
     local NodeIp="$2"
+    local PodSubnet="$3"
+    local ServiceSubnet="$4"
+    local ClusterDns="${ServiceSubnet%.*}.10"
 
     log "Preparing master for the ${ClusterState} $(cluster_name)..."
 
@@ -224,6 +236,9 @@ function master_prepare {
              -e "s/_NODE_IP_/${NodeIp}/g" \
              -e "s\\_ETCD_CLUSTER_\\${EtcdCluster}\\g" \
              -e "s/_ETCD_STATE_/${EtcdState}/g" \
+             -e "s\\_POD_SUBNET_\\${PodSubnet}\\g" \
+             -e "s\\_SERVICE_SUBNET_\\${ServiceSubnet}\\g" \
+             -e "s/_CLUSTER_DNS_/${ClusterDns}/g" \
              "$(templates)/kubeadm.yaml" | \
          sudo tee "$(kubeadm_config)" > /dev/null
     sudo chmod 600 "$(kubeadm_config)"
@@ -622,16 +637,26 @@ function dns_ready {
 
 function install_calico {
     local NodeIp="$1"
+    local PodSubnet="$2"
 
     log "Installing Calico..."
 #   kubectl create --filename "$(templates)/calico-kdd-rbac.yaml"
 #   kubectl create --filename "$(templates)/calico-kdd.yaml"
-    kubectl create --filename "$(templates)/calico-etcd-config.yaml"
+
+    sudo sed -e "s~_POD_SUBNET_~${PodSubnet}~" \
+             "$(templates)/calico-etcd-config.yaml" |
+         kubectl create --filename -
+
     kubectl create --filename "$(templates)/calico-etcd-sync.yaml"
+
     calico_etcd_secrets_create
     calico_etcd_endpoints_add "${NodeIp}"
+
     kubectl create --filename "$(templates)/calico-etcd-rbac.yaml"
-    kubectl create --filename "$(templates)/calico-etcd.yaml"
+
+    sudo sed -e "s~_POD_SUBNET_~${PodSubnet}~" \
+             "$(templates)/calico-etcd.yaml" |
+         kubectl create --filename -
 }
 function calico_etcd_secrets_create {
     local Pki; Pki="$(pki)/calico"
