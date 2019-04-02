@@ -18,7 +18,6 @@ following add-ons:
 
 * [Setup]
 * [Upgrade]
-* [Operations]
 * [Troubleshooting]
 
 ## License
@@ -51,7 +50,6 @@ limitations under the License.
 
 [Setup]: docs/setup.md
 [Upgrade]: docs/upgrade.md
-[Operations]: docs/operations.md
 [Troubleshooting]: docs/troubleshooting.md
 
 <!-- Badges -->
