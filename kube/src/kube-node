@@ -188,8 +188,8 @@ function master_join {
     resolve_kubernetes_to "${ApiIp}"
 
     local NodeName; NodeName="$(node_name)"
-    local PodSubnet; PodSubnet="$(cluster_cidr not "${NodeName}")"
-    local ServiceSubnet; ServiceSubnet="$(service_ip_range not "${NodeName}")"
+    local PodSubnet; PodSubnet="$(pod_subnet not "${NodeName}")"
+    local ServiceSubnet; ServiceSubnet="$(service_subnet not "${NodeName}")"
 
     kubelet_extra_set "$(kubelet_extra_master "${NodeIp}")"
     master_prepare existing "${NodeIp}" "${PodSubnet}" "${ServiceSubnet}"
@@ -516,27 +516,29 @@ function etcd_ip {
          "{.items[$(node_index "$@")].status.podIP}" | sed "s/ .*//"
 }
 
-function service_ip_range {
-    api_server_command "$@" |
-        sed -n "s/--service-cluster-ip-range=//p" | head -n1
+function service_subnet {
+    pod_command_arg component=kube-apiserver service-cluster-ip-range "$@"
 }
-function cluster_cidr {
-    controller_manager_command "$@" | sed -n "s/--cluster-cidr=//p" | head -n1
+function pod_subnet {
+    pod_command_arg component=kube-controller-manager cluster-cidr "$@"
 }
 
 function api_server_ip {
-    api_server_command "$@" | sed -n "s/--advertise-address=//p" | head -n1
+    pod_command_arg component=kube-apiserver advertise-address "$@"
 }
 function api_server_port {
-    api_server_command | sed -n "s/--secure-port=//p" | head -n1
+    pod_command_arg component=kube-apiserver secure-port
 }
-function api_server_command {
-    pods "" kube-system component=kube-apiserver "$(command_jp "$@")"
+
+function pod_command_arg {
+    local Selector="$1"
+    local Arg="$2"
+    shift 2
+
+    pods "" kube-system "${Selector}" "$(pod_command_jp "$@")" |
+        sed -n "s/--${Arg}=//p" | head -n1
 }
-function controller_manager_command {
-    pods "" kube-system component=kube-controller-manager "$(command_jp "$@")"
-}
-function command_jp {
+function pod_command_jp {
     printf "%b" "{range.items[$(node_index "$@")]" \
                     ".spec.containers[*].command[*]}" \
                 "{@}{\"\\\\n\"}{end}"
