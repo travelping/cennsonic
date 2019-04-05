@@ -33,9 +33,17 @@ The tool will be installed on the specified node. To check the network status:
 $ ssh <Host SSH> sudo calicoctl node status
 ```
 
-The BGP status should show all the connecions established. Otherwise the broken
+The BGP status should show all the connections established. Otherwise the broken
 node should be either healed or removed from a cluster (see [Master Delete] and
 [Worker Delete]).
+
+Sometimes the status says it cannot connect to a node that was recently
+explicitly removed. In this case restarting of all the "calico-node" pods most
+likely helps:
+
+```
+$ kubectl -n kube-system delete po -l k8s-app=calico-node
+```
 
 ### Calico Sync
 
