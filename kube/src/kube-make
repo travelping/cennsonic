@@ -29,7 +29,7 @@ Options (download):
 Options (install):
     --init
     --api-ip=<ApiIp>
-    --api-iface=<Iface>
+    --vrrp-iface=<Iface>
     --admin-user=<UserName>      # (default: $(whoami))
     --master-ssh=<[SshUser@]SshAddress>
 EOF
@@ -51,7 +51,7 @@ function main {
             --os=*) local Os="${Arg##*=}";;
             --init) local Init=true ;;
             --api-ip=*) local ApiIp="${Arg##*=}";;
-            --api-iface=*) local ApiIface="${Arg##*=}";;
+            --vrrp-iface=*) local VrrpIface="${Arg##*=}";;
             --create-user=*) local CreateUser="${Arg##*=}";;
             --master-ssh=*) local MasterSsh="${Arg##*=}";;
             --admin-user=*) local AdminUser="${Arg##*=}";;
@@ -75,7 +75,7 @@ function main {
         download) make_download "${Masters}" "${Workers}" "${KubeVersion}";;
 
         install) make_install "${Masters}" "${Workers}" \
-                              "${ApiIp}" "${ApiIface}" \
+                              "${ApiIp}" "${VrrpIface}" \
                               "${Init}" "${MasterSsh}" "${AdminUser}" ;;
         *) stop "${Usage}" ;;
     esac
@@ -119,7 +119,7 @@ function make_install {
     local Masters; read -r -a Masters <<< "$1"
     local Workers; read -r -a Workers <<< "$2"
     local ApiIp="$3"
-    local ApiIface="$4"
+    local VrrpIface="$4"
     local Init="$5"
     local MasterSsh="$6"
     local AdminUser="$7"
@@ -132,7 +132,8 @@ function make_install {
         if [ -z "${MasterSsh}" ]; then MasterSsh="${Master0Ssh}"; fi
 
         run node "${Master0Ssh}" \
-                 master init "${Master0Ip}" "${ApiIp}" "${ApiIface}"
+                 master init "${Master0Ip}" "${ApiIp}" \
+                        --vrrp-iface="${VrrpIface}"
 
         run user "${Master0Ssh}" create "${AdminUser}" -a
 
