@@ -30,7 +30,7 @@ Commands:
     role unset <Role> [Node Name]
 
 Options (master init):
-    --vrrp-iface=<Interface>  Network interface to use by Keepalived
+    --vrrp-iface=<Interface>  Deploy Keepalived and use this interface for VRRP
     --pod-subnet=<CIDR>       Pod network CIDR (default: $POD_SUBNET)
     --service-subnet=<CIDR>   Service network CIDR (default: $SERVICE_SUBNET)
 EOF
