@@ -70,21 +70,23 @@ If your cluster hosts run CoreOS you can skip this step. In case of Ubuntu or
 CentOS run the corresponding preparation against each one:
 
 ```
-$ kube tools-<ubuntu|centos> <Host SSH> install [Username]
+$ kube tools-<ubuntu|centos> <Host SSH> install [Options]
 ```
 
 For example with an Ubuntu machine:
 
 ```
-$ kube tools-ubuntu root@192.168.10.11 install ubuntu
+$ kube tools-ubuntu root@192.168.10.11 install --create-user=ubuntu
 ```
 
-The specified user ("ubuntu" in this case) will be created on the host if does
-not exist. This user will later be used to install the cluster components from
-(to avoid doing it from root). If you have an existing preferable user on the
-machine, for example "vagrant" specify it.
+The specified "ubuntu" user will be created on the host if does not exist. This
+user will be later used to install the cluster components (to avoid doing that
+from root). If you already have a user you plan to setup the cluster with, for
+example "vagrant", it worth to specify it to perform some additional setup.
+This includes adding the user into "sudo" and "docker" groups and disabling sudo
+password.
 
-The are known issues with "admin" user, so better to avoid.
+The are known issues with the "admin" user and better to avoid it.
 
 ## Download
 

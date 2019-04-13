@@ -64,7 +64,6 @@ function main {
     Workers="${Workers//,/ }"
     Os="${Os:-coreos}"
     Init="${Init:-false}"
-    CreateUser="${CreateUser:-$(whoami)}"
     AdminUser="${AdminUser:-$(whoami)}"
     KubeVersion="${KubeVersion:-${KUBE_VERSION}}"
 
@@ -96,7 +95,8 @@ function make_prepare {
 
     local Node
     for Node in "${Masters[@]}" "${Workers[@]}"; do
-        run "tools-${Os}" "$(node_ssh "${Node}")" install "${CreateUser}" &
+        run "tools-${Os}" "$(node_ssh "${Node}")" \
+            install --create-user="${CreateUser}" &
     done
 }
 

@@ -6,7 +6,10 @@ set -e
 source "$(dirname "$0")/kube-utils"
 
 Usage=$(cat <<EOF
-Usage: kube-tools-centos install [User]
+Usage: kube-tools-centos install [Options]
+
+Options
+    -u,--create-user=<User>
 EOF
 )
 
@@ -22,33 +25,43 @@ function main {
 }
 
 function centos_install {
-    local User="${1:-centos}"
+    log "Preparing CentOS..."
 
-    log "Preparing CentOS with user ${User}..."
-    
+    local Arg
+    for Arg in "$@"; do
+        case "${Arg}" in
+            -u=*|--create-user=*) local User="${Arg#*=}"; shift ;;
+            *) stop unknown-option "${Arg}" ;;
+        esac
+    done
+
     sudo yum-config-manager --add-repo \
              https://download.docker.com/linux/centos/docker-ce.repo
-    
+
     sudo yum install docker-ce-18.06.1.ce-3.el7 ebtables ethtool socat -y
     sudo systemctl start docker
     sudo systemctl enable docker
-    
+
     sudo swapoff -a
     sudo sed -i "s/\\(.*\\)swap\\(.*\\)/#\\1swap\\2/" /etc/fstab
-    
+
     sudo ln -sf /opt/bin/kube{adm,ctl,let} /usr/bin
-    
-    sudo adduser -p "$(openssl rand -base64 8)" "${User}" || true
-    sudo usermod -aG wheel "${User}"
-    sudo usermod -aG docker "${User}"
-    
-    sudo mkdir -p "/home/${User}/.ssh"
-    sudo -E cp "${HOME}/.ssh/authorized_keys" \
-               "/home/${User}/.ssh/authorized_keys" || true
-    sudo chown -R "${User}:${User}" "/home/${User}/.ssh"
-    
-    echo "${User} ALL=(ALL) NOPASSWD: ALL" | \
-        sudo tee "/etc/sudoers.d/${User}" > /dev/null
+
+    if [ -n "${User}" ]; then
+        log "Creating user ${User}..."
+
+        sudo adduser -p "$(openssl rand -base64 8)" "${User}" || true
+        sudo usermod -aG wheel "${User}"
+        sudo usermod -aG docker "${User}"
+
+        sudo mkdir -p "/home/${User}/.ssh"
+        sudo -E cp "${HOME}/.ssh/authorized_keys" \
+                   "/home/${User}/.ssh/authorized_keys" || true
+        sudo chown -R "${User}:${User}" "/home/${User}/.ssh"
+
+        echo "${User} ALL=(ALL) NOPASSWD: ALL" | \
+            sudo tee "/etc/sudoers.d/${User}" > /dev/null
+    fi
 }
 
 main "$@"
