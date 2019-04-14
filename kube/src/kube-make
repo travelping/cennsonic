@@ -21,7 +21,7 @@ Options:
 
 Options (prepare):
     --os=<coreos|centos|ubuntu>  # (default: coreos)
-    --create-user=<UserName>     # (default: $(whoami))
+    --setup-user=<UserName>
 
 Options (download):
     --kube-version=<Version>     # (default: ${KUBE_VERSION})
@@ -52,7 +52,7 @@ function main {
             --init) local Init=true ;;
             --api-ip=*) local ApiIp="${Arg##*=}";;
             --vrrp-iface=*) local VrrpIface="${Arg##*=}";;
-            --create-user=*) local CreateUser="${Arg##*=}";;
+            --setup-user=*) local SetupUser="${Arg##*=}";;
             --master-ssh=*) local MasterSsh="${Arg##*=}";;
             --admin-user=*) local AdminUser="${Arg##*=}";;
             --kube-version=*) local KubeVersion="${Arg##*=}";;
@@ -69,9 +69,9 @@ function main {
 
     case "${Action}" in
         prepare) make_prepare "${Masters}" "${Workers}" \
-                              "${Os}" "${CreateUser}";;
+                              "${Os}" "${SetupUser}" ;;
 
-        download) make_download "${Masters}" "${Workers}" "${KubeVersion}";;
+        download) make_download "${Masters}" "${Workers}" "${KubeVersion}" ;;
 
         install) make_install "${Masters}" "${Workers}" \
                               "${ApiIp}" "${VrrpIface}" \
@@ -86,7 +86,7 @@ function make_prepare {
     local Masters; read -r -a Masters <<< "$1"
     local Workers; read -r -a Workers <<< "$2"
     local Os="$3"
-    local CreateUser="$4"
+    local SetupUser="$4"
 
     case "${Os}" in
         centos|ubuntu) ;;
@@ -96,7 +96,7 @@ function make_prepare {
     local Node
     for Node in "${Masters[@]}" "${Workers[@]}"; do
         run "tools-${Os}" "$(node_ssh "${Node}")" \
-            install --create-user="${CreateUser}" &
+            install --setup-user="${SetupUser}" &
     done
 }
 

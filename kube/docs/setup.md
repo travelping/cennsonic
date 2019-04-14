@@ -76,7 +76,7 @@ $ kube tools-<ubuntu|centos> <Host SSH> install [Options]
 For example with an Ubuntu machine:
 
 ```
-$ kube tools-ubuntu root@192.168.10.11 install --create-user=ubuntu
+$ kube tools-ubuntu root@192.168.10.11 install --setup-user=ubuntu
 ```
 
 The specified "ubuntu" user will be created on the host if does not exist. This

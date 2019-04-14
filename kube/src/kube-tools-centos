@@ -9,7 +9,7 @@ Usage=$(cat <<EOF
 Usage: kube-tools-centos install [Options]
 
 Options
-    -u,--create-user=<User>
+    -u,--setup-user=<User>
 EOF
 )
 
@@ -30,7 +30,7 @@ function centos_install {
     local Arg
     for Arg in "$@"; do
         case "${Arg}" in
-            -u=*|--create-user=*) local User="${Arg#*=}"; shift ;;
+            -u=*|--setup-user=*) local User="${Arg#*=}"; shift ;;
             *) stop unknown-option "${Arg}" ;;
         esac
     done
