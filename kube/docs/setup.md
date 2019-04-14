@@ -235,7 +235,7 @@ If you use Kubernetes v1.12.x you do not need to pass "Join Info".
 Example:
 
 ```
-$ kube node core@192.168.10.12 master join 172.18.10.12 172.18.10.11 $JoinInfo
+$ kube node core@192.168.10.12 master join 172.18.10.12 172.18.10.11 "$JoinInfo"
 ```
 
 #### Master Delete

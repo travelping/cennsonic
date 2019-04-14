@@ -280,7 +280,8 @@ function master_delete {
     log "Deleting ${NodeName} from $(cluster_name)..."
     node_role unset master "${NodeName}"
 
-    kubectl drain "${Node}" --delete-local-data --ignore-daemonsets --force
+    kubectl drain "${Node}" --delete-local-data --ignore-daemonsets \
+                            --force --timeout=120s || true
 
     if [ -n "${ApiIp}" ]; then
         if [ "${NodeName}" = "$(node_name)" ]; then
@@ -369,7 +370,9 @@ function worker_delete {
 
     echo "Deleting ${NodeName} from $(cluster_name)..."
 
-    kubectl drain "${Node}" --delete-local-data --ignore-daemonsets --force
+    kubectl drain "${Node}" --delete-local-data --ignore-daemonsets \
+                            --force --timeout=120s || true
+
     kubectl delete node "${NodeName}.$(cluster_name)"
 }
 
