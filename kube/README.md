@@ -59,4 +59,4 @@ limitations under the License.
 [GitHub Releases]: https://github.com/travelping/cennsonic/releases
 [GitHub Release Badge]: https://img.shields.io/github/release/travelping/cennsonic/all.svg?style=flat-square
 [Kubernetes Releases]: https://github.com/kubernetes/kubernetes/releases
-[Kubernetes Releases Badge]: https://img.shields.io/badge/Kubernetes-1.12.x-306CE6.svg?style=flat-square
+[Kubernetes Releases Badge]: https://img.shields.io/badge/Kubernetes-1.12.x%20to%201.14.x-306CE6.svg?style=flat-square

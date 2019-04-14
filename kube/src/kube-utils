@@ -1,3 +1,6 @@
+function k8s_version {
+    /opt/bin/kubelet --version | sed "s/.* //"
+}
 function api_hostname {
     echo "k8s.$(cluster_name)"
 }

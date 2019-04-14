@@ -14,6 +14,7 @@ operating system additional preparation might be required (described below).
   * [Control Plane](#control-plane)
     * [Master Init](#master-init)
     * [Single Node](#single-node)
+    * [Join Info](#join-info)
     * [Master Join](#master-join)
     * [Master Delete](#master-delete)
   * [Data Plane](#data-plane)
@@ -101,12 +102,9 @@ $ kube tools <Host SSH> install <master|worker> <Kubernetes Version>
 For example with a master and another worker machine:
 
 ```
-$ kube tools core@192.168.10.11 install master v1.12.7
-$ kube tools core@192.168.10.21 install worker v1.12.7
+$ kube tools core@192.168.10.11 install master v1.14.1
+$ kube tools core@192.168.10.21 install worker v1.14.1
 ```
-
-**Note:** you can download any version of Kubernetes, but further operations are
-fully supported with the v1.12.x branch only.
 
 ## Install
 
@@ -193,6 +191,21 @@ can get the hybrid node back to be master only:
 $ kube node core@192.168.10.11 role unset worker
 ```
 
+#### Join Info
+
+To join a node to the cluster you need a "Join Information". It can be get from
+any of the existing master nodes:
+
+```
+$ kube node <Host SSH> master join-info
+```
+
+For example it could be kept in a variable and used afterwards:
+
+```
+$ JoinInfo=$(kube node core@192.168.10.11 master join-info)
+```
+
 #### Master Join
 
 Note the [Prepare] and [Download] steps.
@@ -210,16 +223,19 @@ Example:
 $ kube pki core@192.168.10.11 core@192.168.10.12
 ```
 
-When the PKI is ready the node can be joined:
+Besides that you will need [Join Info]. When you have it and the PKI is ready
+the node can be joined:
 
 ```
-$ kube node <Host SSH> master join <Node IP> <API IP>
+$ kube node <Host SSH> master join <Node IP> <API IP> <Join Info>
 ```
+
+If you use Kubernetes v1.12.x you do not need to pass "Join Info".
 
 Example:
 
 ```
-$ kube node core@192.168.10.12 master join 172.18.10.12 172.18.10.11
+$ kube node core@192.168.10.12 master join 172.18.10.12 172.18.10.11 $JoinInfo
 ```
 
 #### Master Delete
@@ -264,20 +280,8 @@ cluster.
 
 Note the [Prepare] and [Download] steps.
 
-To join a worker node you need a "join information". It can be get from any of
-the existing master nodes:
-
-```
-$ kube node <Host SSH> master join-info
-```
-
-For example it could be kept in a variable and used aftewards:
-
-```
-$ JI=$(kube node core@192.168.10.11 master join-info)
-```
-
-Now we can join a worker:
+To join a worker node you will need [Join Info]. When you have it the node can
+be joined:
 
 ```
 $ kube node <Host SSH> worker join <Node IP> <API IP> <Join Info>
@@ -286,7 +290,21 @@ $ kube node <Host SSH> worker join <Node IP> <API IP> <Join Info>
 Example:
 
 ```
-$ kube node core@192.168.10.21 worker join 172.18.10.21 172.18.10.11 "$JI"
+$ kube node core@192.168.10.21 worker join 172.18.10.21 172.18.10.11 "$JoinInfo"
+```
+
+Unless you use Kubernetes v1.12.x you need to assign the joined node a "worker"
+role. This should be done from a master node using the worker node name (a host
+name without the cluster name part):
+
+```
+$ kube node <Master Host SSH> role set worker <Worker Node>
+```
+
+For example:
+
+```
+$ kube node core@192.168.10.11 role set worker worker-01
 ```
 
 #### Worker Delete
@@ -389,5 +407,6 @@ reset:
 [Control Plane]: #control-plane
 [Data Plane]: #data-plane
 
+[Join Info]: #join-info
 [Master Delete]: #master-delete
 [Worker Delete]: #worker-delete

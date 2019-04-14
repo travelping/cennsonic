@@ -13,7 +13,7 @@ Usage: kube-node <Command>
 
 Commands:
     master init <Node IP> <API IP> [Options]
-    master join <Node IP> <API IP>
+    master join <Node IP> <API IP> <Join Info>
     master join-info
     master delete [Node Name]
     master upgrade
@@ -51,12 +51,17 @@ function main {
             show_completion_time "${StartTime}"
         ;;
         "master join $3 $4 $5")
-            if [ "$#" -ne 4 ]; then stop "${Usage}"; fi
+            case "$(k8s_version)" in
+                v1.12.*) if [ "$#" -lt 4 ]; then stop "${Usage}"; fi ;;
+                v1.13.*|\
+                v1.14.*) if [ "$#" -ne 9 ]; then stop "${Usage}"; fi ;;
+            esac
 
             local NodeIp="$3"
             local ApiIp="$4"
 
-            master_join "${NodeIp}" "${ApiIp}"
+            shift 4
+            master_join "${NodeIp}" "${ApiIp}" "$@"
             show_completion_time "${StartTime}"
         ;;
         "master join-info   ")
@@ -178,6 +183,7 @@ function master_init {
 function master_join {
     local NodeIp="$1"
     local ApiIp="$2"
+    shift 2
 
     log "Joining master to $(cluster_name)..."
     if node_is_active; then show_node_is_active; return; fi
@@ -194,32 +200,42 @@ function master_join {
     kubelet_extra_set "$(kubelet_extra_master "${NodeIp}")"
     master_prepare existing "${NodeIp}" "${PodSubnet}" "${ServiceSubnet}"
 
-    kubeadm_alpha certs all
-    kubeadm_alpha kubelet config write-to-disk
-    kubeadm_alpha kubelet write-env-file
-    kubeadm_alpha kubeconfig kubelet
-    sudo systemctl start kubelet
+    case "$(k8s_version)" in
+        v1.12.*)
+            local EtcdHostname
+            local EtcdIp
 
-    local EtcdHostname; EtcdHostname="$(etcd_hostname not "$(node_name)")"
-    local EtcdIp; EtcdIp="$(etcd_ip not "$(node_name)")"
+            kubeadm_alpha certs all
+            kubeadm_alpha kubelet config write-to-disk
+            kubeadm_alpha kubelet write-env-file
+            kubeadm_alpha kubeconfig kubelet
+            sudo systemctl start kubelet
 
-    log "Joining etcd ${EtcdHostname} (${EtcdIp})..."
-    etcd_exec "${EtcdHostname}" "${EtcdIp}" \
-              member add "$(node_hostname)" "https://${NodeIp}:2380"
+            EtcdHostname="$(etcd_hostname not "$(node_name)")"
+            EtcdIp="$(etcd_ip not "$(node_name)")"
 
-    kubeadm_alpha etcd local
-    kubeadm_alpha kubeconfig all
-    kubeadm_alpha controlplane all
-    kubeadm_alpha kubelet config annotate-cri
-    kubeadm_alpha mark-master
+            log "Joining etcd ${EtcdHostname} (${EtcdIp})..."
+            etcd_exec "${EtcdHostname}" "${EtcdIp}" \
+                      member add "$(node_hostname)" "https://${NodeIp}:2380"
+
+            kubeadm_alpha etcd local
+            kubeadm_alpha kubeconfig all
+            kubeadm_alpha controlplane all
+            kubeadm_alpha kubelet config annotate-cri
+            kubeadm_alpha mark-master
+        ;;
+        v1.13.*|\
+        v1.14.*)
+            sudo /opt/bin/kubeadm join \
+                --apiserver-advertise-address "${NodeIp}" \
+                --experimental-control-plane "$@"
+    esac
 
     node_role set master
-
     wait_for_core_pods
-
+    update_cluster_status
     calico_etcd_endpoints_add "${NodeIp}"
     ensure_dns_ha
-
     resolve_kubernetes_to "${NodeIp}"
 }
 function master_prepare {
@@ -243,7 +259,7 @@ function master_prepare {
              -e "s\\_POD_SUBNET_\\${PodSubnet}\\g" \
              -e "s\\_SERVICE_SUBNET_\\${ServiceSubnet}\\g" \
              -e "s/_CLUSTER_DNS_/${ClusterDns}/g" \
-             "$(templates)/kubeadm.yaml" | \
+             "$(kubeadm_config_template)" | \
          sudo tee "$(kubeadm_config)" > /dev/null
     sudo chmod 600 "$(kubeadm_config)"
 }
@@ -285,6 +301,7 @@ function master_delete {
         etcd_exec "${EtcdHostname}" "${EtcdIp}" member remove "${EtcdId}"
 
         kubectl delete node "${Node}"
+        update_cluster_status
     fi
 
     if [ "${NodeName}" = "$(node_name)" ]; then
@@ -295,8 +312,9 @@ function master_upgrade {
     local K8sVersion; K8sVersion="$(k8s_version)"
 
     log "Upgrading master of $(cluster_name) to ${K8sVersion}..."
-    sudo /opt/bin/kubeadm upgrade apply "${K8sVersion}" -y
 
+    update_cluster_status
+    sudo /opt/bin/kubeadm upgrade apply "${K8sVersion}" -y
     node_restart
 }
 function master_pki_make {
@@ -340,7 +358,10 @@ function worker_join {
     sudo /opt/bin/kubeadm join "$@"
 
     sudo ln -s "$(kubeconfig_worker)" "$(kubeconfig)"
-    node_role set worker
+
+    case "$(k8s_version)" in
+        v1.12.*) node_role set worker ;;
+    esac
 }
 function worker_delete {
     local NodeName="$1"
@@ -448,6 +469,46 @@ function node_has_role_taint {
 
     local JsonPath="jsonpath={.spec.taints[?(@.key==\"${Taint}\")].effect}"
     [ "$(kubectl get node "${Node}" -o "${JsonPath}")" = "NoSchedule" ]
+}
+
+function update_cluster_status {
+    log "Updating cluster status in Kubeadm ConfigMap..."
+    kubectl patch configmap kubeadm-config \
+            --namespace kube-system \
+            --patch "$(cluster_status_patch)"
+}
+function cluster_status_patch {
+    printf "%b" \
+        "data:\\n" \
+        "  ClusterStatus: |\\n" \
+        "    apiEndpoints:\\n" \
+        "$(cluster_status_api_endpoints)\\n" \
+        "    apiVersion: $(cluster_status_api_version)\\n" \
+        "    kind: ClusterStatus\\n"
+}
+function cluster_status_api_version {
+    kubectl get configmap kubeadm-config \
+            --namespace kube-system \
+            --output jsonpath="{.data.ClusterStatus}" \
+        |
+        sed -n "s/apiVersion: //p"
+}
+function cluster_status_api_endpoints {
+    local MasterNodes
+    MasterNodes="$(kubectl get nodes --output jsonpath="$(master_nodes_jp)")"
+
+    local Node
+    for Node in ${MasterNodes}; do
+        local NodeName="${Node%%.*}"
+        echo "      ${Node}:"
+        echo "        advertiseAddress: $(api_server_ip "${NodeName}")"
+        echo "        bindPort: $(api_server_port "${NodeName}")"
+    done
+}
+function master_nodes_jp {
+    printf "%b" "{.items[?(@.metadata.labels" \
+                    ".node-role\\.kubernetes\\.io/master==''" \
+                ")].metadata.name}"
 }
 
 function ip_ready {
@@ -775,9 +836,6 @@ function discovery_token_ca_cert_hash {
             openssl dgst -sha256 -hex | sed "s/^.* //"
 }
 
-function k8s_version {
-    /opt/bin/kubelet --version | sed "s/.* //"
-}
 function kubeadm {
     sudo /opt/bin/kubeadm --config "$(kubeadm_config)" "$@"
 }
@@ -786,6 +844,13 @@ function kubeadm_alpha {
 }
 function kubeadm_config {
     echo "/etc/kubernetes/kubeadm.conf"
+}
+function kubeadm_config_template {
+    case "$(k8s_version)" in
+        v1.12.*) echo "$(templates)/kubeadm-v1alpha3.yaml" ;;
+        v1.13.*|\
+        v1.14.*) echo "$(templates)/kubeadm-v1beta1.yaml" ;;
+    esac
 }
 function kubectl {
     sudo -H /opt/bin/kubectl --kubeconfig "$(kubeconfig)" "$@"

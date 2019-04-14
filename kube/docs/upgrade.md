@@ -1,45 +1,18 @@
 # Upgrade
 
-Technically a cluster can be upgraded from v1.12.x to v1.13.x and then further
-to v1.14.x. But at the moment master node add/delete operations are supported
-for the v1.12.x branch only. Therefore currently upgrade is recommended within
-this branch.
+At the moment clusters of the versions from v1.12.x to v1.14.x are supported.
+If you upgrade within a major version, for example from v1.12.3 to v1.12.7, it
+is fine to skip the intermediate versions. The major versions should be upgraded
+one by one (i.e. v1.12.x → v1.13.x → v1.14.x).
 
 ## Preparation
 
-Edit the "apiEndpoints" section of the "kubeadm-config" ConfigMap to add an
-entry for each of the additional master nodes:
+If you upgrade from v1.12.x to v1.13.x, remove the "etcd" section from the
+"kubeadm-config" ConfigMap completely. To edit the ConfigMap:
 
 ```
 $ kubectl -n kube-system edit cm kubeadm-config
 ```
-
-For example if the section looks like this:
-
-```
-apiEndpoints:
-  master-01.example.org:
-    advertiseAddress: 172.18.10.11
-    bindPort: 6443
-```
-
-but there are three master nodes actually, then the section should be extended:
-
-```
-apiEndpoints:
-  master-01.example.org:
-    advertiseAddress: 172.18.10.11
-    bindPort: 6443
-  master-02.example.org:
-    advertiseAddress: 172.18.10.12
-    bindPort: 6443
-  master-03.example.org:
-    advertiseAddress: 172.18.10.13
-    bindPort: 6443
-```
-
-**Note:** if you upgrade to v1.13.x or v1.14.x, remove the "etcd" section
-completely.
 
 ## Master Upgrade
 
@@ -65,7 +38,7 @@ On each master node:
 On each worker node:
 
 * [download] the worker node components of the desired version
-* restart Kubelet on each worker node:
+* restart Kubelet:
 
   ```
   $ kube node <Host SSH> restart

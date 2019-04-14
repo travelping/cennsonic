@@ -127,8 +127,8 @@ function templates {
     )"
 
     case "${Name}" in
-        kubeadm) template "${Name}" "${Templates}" \
-            "$(printf %b "${Manifests}/config/kubeadm.yaml")"
+        kubeadm*) template "${Name}" "${Templates}" \
+            "$(printf %b "${Manifests}/config/${Name}.yaml")"
         ;;
         calico) template "${Name}" "${Templates}" \
             "$(printf %b " ${Manifests}/network/calico-etcd.yaml" \
@@ -219,7 +219,13 @@ function install_master {
     install_kubectl "${KubernetesVersion}" "${Arch}"
     install_images master "${KubernetesVersion}" "${Templates}" "${Arch}"
 
-    install_templates "$(templates kubeadm "${Templates}")" \
+    case "$(k8s_version)" in
+        v1.12.*) local Kubeadm="kubeadm-v1alpha3" ;;
+        v1.13.*|\
+        v1.14.*) local Kubeadm="kubeadm-v1beta1" ;;
+    esac
+
+    install_templates "$(templates "${Kubeadm}" "${Templates}")" \
                       "$(templates calico "${Templates}")" \
                       "$(templates multus-cni "${Templates}")" \
                       "$(templates vxlan-controller "${Templates}")" \
