@@ -6,6 +6,7 @@ operating system additional preparation might be required (described below).
 
 * [Prerequisites](#prerequisites)
   * [Install Kube](#install-kube)
+  * [Uninstall Kube](#uninstall-kube)
 * [Prepare](#prepare)
 * [Download](#download)
 * [Install](#install)
@@ -59,11 +60,19 @@ machine or a CI/CD worker. To install the scripts:
 
 ```
 $ git clone https://github.com/travelping/cennsonic
-$ make -C cennsonic/kube install # work in progress
+$ make -C cennsonic/kube install
 ```
 
 If you prefer to avoid installing the scripts into the system, you can cd into
 the "cennsonic/kube/src" folder and run from there.
+
+### Uninstall Kube
+
+To uninstall Kube scripts:
+
+```
+$ make -C cennsonic/kube uninstall
+```
 
 ## Prepare
 

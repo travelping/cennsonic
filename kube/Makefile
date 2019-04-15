@@ -39,9 +39,9 @@ install:
 	mkdir -p /usr/local/bin
 	find src -type f -exec install "{}" /usr/local/bin \;
 
-#uninstall:
-#	find src -type f -exec echo rm -f /usr/local/bin/"{}" \;
-#	rmdir /usr/local/bin 2>/dev/null || true
+uninstall:
+	cd src && find * -type f -exec rm -f /usr/local/bin/"{}" \;
+	rmdir /usr/local/bin 2>/dev/null || true
 
 docker-build:
 	docker build $(BUILD_ARGS) . -t $(IMAGE)
