@@ -143,21 +143,23 @@ function make_install {
         Masters=("${Masters[@]:1}")
     fi
 
-    local Master
-    for Master in "${Masters[@]}"; do
-        "$(workdir)/kube-pki" "${MasterSsh}" "$(node_ssh "${Master}")"
-        run node "$(node_ssh "${Master}")" \
-                 master join "$(node_ip "${Master}")" "${ApiIp}"
-    done &
-
     if [ "${#Workers[@]}" -gt 0 ]; then
         local JoinInfo; JoinInfo=$(run node "${MasterSsh}" master join-info)
     fi
 
+    local Master
+    for Master in "${Masters[@]}"; do
+        "$(workdir)/kube-pki" "${MasterSsh}" "$(node_ssh "${Master}")"
+        run node "$(node_ssh "${Master}")" \
+                 master join "$(node_ip "${Master}")" "${ApiIp}" "${JoinInfo}"
+    done &
+
     local Worker
     for Worker in "${Workers[@]}"; do
         run node "$(node_ssh "${Worker}")" \
-                 worker join "$(node_ip "${Worker}")" "${ApiIp}" "${JoinInfo}" &
+                 worker join "$(node_ip "${Worker}")" "${ApiIp}" "${JoinInfo}"
+
+        run node "${MasterSsh}" role set worker "$(node_name "${Worker}")"
     done
 }
 
@@ -167,6 +169,9 @@ function node_ssh {
 function node_ip {
     local Ip="${1##*@}"
     echo "${Ip##*/}"
+}
+function node_name {
+    ssh "$(node_ssh "$1")" sed 's/\\..*//' /etc/hostname
 }
 
 main "$@"
