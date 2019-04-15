@@ -152,7 +152,7 @@ function make_install {
         "$(workdir)/kube-pki" "${MasterSsh}" "$(node_ssh "${Master}")"
         run node "$(node_ssh "${Master}")" \
                  master join "$(node_ip "${Master}")" "${ApiIp}" "${JoinInfo}"
-    done &
+    done
 
     local Worker
     for Worker in "${Workers[@]}"; do
