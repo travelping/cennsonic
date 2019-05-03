@@ -103,6 +103,54 @@ $ kubectl delete -f https://raw.githubusercontent.com/travelping/cennsonic/maste
 $ kubectl delete pvc rook-usage-example-rook-usage-example-0
 ```
 
+## Monitoring
+
+There is no native way to monitor Rook volumes with Prometheus, so we have to take some additional steps.
+The volumes are mounted as `dev/rbd*` on the worker-nodes so we need to get these into the Node exporter.
+
+### Node exporter
+
+1. Update [node exporter] to at least tag `v0.17.0`, older versions of node-exporter can not see the Rook mounts on the nodes.
+2. Enable the `drbd` collector with the flag `--collector.drdb`.
+3. Mount path `/var/lib/kubelet` into node exporter.
+
+### On the nodes
+
+Make `/var/lib/kubelet` world-readable so the Node exporters can access the necessary files.
+
+```bash
+sudo chmod o+rX plugins
+sudo chmod o+rX plugins/<rook-dir1>/
+sudo chmod o+rX plugins/<rook-dir1>/<rook-dir2>/
+sudo chmod o+rX plugins/<rook-dir1>/<rook-dir2>/mounts/
+```
+
+`<rook-dir1>/<rook-dir2>` can have different values. We have seen at least `rook.io/rook-system` and `ceph.rook.io/rook-ceph-system`.
+
+### Prometheus
+
+Add alerts to prometheus to be notified when a volume reaches a given limit:
+
+```
+- alert: CephVolumeUsageHigh
+  expr: 100 - (100 / node_filesystem_size_bytes{device=~"/dev/rbd.*"} ) * node_filesystem_avail_bytes{device=~"/dev/rbd.*"}
+    <= 15
+  for: 5m
+  labels:
+    severity: major
+  annotations:
+    description: 'RPG-03: Volume {{$labels.mountpoint}} has less than 15 % free space'
+
+- alert: CephVolumeUsageCritical
+  expr: 100 - (100 / node_filesystem_size_bytes{device=~"/dev/rbd.*"} ) * node_filesystem_avail_bytes{device=~"/dev/rbd.*"}
+    <= 5
+  for: 5m
+  labels:
+    severity: critical
+  annotations:
+    description: 'RPG-03: Volume {{$labels.mountpoint}} has less than 5 % free space'
+```
+
 <!-- Links -->
 
 [PVC]: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
@@ -118,3 +166,5 @@ $ kubectl delete pvc rook-usage-example-rook-usage-example-0
 [Storage Resize →]: resize.md
 [Storage Backup and Restore →]: backup_and_restore.md
 [Rook Quick Start (Ceph Storage) →]: https://rook.io/docs/rook/v0.9/ceph-quickstart.html
+
+[node exporter]: https://github.com/prometheus/node_exporter
