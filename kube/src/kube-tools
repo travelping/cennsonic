@@ -180,9 +180,6 @@ function master_images {
     /opt/bin/kubeadm config images list \
         --kubernetes-version "${KubernetesVersion}"
 
-    template_images calico "${Templates}"
-    template_images multus-cni "${Templates}"
-    template_images vxlan-controller "${Templates}"
     template_images kubealived "${Templates}"
 }
 function worker_images {
@@ -195,9 +192,6 @@ function worker_images {
         |
         grep -E "kube-proxy|pause|coredns"
 
-    template_images calico "${Templates}" | grep -v calico/kube-controllers
-    template_images multus-cni "${Templates}"
-    template_images vxlan-controller "${Templates}"
 }
 function template_images {
     local Name="$1"
@@ -226,9 +220,6 @@ function install_master {
     esac
 
     install_templates "$(templates "${Kubeadm}" "${Templates}")" \
-                      "$(templates calico "${Templates}")" \
-                      "$(templates multus-cni "${Templates}")" \
-                      "$(templates vxlan-controller "${Templates}")" \
                       "$(templates kubealived "${Templates}")" \
                       "$(templates user-admin-crb "${Templates}")"
 

@@ -164,22 +164,14 @@ function master_init {
 
     kubeadm init --skip-token-print --ignore-preflight-errors=FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
     node_role set master
-    install_calico "${NodeIp}" "${PodSubnet}"
 
     wait_for_core_pods
 
     if [ -n "${VrrpIface}" ]; then
         install_kubealived "${ApiIp}" "${VrrpIface}"
     fi
-
-    log "Installing Multus CNI..."
-    kubectl create --filename "$(templates)/multus-cni-config.yaml"
-    kubectl create --filename "$(templates)/multus-cni-rbac.yaml"
-    kubectl create --filename "$(templates)/multus-cni.yaml"
-
-    log "Installing VXLAN Controller..."
-    kubectl create --filename "$(templates)/kube-vxlan-controller.yaml"
 }
+
 function master_join {
     local NodeIp="$1"
     local ApiIp="$2"
@@ -235,7 +227,6 @@ function master_join {
     node_role set master
     wait_for_core_pods
     update_cluster_status
-    calico_etcd_endpoints_add "${NodeIp}"
     ensure_dns_ha
     resolve_kubernetes_to "${NodeIp}"
 }
@@ -613,7 +604,6 @@ function wait_for_core_pods {
     declare -A Labels; declare -a Apps
 
     Labels[kube-proxy]=k8s-app; Apps+=(kube-proxy)
-    Labels[calico-node]=k8s-app; Apps+=(calico-node)
     Labels[kube-apiserver]=component; Apps+=(kube-apiserver)
     Labels[kube-scheduler]=component; Apps+=(kube-scheduler)
     Labels[kube-controller-manager]=component; Apps+=(kube-controller-manager)
