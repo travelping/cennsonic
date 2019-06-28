@@ -150,6 +150,8 @@ Add alerts to prometheus to be notified when a volume reaches a given limit:
   annotations:
     description: 'RPG-03: Volume {{$labels.mountpoint}} has less than 5 % free space'
 ```
+volumename added on CephVolumeUsage 
+label_replace(100 - (100 / node_filesystem_size_bytes{device=~"/dev/rbd.*"}) * node_filesystem_avail_bytes{device=~"/dev/rbd.*"} ,"volumename", "$1", "mountpoint", ".*(pvc.*)$") * ON(volumename) GROUP_LEFT (persistentvolumeclaim) kube_persistentvolumeclaim_info
 
 <!-- Links -->
 
