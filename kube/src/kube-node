@@ -162,7 +162,7 @@ function master_init {
     kubelet_extra_set "$(kubelet_extra_master "${NodeIp}")"
     master_prepare new "${NodeIp}" "${PodSubnet}" "${ServiceSubnet}"
 
-    kubeadm init --skip-token-print
+    kubeadm init --skip-token-print --ignore-preflight-errors=FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
     node_role set master
     install_calico "${NodeIp}" "${PodSubnet}"
 
