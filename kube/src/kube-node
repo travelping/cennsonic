@@ -228,6 +228,7 @@ function master_join {
         v1.14.*)
             sudo /opt/bin/kubeadm join \
                 --apiserver-advertise-address "${NodeIp}" \
+                --ignore-preflight-errors=FileContent--proc-sys-net-bridge-bridge-nf-call-iptables \
                 --experimental-control-plane "$@"
     esac
 
@@ -356,7 +357,7 @@ function worker_join {
     kubelet_extra_set "$(kubelet_extra_worker "${NodeIp}")"
 
     sudo mkdir -m 700 -p /etc/kubernetes/manifests
-    sudo /opt/bin/kubeadm join "$@"
+    sudo /opt/bin/kubeadm join "$@" --ignore-preflight-errors=FileContent--proc-sys-net-bridge-bridge-nf-call-iptables
 
     sudo ln -s "$(kubeconfig_worker)" "$(kubeconfig)"
 
