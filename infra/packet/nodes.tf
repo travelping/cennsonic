@@ -10,29 +10,30 @@ variable "cluster" {
 }
 
 resource "packet_device" "master" {
-    count = 0
+    count = 1
     hostname = "master-0${count.index + 1}.${var.cluster}"
-    facility = "ams1"
+    facilities = ["ams1"]
     billing_cycle = "hourly"
     plan = "baremetal_0"
-    operating_system = "coreos_stable"
+    operating_system = "ubuntu_18_04"
     project_id = "${var.packet_project_id}"
 
     provisioner "local-exec" {
-        command = "echo \"${self.hostname} ansible_ssh_host=${self.access_public_ipv4} ip=${self.access_private_ipv4}\" >> hosts.ini" 
+      command = "echo \"${self.hostname} ansible_ssh_host=${self.access_public_ipv4} ip=${self.access_private_ipv4}\" >> hosts.ini"
     }
 }
 
 resource "packet_device" "worker" {
-    count = 0
+    count = 2
     hostname = "worker-0${count.index + 1}.${var.cluster}"
-    facility = "ams1"
+    facilities = ["ams1"]
     billing_cycle = "hourly"
-    plan = "baremetal_0"
-    operating_system = "coreos_stable"
+    plan = "c1.small.x86"
+    operating_system = "ubuntu_18_04"
     project_id = "${var.packet_project_id}"
+    public_ipv4_subnet_size = "30"
 
     provisioner "local-exec" {
-        command = "echo \"${self.hostname} ansible_ssh_host=${self.access_public_ipv4} ip=${self.access_private_ipv4}\" >> hosts.ini" 
+      command = "echo \"${self.hostname} ansible_ssh_host=${self.access_public_ipv4} ip=${self.access_private_ipv4}\" >> hosts.ini"
     }
 }
