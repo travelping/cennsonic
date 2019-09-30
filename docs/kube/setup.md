@@ -60,7 +60,7 @@ machine or a CI/CD worker. To install the scripts:
 
 ```
 $ git clone https://github.com/travelping/cennsonic
-$ make -C cennsonic/kube install
+$ make install
 ```
 
 If you prefer to avoid installing the scripts into the system, you can cd into
@@ -71,7 +71,7 @@ the "cennsonic/kube/src" folder and run from there.
 To uninstall Kube scripts:
 
 ```
-$ make -C cennsonic/kube uninstall
+$ make uninstall
 ```
 
 ## Prepare
