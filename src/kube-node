@@ -54,7 +54,8 @@ function main {
             case "$(k8s_version)" in
                 v1.12.*) if [ "$#" -lt 4 ]; then stop "${Usage}"; fi ;;
                 v1.13.*|\
-                v1.14.*) if [ "$#" -ne 9 ]; then stop "${Usage}"; fi ;;
+                v1.14.*|\
+                v1.15.*) if [ "$#" -ne 9 ]; then stop "${Usage}"; fi ;;
             esac
 
             local NodeIp="$3"
@@ -217,7 +218,8 @@ function master_join {
             kubeadm_alpha mark-master
         ;;
         v1.13.*|\
-        v1.14.*)
+        v1.14.*|\
+        v1.15.*)
             sudo /opt/bin/kubeadm join \
                 --apiserver-advertise-address "${NodeIp}" \
                 --ignore-preflight-errors=FileContent--proc-sys-net-bridge-bridge-nf-call-iptables \
@@ -843,7 +845,8 @@ function kubeadm_config_template {
     case "$(k8s_version)" in
         v1.12.*) echo "$(templates)/kubeadm-v1alpha3.yaml" ;;
         v1.13.*|\
-        v1.14.*) echo "$(templates)/kubeadm-v1beta1.yaml" ;;
+        v1.14.*|\
+        v1.15.*) echo "$(templates)/kubeadm-v1beta1.yaml" ;;
     esac
 }
 function kubectl {
