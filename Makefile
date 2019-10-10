@@ -1,5 +1,5 @@
-PROJECT = cennsonic
-VERSION = $(shell cat src/$(PROJECT) | grep VERSION= | cut -d= -f2)
+PROJECT = kube
+VERSION = 0.4.0
 
 REGISTRY = quay.io
 USER = travelping
@@ -15,33 +15,33 @@ BUILD_ARGS = \
 	--build-arg GIT_SHA=$(GIT_SHA)
 
 usage:
-	@echo "Usage: make <Command> [Options]"
+	@echo "Usage: make <Command>"
 	@echo
 	@echo "Commands"
+	@echo "    shellcheck"
+	@echo
 	@echo "    install"
-	@echo "    uninstall"
 	@echo
 	@echo "    docker-build"
-	@echo "    docker-clean"
-	@echo "    docker-distclean"
 	@echo "    docker-push"
 	@echo "    docker-release"
 	@echo "    docker-local-release"
+	@echo "    docker-clean"
+	@echo "    docker-distclean"
 	@echo
 	@echo "    git-release"
 	@echo "    version"
-	@echo
-	@echo "Options"
-	@echo "    REGISTRY=<Docker Registry> # current: $(REGISTRY)"
-	@echo "    PROJECT=<Image Name> # current: $(PROJECT)"
-	@echo "    USER=<Docker ID> # current: $(USER)"
-	@echo "    VERSION=<Version> # current: $(VERSION)"
+
+shellcheck:
+	shellcheck -as bash src/$(PROJECT){,-*}
 
 install:
-	install src/$(PROJECT) /usr/local/bin/$(PROJECT)
+	mkdir -p /usr/local/bin
+	find src -type f -exec install "{}" /usr/local/bin \;
 
 uninstall:
-	rm -f /usr/local/bin/$(PROJECT)
+	cd src && find * -type f -exec rm -f /usr/local/bin/"{}" \;
+	rmdir /usr/local/bin 2>/dev/null || true
 
 docker-build:
 	docker build $(BUILD_ARGS) . -t $(IMAGE)

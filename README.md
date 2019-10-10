@@ -7,164 +7,72 @@
 Cennso stands for Cloud ENabled Network Service Operations. Cennsonic is a
 [Kubernetes] based Cennso Network Integration Cluster.
 
-**Note**. This page describes Kubespray based automation way to deploy Cennsonic
-and is currently **obsolete** and is **not recommended** to use due to number of
-operational limitations. It is about to be replaced with a [Kubeadm] based
-automation way and is currently being developed as [Kube] subproject of
-Cennsonic.
+**Note**. The Kubespray-based to deployment of Cennsonic is obsolete and has
+been removed from this repository. It is replaced with a [Kubeadm] based
+automation way -- [Kube](#kubernetes-cluster).
 
-* [Setup](#setup)
-  * [Infrastructure](#infrastructure)
-  * [Configuration](#configuration)
-  * [Deploy](#deploy)
-  * [Components](#components)
-* [Troubleshooting and FAQ](#troubleshooting-and-faq)
+Rather than providing another turn-key automation tool for setting up
+Kubernetes clusters, this is meant to provide a framework, tools, and
+documentation to setup a cluster to run Cennso network services. Common
+tools are utilized to address the respective aspects of a cluster.
 
-## Setup
+- [Cloud Infrastrucutre Management](#infrastructure) with [Terraform]
+- [Configuration Mangement](#configuration-management) with [Ansible]
+- [Kubernetes Cluster Management](#kubernetes-cluster) based on [kubeadm]
+- [Supporting Cluster Components](#components) deployed with [kubectl] and [helm]
+- [Troubleshooting and FAQ](#troubleshooting-and-faq)
 
-As said Cennsonic is based on a regular Kubernetes cluster, so we start from
-setting it up. For the setup we use [Kubespray] packed into a [Docker image],
-so [Docker] is required. Also [kubectl] is required for cluster operations.
-
-The [Cennsonic Tool] simplifies operations with Kubespray in Docker. To download
-and install it:
-
-```
-$ wget https://raw.githubusercontent.com/travelping/cennsonic/master/bin/cennsonic
-$ install cennsonic /usr/local/bin/cennsonic
-```
-
-See also:
-
-* [Kubespray in Docker →] **NYI**
 
 ### Infrastructure
 
 The current approach assumes that every host purposed for the cluster should
 satisfy the following conditioins:
 
-* [Ubuntu 16.04 LTS] OS upgraded after setup
+* [Ubuntu 18.04 LTS] OS upgraded after setup
 * swap is turned off
 * SSH access (either by password or by key)
 * the hostname is set according to the node name (see recommendation below).
 
 Optionally, sudo password could be disabled and needed SSH keys provisioned.
 
-The recommended way of naming nodes is the following. Assuming your cluster
-is named "cennsonic.example.net" then for a single host setup use:
-
-```
-single.cennsonic.example.net
-```
-
-for a multi-host setup use:
+The recommended way of naming nodes is the following, assuming your cluster
+is named "cennsonic.example.net":
 
 ```
 master-[01:XX].cennsonic.example.net
 worker-[01:XX].cennsonic.example.net
 ```
 
-See also:
+Templates to mange infrastructure are available in the [`infra/`](infra/) folder and
+currently comprises
 
-* [Setup Infrastructure on Bare Metal →] **NYI**
-* [Setup Infrastructure on vSphere →] **NYI**
-* [Setup Infrastructure on Packet →] **NYI**
-* [Setup Infrastructure on AWS →] **NYI**
-* [Setup Infrastructure on GCE →] **NYI**
-* [Setup Infrastructure on IBM →] **NYI**
+- IBM
+- packet.net
+- vshpere
 
-Requires [Configuration](#configuration):
+
+### Configuration Management
+
+Ansible playbooks for different aspects of configuration are provided in
+the [`ansible/`](ansible/) folder.
+
+Required configurations:
 
 * [Turn Swap Off →]
 * [Provision SSH Keys →]
 * [Disable Sudo Password →]
 
-### Configuration
 
-Let's name our cluster "cennsonic.example.net" (any other name can be used) and
-get its initial configuration:
+### Kubernetes Cluster
 
-```
-$ cennsonic init cennsonic.example.net
-```
+A [Kubeadm]-based tool `kube` is used to deploy and maintain the Kubernets
+mangement layer, which is acutally a shell script that executes `kubeadm`
+on the remote hosts and takes care of some specific settings.
 
-That should create a "cennsonic.example.net" cluster directory (further refered
-as "Cluster Directory") with the configuration files in it:
+* [Setup](docs/kube/setup.md)
+* [Upgrade](docs/kube/upgrade.md)
+* [Troubleshooting](docs/kube/troubleshooting.md)
 
-```
-$ tree cennsonic.example.net/config
-cennsonic.example.net/config
- ├── group_vars
- │   ├── all.yml
- │   └── k8s-cluster.yml
- └── hosts.ini
-
-3 directories, 3 files
-```
-
-Let's have a look into the files:
-
- * hosts.ini — defines cluster topology and SSH access details. Modify according
-   to your desired topology and SSH setting. Make sure your nodes hostnames are
-   set according to the hostnames in this file
-
- * k8s-cluster.yml — defines Kubernetes settings, especially important might be
-   the following:
-
-   - kube_version — Kubernetes version
-
-   - supplementary_addresses\_in\_ssl\_keys — list of all the IP addresses and
-     DNS names that might be used to access Kubernetes API of the cluster.
-     Make sure to specify here list of IP addresses that you are going to use
-     to access the Kubernetes API server
-
- * all.yml — defines settings for all the hosts in the cluster. During the
-   deployment the useful might be "http(s)_proxy". Should be specified if the
-   nodes access the Internet via proxy only.
-
-Makes sense to keep this configuration under version control if you plan to
-evolve this cluster. Well, also makes sense if you do not plan that.
-
-### Deploy
-
-Once the configuration is ready, a plain Kubernetes cluster can be deployed:
-
-```
-$ cd <Cluster Directory>
-$ cennsonic deploy
-    [-k,--ask-pass] # if SSH password should be specified
-    [-K,--ask-become-pass] # if "sudo" password should be specified
-    [--pk,--private-key[=Path]] # if SSH private key should be specified
-```
-
-To acceess the newly deployed cluster a kubeconfig file should be created:
-
-```
-$ cd <Cluster Directory>
-$ cennsonic user create <Username> -a
-```
-
-The "-a" option means the user will be bound to the "cluster-admin" role meaning
-full cluster access. Omit this option if a user should not have full access.
-In this case you will need to create a separate role and a rolebinding.
-
-Your kubeconfig should now be in the current directory, and you can get the
-nodes or pods list to make sure API is accessible and the cluster is functional:
-
-```
-$ kubectl --kubeconfig <Username>.conf get nodes
-$ kubectl --kubeconfig <Username>.conf get pods --all-namespaces
-```
-
-See also:
-
-* [Users and Roles →] **NYI**
-* [Scaling a Cluster →] **NYI**
-* [Upgrading a Cluster →] **NYI**
-* [OS Kernel and Security Updates →] **NYI**
-* [Modifying Kubelet Start Arguments →] **NYI**
-* [CIS Kubernetes Benchmark Compliance →] **NYI**
-* [Modifying a Cluster API access addresses →] **NYI**
 
 ### Components
 
@@ -179,6 +87,7 @@ installed to fulfill application and operational needs.
 * [Monitoring →] **NYI**
 * [Load Balancer →]
 * [Certificates Manager →] **WiP**
+
 
 ## Troubleshooting and FAQ
 
@@ -215,9 +124,7 @@ limitations under the License.
 [Kubespray]: https://github.com/kubernetes-incubator/kubespray
 [Kubernetes]: https://kubernetes.io
 [Cennsonic Tool]: bin/cennsonic
-[Ubuntu 16.04 LTS]: http://releases.ubuntu.com/16.04
-
-[Kubespray in Docker →]: docs/kubespray_in_docker.md
+[Ubuntu 18.04 LTS]: http://releases.ubuntu.com/18.04
 
 [Setup Infrastructure on Bare Metal →]: docs/infra/bare_metal.md
 [Setup Infrastructure on vSphere →]: docs/infra/vsphere.md
@@ -248,6 +155,16 @@ limitations under the License.
 [Certificates Manager →]: docs/components/certmanager.md
 
 [Exec Format Error →]: docs/troubleshooting/exec_format_error.md
+
+[Calico]: https://docs.projectcalico.org/v3.5/introduction
+[Kubeadm]: https://kubernetes.io/docs/setup/independent/high-availability
+[CNI Node]: https://github.com/openvnf/cni-node
+[Cennsonic]: https://github.com/travelping/cennsonic
+[Keepalived]: http://keepalived.org
+[Kubealived]: https://github.com/openvnf/kubealived
+[Kubernetes]: https://kubernetes.io
+[Calico Sync]: https://github.com/openvnf/calico-sync
+[Kube VXLAN Controller]: https://github.com/openvnf/kube-vxlan-controller
 
 <!-- Badges -->
 
