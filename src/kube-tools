@@ -123,7 +123,7 @@ function templates {
 
     local Manifests; Manifests="$(printf %b \
         "https://raw.githubusercontent.com/travelping/cennsonic" \
-        "/master/kube/manifests" \
+        "/master/manifests" \
     )"
 
     case "${Name}" in
