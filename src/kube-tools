@@ -216,7 +216,8 @@ function install_master {
     case "$(k8s_version)" in
         v1.12.*) local Kubeadm="kubeadm-v1alpha3" ;;
         v1.13.*|\
-        v1.14.*) local Kubeadm="kubeadm-v1beta1" ;;
+        v1.14.*|\
+        v1.15.*) local Kubeadm="kubeadm-v1beta1" ;;
     esac
 
     install_templates "$(templates "${Kubeadm}" "${Templates}")" \
