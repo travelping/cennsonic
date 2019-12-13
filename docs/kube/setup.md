@@ -64,7 +64,7 @@ $ make install
 ```
 
 If you prefer to avoid installing the scripts into the system, you can cd into
-the "cennsonic/kube/src" folder and run from there.
+the "cennsonic/src" folder and run from there.
 
 ### Uninstall Kube
 
@@ -111,8 +111,8 @@ $ kube tools <Host SSH> install <master|worker> <Kubernetes Version>
 For example with a master and another worker machine:
 
 ```
-$ kube tools core@192.168.10.11 install master v1.14.1
-$ kube tools core@192.168.10.21 install worker v1.14.1
+$ kube tools core@192.168.10.11 install master v1.15.6
+$ kube tools core@192.168.10.21 install worker v1.15.6
 ```
 
 ## Install
@@ -172,7 +172,7 @@ To specify custom pod and service network subnets:
 ```
 $ kube node core@192.168.10.11 \
        master init 172.18.10.11 172.18.1.10 \
-              --pod-subnet=10.234.64.0/18 \
+              --pod-subnet=10.234.128.0/17 \
               --service-subnet=10.234.0.0/18
 ```
 
